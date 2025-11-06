@@ -1,0 +1,27 @@
+===========================================
+STEPS TO CLEAR CACHE AND USE RAILWAY
+===========================================
+
+1. STOP the Metro bundler completely
+   - Press Ctrl+C (or Cmd+C) in the terminal where it's running
+   - Close the Expo dev tools browser window
+
+2. DELETE all cache folders:
+   rm -rf node_modules/.cache
+   rm -rf .expo
+   rm -rf $TMPDIR/metro-*
+   rm -rf $TMPDIR/haste-*
+
+3. RESTART with clear cache:
+   npm start -- --clear
+   
+4. REBUILD the app on simulator:
+   - Press 'i' for iOS simulator
+   OR
+   - npm run ios
+
+5. CHECK the console output:
+   - You should see: "🌐 API Client configured for: https://roomify-server-production.up.railway.app/api"
+   - NOT: "http://localhost:3001/api"
+
+===========================================

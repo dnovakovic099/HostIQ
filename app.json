@@ -1,0 +1,73 @@
+{
+  "expo": {
+    "name": "HostIQ",
+    "slug": "roomify",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/app-icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.hostiq.app",
+      "buildNumber": "3",
+      "infoPlist": {
+        "NSCameraUsageDescription": "HostIQ needs access to your camera to capture inspection photos and videos.",
+        "NSPhotoLibraryUsageDescription": "HostIQ needs access to your photo library to select inspection media.",
+        "NSFaceIDUsageDescription": "HostIQ uses Face ID to securely authenticate you."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#FFFFFF",
+        "dark": {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      },
+      "package": "com.hostiq.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow HostIQ to access your camera to capture inspection photos and videos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow HostIQ to access your photos to select inspection media."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "981b4db7-ecd2-4520-8f6e-5ddcd4fd8fc1"
+      }
+    }
+  }
+}
