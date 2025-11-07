@@ -129,6 +129,54 @@ const IssuesScreen = () => {
     }
   };
 
+  const pollSyncStatus = async (jobId) => {
+    const maxAttempts = 120; // 10 minutes max
+    let attempts = 0;
+
+    const checkStatus = async () => {
+      try {
+        const response = await client.get(`/issues/sync-status/${jobId}`);
+        const { status, progress, message, results, error } = response.data;
+
+        console.log(`Sync status: ${status} - ${progress}% - ${message || ''}`);
+
+        if (status === 'completed') {
+          setSyncing(false);
+          Alert.alert(
+            'Sync Complete',
+            `Processed: ${results.processed || 0}\nFlagged: ${results.flagged || 0}\nIssues Detected: ${results.issuesDetected || 0}`,
+            [{ text: 'OK', onPress: () => {
+              fetchIssues();
+              fetchAnalytics();
+            }}]
+          );
+          return;
+        }
+
+        if (status === 'error') {
+          setSyncing(false);
+          Alert.alert('Sync Error', error || 'Failed to sync messages');
+          return;
+        }
+
+        // Still in progress, poll again
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(() => checkStatus(), 3000);
+        } else {
+          setSyncing(false);
+          Alert.alert('Timeout', 'Sync is taking longer than expected. Please check back later.');
+        }
+      } catch (error) {
+        console.error('Error checking sync status:', error);
+        setSyncing(false);
+        Alert.alert('Error', 'Failed to check sync status');
+      }
+    };
+
+    checkStatus();
+  };
+
   const syncMessages = async () => {
     if (!selectedProperty) return;
 
@@ -138,7 +186,7 @@ const IssuesScreen = () => {
         'Syncing Messages',
         'This will fetch and analyze guest messages from the last 90 days. This may take a few minutes.',
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: 'Cancel', style: 'cancel', onPress: () => setSyncing(false) },
           {
             text: 'Continue',
             onPress: async () => {
@@ -147,19 +195,16 @@ const IssuesScreen = () => {
                   daysBack: 90
                 });
                 
-                Alert.alert(
-                  'Sync Complete',
-                  `Processed: ${response.data.processed}\nFlagged: ${response.data.flagged}\nIssues Detected: ${response.data.issuesDetected}`,
-                  [{ text: 'OK', onPress: () => {
-                    fetchIssues();
-                    fetchAnalytics(); // Refresh analytics too
-                  }}]
-                );
+                if (response.data.jobId) {
+                  pollSyncStatus(response.data.jobId);
+                } else {
+                  setSyncing(false);
+                  Alert.alert('Error', 'Failed to start sync');
+                }
               } catch (error) {
                 console.error('Error syncing messages:', error);
-                Alert.alert('Error', error.response?.data?.error || 'Failed to sync messages');
-              } finally {
                 setSyncing(false);
+                Alert.alert('Error', error.response?.data?.error || 'Failed to sync messages');
               }
             }
           }
