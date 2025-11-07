@@ -10,7 +10,6 @@ import PropertiesScreen from '../screens/Owner/PropertiesScreen';
 import PropertyDetailScreen from '../screens/Owner/PropertyDetailScreen';
 import CreatePropertyScreen from '../screens/Owner/CreatePropertyScreen';
 import ListingOptimizationScreen from '../screens/Owner/ListingOptimizationScreen';
-import IssuesScreen from '../screens/Owner/IssuesScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -58,8 +57,8 @@ function PropertiesStack() {
   );
 }
 
-// Listing Insights Stack
-function ListingInsightsStack() {
+// Insights Stack (Combined: Listing Optimization + Guest Issues)
+function InsightsStack() {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -83,42 +82,9 @@ function ListingInsightsStack() {
       }}
     >
       <Stack.Screen 
-        name="ListingOptimization" 
+        name="InsightsList" 
         component={ListingOptimizationScreen}
-        options={{ title: 'Listing Insights' }}
-      />
-    </Stack.Navigator>
-  );
-}
-
-// Issues Stack
-function IssuesStack() {
-  return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: '#FFFFFF',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 0.5 },
-          shadowOpacity: 0.1,
-          shadowRadius: 0,
-          elevation: 1,
-          borderBottomWidth: 0.5,
-          borderBottomColor: '#E5E5EA',
-        },
-        headerTintColor: '#007AFF',
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: 17,
-          color: '#1D1D1F',
-        },
-        headerBackTitleVisible: false,
-      }}
-    >
-      <Stack.Screen 
-        name="IssuesList" 
-        component={IssuesScreen}
-        options={{ title: 'Guest Issues' }}
+        options={{ title: 'Insights' }}
       />
     </Stack.Navigator>
   );
@@ -143,8 +109,6 @@ export default function MainTabs() {
             iconName = focused ? 'business' : 'business-outline';
           } else if (route.name === 'Insights') {
             iconName = focused ? 'bar-chart' : 'bar-chart-outline';
-          } else if (route.name === 'Issues') {
-            iconName = focused ? 'warning' : 'warning-outline';
           } else if (route.name === 'Settings') {
             iconName = focused ? 'settings' : 'settings-outline';
           }
@@ -178,13 +142,8 @@ export default function MainTabs() {
           />
           <Tab.Screen 
             name="Insights" 
-            component={ListingInsightsStack}
+            component={InsightsStack}
             options={{ title: 'Insights' }}
-          />
-          <Tab.Screen 
-            name="Issues" 
-            component={IssuesStack}
-            options={{ title: 'Issues' }}
           />
         </>
       )}
