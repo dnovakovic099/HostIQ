@@ -9,7 +9,8 @@ import {
   RefreshControl,
   Alert,
   Modal,
-  ScrollView
+  ScrollView,
+  TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -28,6 +29,9 @@ const IssuesScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [noPMSConnected, setNoPMSConnected] = useState(false);
   const [pickerModalVisible, setPickerModalVisible] = useState(false);
+  const [analytics, setAnalytics] = useState(null);
+  const [showDashboard, setShowDashboard] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch properties on mount
   useEffect(() => {
@@ -38,6 +42,7 @@ const IssuesScreen = () => {
   useEffect(() => {
     if (selectedProperty) {
       fetchIssues();
+      fetchAnalytics();
     }
   }, [selectedProperty]);
 
@@ -77,6 +82,25 @@ const IssuesScreen = () => {
     }
   };
 
+  const getFilteredProperties = () => {
+    if (!searchQuery.trim()) {
+      return properties;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    return properties.filter(property => {
+      const name = (property.nickname || property.name || '').toLowerCase();
+      const address = (property.address || '').toLowerCase();
+      const city = (property.city || '').toLowerCase();
+      const listingId = (property.pms_listing_id || '').toString().toLowerCase();
+      
+      return name.includes(query) || 
+             address.includes(query) || 
+             city.includes(query) || 
+             listingId.includes(query);
+    });
+  };
+
   const fetchIssues = async () => {
     if (!selectedProperty) return;
 
@@ -90,6 +114,18 @@ const IssuesScreen = () => {
       Alert.alert('Error', 'Failed to load issues');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAnalytics = async () => {
+    if (!selectedProperty) return;
+
+    try {
+      const response = await client.get(`/issues/${selectedProperty}/analytics?days=90`);
+      setAnalytics(response.data);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      // Don't show alert, analytics is optional
     }
   };
 
@@ -114,7 +150,10 @@ const IssuesScreen = () => {
                 Alert.alert(
                   'Sync Complete',
                   `Processed: ${response.data.processed}\nFlagged: ${response.data.flagged}\nIssues Detected: ${response.data.issuesDetected}`,
-                  [{ text: 'OK', onPress: () => fetchIssues() }]
+                  [{ text: 'OK', onPress: () => {
+                    fetchIssues();
+                    fetchAnalytics(); // Refresh analytics too
+                  }}]
                 );
               } catch (error) {
                 console.error('Error syncing messages:', error);
@@ -174,7 +213,8 @@ const IssuesScreen = () => {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchIssues().finally(() => setRefreshing(false));
+    Promise.all([fetchIssues(), fetchAnalytics()])
+      .finally(() => setRefreshing(false));
   }, [selectedProperty]);
 
   const getSeverityColor = (severity) => {
@@ -442,18 +482,45 @@ const IssuesScreen = () => {
         visible={pickerModalVisible}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setPickerModalVisible(false)}
+        onRequestClose={() => {
+          setPickerModalVisible(false);
+          setSearchQuery('');
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.pickerModalContent}>
             <View style={styles.pickerModalHeader}>
-              <Text style={styles.pickerModalTitle}>Select Property</Text>
-              <TouchableOpacity onPress={() => setPickerModalVisible(false)}>
+              <Text style={styles.pickerModalTitle}>
+                Select Property ({properties.length} total)
+              </Text>
+              <TouchableOpacity onPress={() => {
+                setPickerModalVisible(false);
+                setSearchQuery('');
+              }}>
                 <Ionicons name="close" size={24} color="#1F2937" />
               </TouchableOpacity>
             </View>
+            
+            {/* Search Input */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color="#9CA3AF" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search properties..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                </TouchableOpacity>
+              )}
+            </View>
+
             <ScrollView style={styles.pickerScroll}>
-              {properties.map((property) => {
+              {getFilteredProperties().map((property) => {
                 const label = property.nickname || property.name || `Property ${property.pms_listing_id}`;
                 const isSelected = selectedProperty === property.id;
                 return (
@@ -467,62 +534,41 @@ const IssuesScreen = () => {
                       console.log('📍 Property selected:', property.id, label);
                       setSelectedProperty(property.id);
                       setPickerModalVisible(false);
+                      setSearchQuery('');
                     }}
                   >
-                    <Text style={[
-                      styles.pickerOptionText,
-                      isSelected && styles.pickerOptionTextSelected
-                    ]}>
-                      {label}
-                    </Text>
+                    <View style={styles.pickerOptionContent}>
+                      <Text style={[
+                        styles.pickerOptionText,
+                        isSelected && styles.pickerOptionTextSelected
+                      ]}>
+                        {label}
+                      </Text>
+                      {property.address && (
+                        <Text style={styles.pickerOptionSubtext}>
+                          {property.address}{property.city ? `, ${property.city}` : ''}
+                        </Text>
+                      )}
+                    </View>
                     {isSelected && (
                       <Ionicons name="checkmark" size={20} color="#007AFF" />
                     )}
                   </TouchableOpacity>
                 );
               })}
+              {getFilteredProperties().length === 0 && (
+                <View style={styles.noResultsContainer}>
+                  <Ionicons name="search-outline" size={48} color="#9CA3AF" />
+                  <Text style={styles.noResultsText}>No properties found</Text>
+                  <Text style={styles.noResultsSubtext}>
+                    Try adjusting your search
+                  </Text>
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
       </Modal>
-
-      {/* Stats */}
-      {stats && (
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{stats.total}</Text>
-            <Text style={styles.statLabel}>Total Issues</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, { color: '#EF4444' }]}>
-              {stats.bySeverity?.BLOCKER || 0}
-            </Text>
-            <Text style={styles.statLabel}>Blockers</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, { color: '#10B981' }]}>
-              {stats.byStatus?.RESOLVED || 0}
-            </Text>
-            <Text style={styles.statLabel}>Resolved</Text>
-          </View>
-        </View>
-      )}
-
-      {/* Sync Button */}
-      <TouchableOpacity
-        style={styles.syncButton}
-        onPress={syncMessages}
-        disabled={syncing}
-      >
-        {syncing ? (
-          <ActivityIndicator color="#FFF" />
-        ) : (
-          <>
-            <Ionicons name="sync" size={20} color="#FFF" />
-            <Text style={styles.syncButtonText}>Sync Messages</Text>
-          </>
-        )}
-      </TouchableOpacity>
 
       {/* Issues List */}
       <FlatList
@@ -532,6 +578,150 @@ const IssuesScreen = () => {
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListHeaderComponent={
+          <>
+            {/* Stats */}
+            {stats && (
+              <View style={styles.statsContainer}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statNumber}>{stats.total}</Text>
+                  <Text style={styles.statLabel}>Total Issues</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={[styles.statNumber, { color: '#EF4444' }]}>
+                    {stats.bySeverity?.BLOCKER || 0}
+                  </Text>
+                  <Text style={styles.statLabel}>Blockers</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={[styles.statNumber, { color: '#10B981' }]}>
+                    {stats.byStatus?.RESOLVED || 0}
+                  </Text>
+                  <Text style={styles.statLabel}>Resolved</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Analytics Dashboard */}
+            {analytics && (
+              <View style={styles.dashboardContainer}>
+                <TouchableOpacity
+                  style={styles.dashboardHeader}
+                  onPress={() => setShowDashboard(!showDashboard)}
+                >
+                  <View style={styles.dashboardTitleContainer}>
+                    <Ionicons name="bar-chart" size={20} color="#007AFF" />
+                    <Text style={styles.dashboardTitle}>Analytics Dashboard</Text>
+                  </View>
+                  <Ionicons
+                    name={showDashboard ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color="#6B7280"
+                  />
+                </TouchableOpacity>
+
+                {showDashboard && (
+                  <View style={styles.dashboardContent}>
+                    {/* Summary Stats */}
+                    <View style={styles.analyticsSummary}>
+                      <Text style={styles.analyticsSummaryText}>
+                        {analytics.summary.totalIssues} issues detected from{' '}
+                        {analytics.summary.totalConversations} conversations
+                      </Text>
+                      <Text style={styles.analyticsSummarySubtext}>
+                        ({analytics.summary.issueRate}% issue rate)
+                      </Text>
+                      <Text style={styles.dateRangeText}>
+                        Last {analytics.summary.dateRange.days} days
+                      </Text>
+                    </View>
+
+                    {/* Top Issues */}
+                    {analytics.topIssues && analytics.topIssues.length > 0 && (
+                      <View style={styles.analyticsSection}>
+                        <Text style={styles.analyticsSectionTitle}>Most Common Issues</Text>
+                        {analytics.topIssues.slice(0, 5).map((issue, idx) => (
+                          <View key={idx} style={styles.topIssueRow}>
+                            <View style={styles.topIssueLeft}>
+                              <Text style={styles.topIssueCategory}>{issue.category}</Text>
+                              <View style={styles.severityRow}>
+                                <View style={styles.severityMini}>
+                                  <View
+                                    style={[
+                                      styles.severityDot,
+                                      { backgroundColor: getSeverityColor('BLOCKER') }
+                                    ]}
+                                  />
+                                  <Text style={styles.severityMiniText}>
+                                    {issue.severities.BLOCKER}
+                                  </Text>
+                                </View>
+                                <View style={styles.severityMini}>
+                                  <View
+                                    style={[
+                                      styles.severityDot,
+                                      { backgroundColor: getSeverityColor('HIGH') }
+                                    ]}
+                                  />
+                                  <Text style={styles.severityMiniText}>
+                                    {issue.severities.HIGH}
+                                  </Text>
+                                </View>
+                                <View style={styles.severityMini}>
+                                  <View
+                                    style={[
+                                      styles.severityDot,
+                                      { backgroundColor: getSeverityColor('MEDIUM') }
+                                    ]}
+                                  />
+                                  <Text style={styles.severityMiniText}>
+                                    {issue.severities.MEDIUM}
+                                  </Text>
+                                </View>
+                                <View style={styles.severityMini}>
+                                  <View
+                                    style={[
+                                      styles.severityDot,
+                                      { backgroundColor: getSeverityColor('LOW') }
+                                    ]}
+                                  />
+                                  <Text style={styles.severityMiniText}>
+                                    {issue.severities.LOW}
+                                  </Text>
+                                </View>
+                              </View>
+                            </View>
+                            <View style={styles.topIssueCount}>
+                              <Text style={styles.topIssueCountNumber}>{issue.count}</Text>
+                              <Text style={styles.topIssueCountLabel}>occurrences</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Sync Button */}
+            <TouchableOpacity
+              style={styles.syncButton}
+              onPress={syncMessages}
+              disabled={syncing}
+            >
+              {syncing ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name="sync" size={20} color="#FFF" />
+                  <Text style={styles.syncButtonText}>Sync Messages</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </>
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -627,14 +817,57 @@ const styles = StyleSheet.create({
   pickerOptionSelected: {
     backgroundColor: '#EFF6FF'
   },
+  pickerOptionContent: {
+    flex: 1
+  },
   pickerOptionText: {
     fontSize: 16,
-    color: '#1F2937',
-    flex: 1
+    color: '#1F2937'
   },
   pickerOptionTextSelected: {
     color: '#007AFF',
     fontWeight: '600'
+  },
+  pickerOptionSubtext: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    gap: 8
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1F2937',
+    paddingVertical: 4
+  },
+  noResultsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40
+  },
+  noResultsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 12
+  },
+  noResultsSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+    textAlign: 'center'
   },
   statsContainer: {
     flexDirection: 'row',
@@ -680,13 +913,13 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   },
   listContent: {
-    padding: 16,
-    paddingTop: 0
+    paddingBottom: 16
   },
   issueCard: {
     backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 16,
+    marginHorizontal: 16,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -761,7 +994,8 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     alignItems: 'center',
-    padding: 40
+    paddingVertical: 60,
+    paddingHorizontal: 40
   },
   emptyTitle: {
     fontSize: 18,
@@ -926,6 +1160,150 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontSize: 14,
     fontWeight: '600'
+  },
+  dashboardContainer: {
+    backgroundColor: '#FFF',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2
+  },
+  dashboardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16
+  },
+  dashboardTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  dashboardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937'
+  },
+  dashboardContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 16
+  },
+  analyticsSummary: {
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    alignItems: 'center'
+  },
+  analyticsSummaryText: {
+    fontSize: 15,
+    color: '#1F2937',
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 4
+  },
+  analyticsSummarySubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 8
+  },
+  dateRangeText: {
+    fontSize: 12,
+    color: '#9CA3AF'
+  },
+  analyticsSection: {
+    marginBottom: 16
+  },
+  analyticsSectionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 12
+  },
+  topIssueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8
+  },
+  topIssueLeft: {
+    flex: 1
+  },
+  topIssueCategory: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 6
+  },
+  severityRow: {
+    flexDirection: 'row',
+    gap: 12
+  },
+  severityMini: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
+  },
+  severityDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4
+  },
+  severityMiniText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '600'
+  },
+  topIssueCount: {
+    alignItems: 'flex-end',
+    marginLeft: 12
+  },
+  topIssueCountNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937'
+  },
+  topIssueCountLabel: {
+    fontSize: 11,
+    color: '#6B7280'
+  },
+  severityBreakdown: {
+    gap: 8
+  },
+  severityBreakdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8
+  },
+  severityBreakdownLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8
+  },
+  severityIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6
+  },
+  severityBreakdownText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937'
+  },
+  severityBreakdownNumber: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937'
   }
 });
 
