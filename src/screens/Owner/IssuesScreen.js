@@ -24,6 +24,7 @@ const IssuesScreen = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -130,7 +131,7 @@ const IssuesScreen = () => {
   };
 
   const pollSyncStatus = async (jobId) => {
-    const maxAttempts = 120; // 10 minutes max
+    const maxAttempts = 20; // 10 minutes max (20 * 30 seconds)
     let attempts = 0;
 
     const checkStatus = async () => {
@@ -139,9 +140,13 @@ const IssuesScreen = () => {
         const { status, progress, message, results, error } = response.data;
 
         console.log(`Sync status: ${status} - ${progress}% - ${message || ''}`);
+        
+        // Update status message
+        setSyncStatus(message || 'Processing...');
 
         if (status === 'completed') {
           setSyncing(false);
+          setSyncStatus(null);
           Alert.alert(
             'Sync Complete',
             `Processed: ${results.processed || 0}\nFlagged: ${results.flagged || 0}\nIssues Detected: ${results.issuesDetected || 0}`,
@@ -155,6 +160,7 @@ const IssuesScreen = () => {
 
         if (status === 'error') {
           setSyncing(false);
+          setSyncStatus(null);
           Alert.alert('Sync Error', error || 'Failed to sync messages');
           return;
         }
@@ -162,14 +168,16 @@ const IssuesScreen = () => {
         // Still in progress, poll again
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(() => checkStatus(), 3000);
+          setTimeout(() => checkStatus(), 30000); // Poll every 30 seconds
         } else {
           setSyncing(false);
+          setSyncStatus(null);
           Alert.alert('Timeout', 'Sync is taking longer than expected. Please check back later.');
         }
       } catch (error) {
         console.error('Error checking sync status:', error);
         setSyncing(false);
+        setSyncStatus(null);
         Alert.alert('Error', 'Failed to check sync status');
       }
     };
@@ -191,19 +199,24 @@ const IssuesScreen = () => {
             text: 'Continue',
             onPress: async () => {
               try {
+                setSyncStatus('Starting sync...');
+                
                 const response = await client.post(`/issues/sync/${selectedProperty}`, {
                   daysBack: 90
                 });
                 
                 if (response.data.jobId) {
+                  setSyncStatus('This may take a while. Checking progress every 30 seconds...');
                   pollSyncStatus(response.data.jobId);
                 } else {
                   setSyncing(false);
+                  setSyncStatus(null);
                   Alert.alert('Error', 'Failed to start sync');
                 }
               } catch (error) {
                 console.error('Error syncing messages:', error);
                 setSyncing(false);
+                setSyncStatus(null);
                 Alert.alert('Error', error.response?.data?.error || 'Failed to sync messages');
               }
             }
@@ -212,6 +225,7 @@ const IssuesScreen = () => {
       );
     } catch (error) {
       setSyncing(false);
+      setSyncStatus(null);
     }
   };
 
@@ -766,6 +780,13 @@ const IssuesScreen = () => {
                 </>
               )}
             </TouchableOpacity>
+
+            {syncStatus && (
+              <View style={styles.syncStatusBanner}>
+                <Ionicons name="information-circle" size={20} color="#1D4ED8" />
+                <Text style={styles.syncStatusText}>{syncStatus}</Text>
+              </View>
+            )}
           </>
         }
         ListEmptyComponent={
@@ -956,6 +977,24 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600'
+  },
+  syncStatusBanner: {
+    backgroundColor: '#DBEAFE',
+    borderLeftWidth: 4,
+    borderLeftColor: '#1D4ED8',
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
+  syncStatusText: {
+    flex: 1,
+    color: '#1E40AF',
+    fontSize: 14,
+    fontWeight: '500',
   },
   listContent: {
     paddingBottom: 16
