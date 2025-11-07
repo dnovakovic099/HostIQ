@@ -1221,6 +1221,28 @@ export default function ListingOptimizationScreen({ navigation }) {
                     </View>
                   )}
 
+                  {/* Analytics Dashboard */}
+                  {analytics && analytics.topIssues && analytics.topIssues.length > 0 && (
+                    <View style={styles.dashboardContainer}>
+                      <Text style={styles.dashboardTitle}>Most Common Issues</Text>
+                      {analytics.topIssues.slice(0, 3).map((issueCategory, index) => (
+                        <View key={index} style={styles.dashboardCard}>
+                          <View style={styles.dashboardHeader}>
+                            <Text style={styles.dashboardCategory}>{issueCategory.category}</Text>
+                            <View style={styles.dashboardBadge}>
+                              <Text style={styles.dashboardBadgeText}>{issueCategory.count}</Text>
+                            </View>
+                          </View>
+                          {issueCategory.examples && issueCategory.examples.length > 0 && (
+                            <Text style={styles.dashboardExample} numberOfLines={2}>
+                              "{issueCategory.examples[0]}"
+                            </Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
                   <TouchableOpacity
                     style={styles.syncButton}
                     onPress={syncMessages}
@@ -1335,6 +1357,82 @@ export default function ListingOptimizationScreen({ navigation }) {
 
       {renderPropertyPickerModal()}
       {renderUrlModal()}
+      
+      {/* Issue Detail Modal */}
+      <Modal
+        visible={issueModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIssueModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.issueModalContent}>
+            <View style={styles.issueModalHeader}>
+              <Text style={styles.issueModalTitle}>Issue Details</Text>
+              <TouchableOpacity onPress={() => setIssueModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#1F2937" />
+              </TouchableOpacity>
+            </View>
+
+            {selectedIssue && (
+              <ScrollView style={styles.issueModalScroll}>
+                <View style={styles.issueModalSection}>
+                  <View style={styles.issueModalBadges}>
+                    <View style={styles.severityBadge}>
+                      <Ionicons
+                        name={getSeverityIcon(selectedIssue.severity)}
+                        size={16}
+                        color={getSeverityColor(selectedIssue.severity)}
+                      />
+                      <Text style={[styles.severityText, {color: getSeverityColor(selectedIssue.severity)}]}>
+                        {selectedIssue.severity}
+                      </Text>
+                    </View>
+                    <View style={[styles.statusBadge, {backgroundColor: getStatusColor(selectedIssue.status)}]}>
+                      <Text style={styles.statusText}>{selectedIssue.status}</Text>
+                    </View>
+                  </View>
+
+                  <Text style={styles.issueModalCategory}>{selectedIssue.category}</Text>
+                  <Text style={styles.issueModalSummary}>{selectedIssue.summary}</Text>
+
+                  {selectedIssue.confidence_score && (
+                    <Text style={styles.issueModalConfidence}>
+                      Confidence: {Math.round(selectedIssue.confidence_score * 100)}%
+                    </Text>
+                  )}
+                </View>
+
+                {selectedIssue.status === 'DETECTED' && (
+                  <View style={styles.issueModalActions}>
+                    <TouchableOpacity
+                      style={[styles.issueModalButton, {backgroundColor: '#10B981'}]}
+                      onPress={() => {
+                        updateIssueStatus(selectedIssue.id, 'RESOLVED');
+                        setIssueModalVisible(false);
+                      }}
+                    >
+                      <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                      <Text style={styles.issueModalButtonText}>Mark Resolved</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.issueModalButton, {backgroundColor: '#6B7280'}]}
+                      onPress={() => {
+                        updateIssueStatus(selectedIssue.id, 'FALSE_POSITIVE');
+                        setIssueModalVisible(false);
+                      }}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#FFF" />
+                      <Text style={styles.issueModalButtonText}>False Positive</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -2296,6 +2394,60 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  dashboardContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dashboardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 16,
+  },
+  dashboardCard: {
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#DC2626',
+  },
+  dashboardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dashboardCategory: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+  },
+  dashboardBadge: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  dashboardBadgeText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  dashboardExample: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontStyle: 'italic',
+    lineHeight: 20,
+  },
   issueCard: {
     backgroundColor: '#F9FAFB',
     padding: 12,
@@ -2342,6 +2494,72 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 14,
     paddingVertical: 20,
+  },
+  issueModalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    marginTop: 'auto',
+  },
+  issueModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  issueModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  issueModalScroll: {
+    padding: 20,
+  },
+  issueModalSection: {
+    marginBottom: 20,
+  },
+  issueModalBadges: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  issueModalCategory: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  issueModalSummary: {
+    fontSize: 16,
+    color: '#4B5563',
+    lineHeight: 24,
+    marginBottom: 12,
+  },
+  issueModalConfidence: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  issueModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  issueModalButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 8,
+    gap: 8,
+  },
+  issueModalButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   noDataContainerSmall: {
     padding: 20,
