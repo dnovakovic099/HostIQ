@@ -1235,7 +1235,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                           </View>
                           {issueCategory.examples && issueCategory.examples.length > 0 && (
                             <Text style={styles.dashboardExample} numberOfLines={2}>
-                              "{issueCategory.examples[0]}"
+                              "{issueCategory.examples[0].summary || issueCategory.examples[0]}"
                             </Text>
                           )}
                         </View>
