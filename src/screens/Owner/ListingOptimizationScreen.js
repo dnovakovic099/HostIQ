@@ -12,7 +12,8 @@ import {
   Platform,
   Image,
   FlatList,
-  RefreshControl
+  RefreshControl,
+  KeyboardAvoidingView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -1152,46 +1153,66 @@ export default function ListingOptimizationScreen({ navigation }) {
       animationType="fade"
       onRequestClose={() => setShowUrlModal(false)}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Enter Airbnb Listing URL</Text>
-            <TouchableOpacity onPress={() => setShowUrlModal(false)}>
-              <Ionicons name="close" size={24} color={colors.text.primary} />
-            </TouchableOpacity>
-          </View>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.modalOverlay}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowUrlModal(false)}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Enter Airbnb Listing URL</Text>
+                <TouchableOpacity onPress={() => setShowUrlModal(false)}>
+                  <Ionicons name="close" size={24} color={colors.text.primary} />
+                </TouchableOpacity>
+              </View>
 
-          <Text style={styles.modalDescription}>
-            Enter the full URL of your Airbnb listing to fetch optimization insights.
-          </Text>
+              <Text style={styles.modalDescription}>
+                Enter or paste the full URL of your Airbnb listing to fetch optimization insights.
+              </Text>
 
-          <TextInput
-            style={styles.urlInput}
-            value={airbnbUrl}
-            onChangeText={setAirbnbUrl}
-            placeholder="https://www.airbnb.com/rooms/..."
-            placeholderTextColor={colors.text.secondary}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
+              <TextInput
+                style={styles.urlInput}
+                value={airbnbUrl}
+                onChangeText={setAirbnbUrl}
+                placeholder="https://www.airbnb.com/rooms/..."
+                placeholderTextColor={colors.text.secondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoFocus={true}
+                keyboardType="url"
+                returnKeyType="done"
+                enablesReturnKeyAutomatically={true}
+                textContentType="URL"
+              />
 
-          <View style={styles.modalActions}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => setShowUrlModal(false)}
-            >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.fetchButton}
-              onPress={handleFetchListingData}
-            >
-              <Text style={styles.fetchButtonText}>Fetch Data</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowUrlModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.fetchButton}
+                  onPress={handleFetchListingData}
+                  disabled={fetchingData}
+                >
+                  {fetchingData ? (
+                    <ActivityIndicator color="#FFF" size="small" />
+                  ) : (
+                    <Text style={styles.fetchButtonText}>Fetch Data</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
     </Modal>
   );
 
