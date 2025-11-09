@@ -14,6 +14,7 @@ import ListingOptimizationScreen from '../screens/Owner/ListingOptimizationScree
 import SubscriptionManagementScreen from '../screens/Owner/SubscriptionManagementScreen';
 import PMSSettingsScreen from '../screens/Owner/PMSSettingsScreen';
 import IssuesScreen from '../screens/Owner/IssuesScreen';
+import RoomTemplatesScreen from '../screens/Owner/RoomTemplatesScreen';
 
 const Stack = createStackNavigator();
 
@@ -109,6 +110,11 @@ export default function OwnerStack() {
         name="Issues" 
         component={IssuesScreen}
         options={{ title: 'Guest Issues' }}
+      />
+      <Stack.Screen 
+        name="RoomTemplates" 
+        component={RoomTemplatesScreen}
+        options={{ title: 'Room Templates' }}
       />
     </Stack.Navigator>
   );

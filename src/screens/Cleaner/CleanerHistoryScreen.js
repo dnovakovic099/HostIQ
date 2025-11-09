@@ -528,7 +528,11 @@ export default function CleanerHistoryScreen({ navigation }) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={handleRefresh}
+              tintColor="#007AFF"
+            />
           }
         />
       )}
@@ -548,52 +552,55 @@ export default function CleanerHistoryScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F2F2F7',
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F2F2F7',
   },
   list: {
     padding: 16,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 10,
+    marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    padding: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
   },
   propertyInfo: {
     flex: 1,
   },
   propertyName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 4,
+    color: '#000000',
+    marginBottom: 3,
+    letterSpacing: -0.4,
   },
   unitName: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 15,
+    color: '#8E8E93',
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   deleteButton: {
     padding: 4,
@@ -601,23 +608,24 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 3,
   },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+    letterSpacing: -0.1,
   },
   cardBody: {
-    padding: 16,
+    padding: 14,
   },
   infoRowCompact: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 6,
   },
   infoItem: {
     flexDirection: 'row',
@@ -625,67 +633,73 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   infoTextSmall: {
-    fontSize: 12,
-    color: colors.text.secondary,
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '400',
+    letterSpacing: -0.1,
   },
   infoDivider: {
     fontSize: 12,
-    color: colors.text.secondary,
-    opacity: 0.5,
+    color: '#C7C7CC',
+    opacity: 0.8,
   },
   scoreContainerCompact: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   scoreValueCompact: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
+    letterSpacing: -0.2,
   },
   processingBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 8,
     paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    gap: 8,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(60, 60, 67, 0.12)',
+    gap: 6,
   },
   processingText: {
-    fontSize: 14,
-    color: colors.accent.info,
+    fontSize: 13,
+    color: '#007AFF',
     fontWeight: '500',
+    letterSpacing: -0.1,
   },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginTop: 8,
     paddingTop: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
     paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    backgroundColor: colors.accent.error + '10',
-    borderRadius: 6,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(60, 60, 67, 0.12)',
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    borderRadius: 8,
     gap: 8,
   },
   errorText: {
     flex: 1,
     fontSize: 13,
-    color: colors.accent.error,
+    color: '#FF3B30',
     fontWeight: '500',
+    letterSpacing: -0.1,
   },
   cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    padding: 14,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(60, 60, 67, 0.12)',
   },
   viewDetailsText: {
-    fontSize: 14,
-    color: colors.primary.main,
+    fontSize: 15,
+    color: '#007AFF',
     fontWeight: '600',
+    letterSpacing: -0.2,
   },
   empty: {
     flex: 1,

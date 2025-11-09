@@ -243,22 +243,28 @@ export default function CaptureMediaScreen({ route, navigation }) {
   };
 
   const handleSubmitInspection = async () => {
-    // Validation
-    const unassignedPhotos = photos.filter(p => !p.roomId);
-    if (unassignedPhotos.length > 0) {
+    // Validation: Must have at least one photo
+    if (photos.length === 0) {
       Alert.alert(
-        'Unassigned Photos',
-        `You have ${unassignedPhotos.length} photo(s) without a room assignment. Please assign all photos to rooms.`
+        'No Photos',
+        'Please capture at least one photo before submitting.',
+        [{ text: 'OK' }]
       );
       return;
     }
 
-    if (photos.length === 0) {
-      Alert.alert('No Photos', 'Please capture at least one photo before submitting.');
+    // Validation: All photos must be assigned to rooms
+    const unassignedPhotos = photos.filter(p => !p.roomId);
+    if (unassignedPhotos.length > 0) {
+      Alert.alert(
+        'Unassigned Photos',
+        `You have ${unassignedPhotos.length} photo(s) without a room assignment. Please assign all photos to rooms before submitting.`,
+        [{ text: 'OK' }]
+      );
       return;
     }
 
-    // Check that all rooms have at least one photo
+    // Validation: All rooms must have at least one photo (STRICT - NO BYPASS)
     const roomsWithPhotos = new Set(photos.map(p => p.roomId));
     const roomsWithoutPhotos = rooms.filter(r => !roomsWithPhotos.has(r.id));
     
@@ -266,11 +272,8 @@ export default function CaptureMediaScreen({ route, navigation }) {
       const roomNames = roomsWithoutPhotos.map(r => r.name).join(', ');
       Alert.alert(
         'Missing Rooms',
-        `The following rooms have no photos: ${roomNames}. Would you like to continue anyway?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Continue', onPress: () => performUpload() },
-        ]
+        `All rooms must have photos. Missing photos for:\n\n${roomNames}\n\nPlease take at least one photo for each room.`,
+        [{ text: 'OK' }]
       );
       return;
     }
@@ -762,7 +765,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F2F2F7',
   },
   header: {
     flexDirection: 'row',
@@ -770,9 +773,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 12,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
   },
   backButton: {
     marginRight: 12,
@@ -782,37 +785,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1E293B',
+    color: '#000000',
     marginBottom: 2,
+    letterSpacing: -0.5,
   },
   headerSubtitle: {
     fontSize: 13,
-    color: '#64748B',
+    color: '#8E8E93',
+    letterSpacing: -0.1,
   },
   summaryBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F8FAFC',
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0, 122, 255, 0.05)',
   },
   summaryItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
   },
   summaryDivider: {
     width: 1,
-    height: 10,
-    backgroundColor: '#E2E8F0',
-    marginHorizontal: 6,
+    height: 12,
+    backgroundColor: 'rgba(60, 60, 67, 0.18)',
+    marginHorizontal: 8,
   },
   summaryText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#64748B',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
+    letterSpacing: -0.1,
   },
   content: {
     flex: 1,
@@ -828,12 +834,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   failedRoomSection: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: 'rgba(255, 59, 48, 0.08)',
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginHorizontal: 0,
     borderLeftWidth: 3,
-    borderLeftColor: '#DC2626',
+    borderLeftColor: '#FF3B30',
   },
   roomHeader: {
     flexDirection: 'row',
@@ -842,12 +848,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   roomTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#1E293B',
+    color: '#000000',
+    letterSpacing: -0.3,
   },
   failedRoomTitle: {
-    color: '#DC2626',
+    color: '#FF3B30',
   },
   editTipsBanner: {
     flexDirection: 'row',
@@ -924,10 +931,14 @@ const styles = StyleSheet.create({
   photoCard: {
     width: '23%',
     aspectRatio: 1,
-    borderRadius: 10,
+    borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: '#FFF',
-    ...shadows.small,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 2,
   },
   photoImageContainer: {
     width: '100%',
@@ -942,20 +953,21 @@ const styles = StyleSheet.create({
     top: 6,
     left: 6,
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   roomBadgeText: {
     fontSize: 10,
     fontWeight: '700',
     color: '#FFF',
+    letterSpacing: 0.2,
   },
   assignButton: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(59, 130, 246, 0.95)',
+    backgroundColor: 'rgba(0, 122, 255, 0.95)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -1020,33 +1032,40 @@ const styles = StyleSheet.create({
   },
   cameraButton: {
     flex: 1,
-    backgroundColor: colors.primary.main,
+    backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 10,
-    gap: 3,
+    gap: 4,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cameraButtonText: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFF',
+    letterSpacing: -0.2,
   },
   galleryButton: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 10,
-    gap: 3,
-    borderWidth: 1,
-    borderColor: '#3B82F6',
+    gap: 4,
+    borderWidth: 1.5,
+    borderColor: '#007AFF',
   },
   galleryButtonText: {
-    fontSize: 12,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: '#007AFF',
+    letterSpacing: -0.2,
   },
   submitContainer: {
     position: 'absolute',
@@ -1059,22 +1078,29 @@ const styles = StyleSheet.create({
     zIndex: 101,
   },
   submitButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#34C759',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 10,
-    gap: 4,
+    gap: 6,
+    shadowColor: '#34C759',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   submitButtonDisabled: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#C7C7CC',
     opacity: 0.6,
+    shadowOpacity: 0,
   },
   submitButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#FFF',
+    letterSpacing: -0.3,
   },
   modalOverlay: {
     flex: 1,

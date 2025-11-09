@@ -333,7 +333,11 @@ export default function InspectionReportsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor="#007AFF"
+          />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -349,71 +353,77 @@ export default function InspectionReportsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F2F2F7',
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F2F2F7',
   },
   filterBar: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
   },
   filterButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: 'center',
-    marginHorizontal: 5,
+    marginHorizontal: 4,
     borderRadius: 8,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   filterButtonActive: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#007AFF',
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#666',
+    color: '#3C3C43',
+    letterSpacing: -0.2,
   },
   filterButtonTextActive: {
-    color: '#fff',
+    color: '#FFFFFF',
   },
   list: {
-    padding: 15,
+    padding: 16,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   propertyInfo: {
     flex: 1,
   },
   propertyName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 3,
+    letterSpacing: -0.4,
   },
   unitName: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 15,
+    color: '#8E8E93',
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
   headerRight: {
     flexDirection: 'row',
@@ -423,21 +433,22 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    borderRadius: 6,
+    gap: 3,
   },
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+    letterSpacing: -0.1,
   },
   deleteButton: {
     padding: 4,
   },
   cardBody: {
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(60, 60, 67, 0.12)',
     paddingTop: 10,
   },
   infoRowCompact: {
@@ -453,11 +464,13 @@ const styles = StyleSheet.create({
   },
   infoTextSmall: {
     fontSize: 13,
-    color: '#666',
+    color: '#8E8E93',
+    fontWeight: '400',
+    letterSpacing: -0.1,
   },
   infoDivider: {
     fontSize: 12,
-    color: '#ccc',
+    color: '#C7C7CC',
     marginHorizontal: 6,
   },
   scoreRow: {
@@ -468,13 +481,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingVertical: 5,
+    borderRadius: 6,
     gap: 4,
   },
   scoreChipText: {
     fontSize: 13,
     fontWeight: '600',
+    letterSpacing: -0.1,
   },
   empty: {
     alignItems: 'center',
@@ -482,8 +496,10 @@ const styles = StyleSheet.create({
     marginTop: 40,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#999',
+    fontSize: 17,
+    color: '#8E8E93',
     marginTop: 12,
+    fontWeight: '400',
+    letterSpacing: -0.4,
   },
 });

@@ -93,13 +93,13 @@ export const colors = {
     textSecondary: '#4A90E2',
   },
   
-  // Score Colors (for cleanliness scores)
+  // Score Colors (for cleanliness scores) - iOS native palette
   score: {
-    excellent: '#34C759',    // 9-10
-    good: '#84CC16',         // 7-8
-    average: '#FFCC00',      // 5-6
-    poor: '#F97316',         // 3-4
-    critical: '#FF3B30',     // 0-2
+    excellent: '#34C759',    // 9-10 - iOS Green
+    good: '#007AFF',         // 7-8.9 - iOS Blue
+    average: '#FF9500',      // 5-6.9 - iOS Orange
+    poor: '#FF3B30',         // 3-4.9 - iOS Red
+    critical: '#D70015',     // 0-2.9 - Darker Red
   },
   
   // Gradients (for buttons, FABs, headers)
@@ -137,11 +137,11 @@ export const colors = {
 
 // Helper function to get score color based on value
 export const getScoreColor = (score) => {
-  if (score >= 9) return colors.score.excellent;
-  if (score >= 7) return colors.score.good;
-  if (score >= 5) return colors.score.average;
-  if (score >= 3) return colors.score.poor;
-  return colors.score.critical;
+  if (score >= 9) return colors.score.excellent;   // 9-10: Green
+  if (score >= 7) return colors.score.good;        // 7-8.9: Blue
+  if (score >= 5) return colors.score.average;     // 5-6.9: Orange
+  if (score >= 3) return colors.score.poor;        // 3-4.9: Red
+  return colors.score.critical;                    // 0-2.9: Dark Red
 };
 
 // Helper function to get grade color

@@ -29,6 +29,7 @@ export default function PropertiesScreen({ navigation }) {
   const [pmsRoomCount, setPmsRoomCount] = useState('');
   const [pmsNotes, setPmsNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -71,6 +72,32 @@ export default function PropertiesScreen({ navigation }) {
   const handleRefresh = () => {
     setRefreshing(true);
     fetchProperties();
+  };
+
+  const getFilteredProperties = () => {
+    if (!searchQuery.trim()) {
+      return properties;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    return properties.filter(property => {
+      const name = (property.name || '').toLowerCase();
+      const address = (property.address || '').toLowerCase();
+      return name.includes(query) || address.includes(query);
+    });
+  };
+
+  const getFilteredPMSProperties = () => {
+    if (!searchQuery.trim()) {
+      return pmsProperties;
+    }
+    
+    const query = searchQuery.toLowerCase();
+    return pmsProperties.filter(property => {
+      const name = (property.nickname || property.name || '').toLowerCase();
+      const address = (property.address || '').toLowerCase();
+      return name.includes(query) || address.includes(query);
+    });
   };
 
   const handleDownloadTemplate = async () => {
@@ -291,9 +318,33 @@ export default function PropertiesScreen({ navigation }) {
     );
   }
 
+  const filteredProperties = getFilteredProperties();
+  const filteredPMSProperties = getFilteredPMSProperties();
+
   return (
     <View style={styles.container}>
-      {properties.length === 0 ? (
+      {/* Search Bar */}
+      {(properties.length > 0 || pmsProperties.length > 0) && (
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search properties..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholderTextColor="#8E8E93"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color="#8E8E93" />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
+      {properties.length === 0 && pmsProperties.length === 0 ? (
         <View style={styles.empty}>
           <Ionicons name="business-outline" size={64} color="#ccc" />
           <Text style={styles.emptyText}>No properties yet</Text>
@@ -305,74 +356,12 @@ export default function PropertiesScreen({ navigation }) {
           >
             <Text style={styles.createButtonText}>Create Property</Text>
           </TouchableOpacity>
-
-          <View style={styles.csvSection}>
-            <Text style={styles.csvSectionTitle}>Bulk Upload via CSV</Text>
-            <View style={styles.csvButtons}>
-              <TouchableOpacity
-                style={styles.csvButton}
-                onPress={handleDownloadTemplate}
-              >
-                <Ionicons name="download-outline" size={18} color="#4A90E2" />
-                <Text style={styles.csvButtonText}>Download Template</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.csvButton, styles.uploadButton]}
-                onPress={handleUploadCSV}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
-                    <Text style={styles.uploadButtonText}>Upload CSV</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
       ) : (
         <>
-          <View style={styles.header}>
-            <View style={styles.csvButtonsRow}>
-              <TouchableOpacity
-                style={styles.csvButtonCompact}
-                onPress={handleDownloadTemplate}
-              >
-                <Ionicons name="download-outline" size={16} color="#4A90E2" />
-                <Text style={styles.csvButtonCompactText}>Template</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.csvButtonCompact, styles.uploadButtonCompact]}
-                onPress={handleUploadCSV}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
-                    <Text style={styles.uploadButtonCompactText}>Upload CSV</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.pmsButton}
-                onPress={() => navigation.navigate('PMSSettings')}
-              >
-                <Ionicons name="cloud-outline" size={16} color="#6366F1" />
-                <Text style={styles.pmsButtonText}>PMS</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
 
           <FlatList
-            data={properties}
+            data={filteredProperties}
             renderItem={renderProperty}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
@@ -380,15 +369,17 @@ export default function PropertiesScreen({ navigation }) {
               <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
             }
             ListHeaderComponent={
-              pmsProperties.length > 0 ? (
+              filteredPMSProperties.length > 0 ? (
                 <View style={styles.pmsSectionContainer}>
                   <Text style={styles.pmsSection}>PMS Listings</Text>
-                  {pmsProperties.map(pmsProp => (
+                  {filteredPMSProperties.map(pmsProp => (
                     <View key={pmsProp.id}>
                       {renderPMSProperty({ item: pmsProp })}
                     </View>
                   ))}
-                  <Text style={styles.pmsSectionFooter}>Manual Properties</Text>
+                  {filteredProperties.length > 0 && (
+                    <Text style={styles.pmsSectionFooter}>Manual Properties</Text>
+                  )}
                 </View>
               ) : null
             }
@@ -482,7 +473,31 @@ export default function PropertiesScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F2F2F7',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 17,
+    color: '#000000',
+    letterSpacing: -0.4,
   },
   loading: {
     flex: 1,

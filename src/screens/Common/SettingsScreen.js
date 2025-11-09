@@ -179,18 +179,33 @@ export default function SettingsScreen({ navigation }) {
       </View>
 
       {(user?.role === 'OWNER' || user?.role === 'ADMIN') && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Integrations</Text>
-          <View style={styles.card}>
-            <SettingsItem
-              icon="cloud-outline"
-              title="PMS Integration"
-              onPress={() => navigation.navigate('Inspections', { 
-                screen: 'PMSSettings' 
-              })}
-            />
+        <>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Property Management</Text>
+            <View style={styles.card}>
+              <SettingsItem
+                icon="bookmark-outline"
+                title="Room Templates"
+                onPress={() => navigation.navigate('Inspections', { 
+                  screen: 'RoomTemplates' 
+                })}
+              />
+            </View>
           </View>
-        </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Integrations</Text>
+            <View style={styles.card}>
+              <SettingsItem
+                icon="cloud-outline"
+                title="PMS Integration"
+                onPress={() => navigation.navigate('Inspections', { 
+                  screen: 'PMSSettings' 
+                })}
+              />
+            </View>
+          </View>
+        </>
       )}
 
       <View style={styles.section}>

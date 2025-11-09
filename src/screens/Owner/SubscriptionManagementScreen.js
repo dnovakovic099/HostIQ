@@ -28,11 +28,28 @@ export default function SubscriptionManagementScreen({ navigation }) {
         api.get('/subscriptions/my-subscriptions'),
       ]);
 
-      setUsage(usageRes.data);
-      setProperties(propertiesRes.data);
-      setSubscriptions(subscriptionsRes.data);
+      setUsage(usageRes.data || null);
+      
+      // Handle new API format with separated manual and PMS properties
+      let allProperties = [];
+      if (propertiesRes.data.manualProperties) {
+        allProperties = [
+          ...(propertiesRes.data.manualProperties || []),
+          ...(propertiesRes.data.pmsProperties || [])
+        ];
+      } else {
+        // Fallback for old API format
+        allProperties = Array.isArray(propertiesRes.data) ? propertiesRes.data : [];
+      }
+      
+      setProperties(allProperties);
+      setSubscriptions(Array.isArray(subscriptionsRes.data) ? subscriptionsRes.data : []);
     } catch (error) {
       console.error('Load subscription data error:', error);
+      // Ensure states are set to empty arrays on error
+      setUsage(null);
+      setProperties([]);
+      setSubscriptions([]);
       Alert.alert('Error', 'Failed to load subscription data');
     } finally {
       setLoading(false);
@@ -254,7 +271,7 @@ export default function SubscriptionManagementScreen({ navigation }) {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your Properties</Text>
-        {properties.length === 0 ? (
+        {!properties || properties.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="home-outline" size={64} color="#ccc" />
             <Text style={styles.emptyText}>No properties yet</Text>
@@ -266,7 +283,7 @@ export default function SubscriptionManagementScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         ) : (
-          properties.map(renderPropertyCard)
+          Array.isArray(properties) && properties.map(renderPropertyCard)
         )}
       </View>
 
@@ -288,127 +305,136 @@ export default function SubscriptionManagementScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F2F2F7',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F2F2F7',
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 16,
-    color: '#666',
+    fontSize: 15,
+    color: '#8E8E93',
+    letterSpacing: -0.2,
   },
   content: {
-    padding: 20,
+    padding: 16,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 8,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 15,
-    color: '#666',
-    lineHeight: 22,
+    color: '#8E8E93',
+    lineHeight: 21,
+    letterSpacing: -0.2,
   },
   usageCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   usageHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   usageTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#1a1a1a',
-    marginLeft: 12,
+    color: '#000000',
+    marginLeft: 10,
+    letterSpacing: -0.4,
   },
   usageStats: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   usageCount: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.8,
   },
   usageLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: '#8E8E93',
     marginTop: 4,
+    letterSpacing: -0.1,
   },
   progressBarContainer: {
-    height: 8,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 4,
+    height: 6,
+    backgroundColor: 'rgba(60, 60, 67, 0.08)',
+    borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   progressBar: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 3,
   },
   usageHint: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: '#8E8E93',
     textAlign: 'center',
+    letterSpacing: -0.1,
   },
   warningBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFEBEE',
-    padding: 12,
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    padding: 10,
     borderRadius: 8,
     gap: 8,
   },
   warningText: {
     flex: 1,
-    fontSize: 14,
-    color: '#C62828',
+    fontSize: 13,
+    color: '#FF3B30',
     fontWeight: '500',
+    letterSpacing: -0.1,
   },
   section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
     marginBottom: 16,
   },
-  propertyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
     marginBottom: 12,
+    letterSpacing: -0.4,
+  },
+  propertyCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   propertyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   propertyInfo: {
     flex: 1,
@@ -416,72 +442,79 @@ const styles = StyleSheet.create({
   propertyName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#000000',
     marginBottom: 4,
+    letterSpacing: -0.4,
   },
   propertyAddress: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 15,
+    color: '#8E8E93',
+    letterSpacing: -0.2,
   },
   activeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E8F5E9',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
     gap: 4,
   },
   activeBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#2E7D32',
+    color: '#34C759',
+    letterSpacing: -0.1,
   },
   subscriptionDetails: {
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(60, 60, 67, 0.18)',
+    paddingTop: 10,
   },
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   priceLabel: {
     fontSize: 15,
-    color: '#666',
+    color: '#8E8E93',
+    letterSpacing: -0.2,
   },
   priceValue: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#000000',
+    letterSpacing: -0.4,
   },
   cancelButton: {
-    padding: 12,
+    padding: 10,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#F44336',
+    borderWidth: 0.5,
+    borderColor: '#FF3B30',
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#F44336',
+    color: '#FF3B30',
+    letterSpacing: -0.2,
   },
   subscribeSection: {
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    paddingTop: 12,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(60, 60, 67, 0.18)',
+    paddingTop: 10,
   },
   benefitsBox: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   benefitsTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1a1a1a',
+    color: '#000000',
     marginBottom: 8,
+    letterSpacing: -0.2,
   },
   benefitRow: {
     flexDirection: 'row',
@@ -490,50 +523,56 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   benefitText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 15,
+    color: '#3C3C43',
+    letterSpacing: -0.2,
   },
   subscribeButton: {
     flexDirection: 'row',
-    backgroundColor: '#4A90E2',
-    padding: 14,
-    borderRadius: 10,
+    backgroundColor: '#007AFF',
+    padding: 12,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
   subscribeButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 32,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 16,
-    marginBottom: 20,
+    fontSize: 15,
+    color: '#8E8E93',
+    marginTop: 12,
+    marginBottom: 16,
+    letterSpacing: -0.2,
   },
   addButton: {
-    backgroundColor: '#4A90E2',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 8,
   },
   addButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#fff',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#E3F2FD',
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 122, 255, 0.3)',
   },
   infoTextContainer: {
     flex: 1,
@@ -541,13 +580,15 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1565C0',
+    color: '#007AFF',
     marginBottom: 6,
+    letterSpacing: -0.2,
   },
   infoText: {
-    fontSize: 14,
-    color: '#1976D2',
-    lineHeight: 20,
+    fontSize: 15,
+    color: '#007AFF',
+    lineHeight: 21,
+    letterSpacing: -0.2,
   },
 });
 

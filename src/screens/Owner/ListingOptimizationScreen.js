@@ -40,6 +40,11 @@ export default function ListingOptimizationScreen({ navigation }) {
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [issueModalVisible, setIssueModalVisible] = useState(false);
   
+  // Pricing Analytics Section State
+  const [pricingExpanded, setPricingExpanded] = useState(false);
+  const [pricingData, setPricingData] = useState(null);
+  const [loadingPricing, setLoadingPricing] = useState(false);
+  
   // Listing Optimization Section State
   const [optimizationExpanded, setOptimizationExpanded] = useState(false);
   const [showUrlModal, setShowUrlModal] = useState(false);
@@ -65,13 +70,31 @@ export default function ListingOptimizationScreen({ navigation }) {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const pmsResponse = await api.get('/issues/properties');
-      const pmsProperties = pmsResponse.data.properties || [];
-      setProperties(pmsProperties);
+      // Try to fetch PMS properties first (for Guest Issues)
+      try {
+        const pmsResponse = await api.get('/issues/properties');
+        const pmsProperties = pmsResponse.data.properties || [];
+        
+        if (pmsProperties.length > 0) {
+          setProperties(pmsProperties);
+          // Auto-select first property if none selected
+          if (!selectedProperty && pmsProperties.length > 0) {
+            handleSelectProperty(pmsProperties[0]);
+          }
+          return;
+        }
+      } catch (pmsError) {
+        console.log('No PMS properties found, fetching manual properties...');
+      }
+
+      // Fallback to manual properties if no PMS properties
+      const response = await api.get('/owner/properties');
+      const manualProperties = response.data.manualProperties || response.data || [];
+      setProperties(manualProperties);
       
       // Auto-select first property if none selected
-      if (!selectedProperty && pmsProperties.length > 0) {
-        handleSelectProperty(pmsProperties[0]);
+      if (!selectedProperty && manualProperties.length > 0) {
+        handleSelectProperty(manualProperties[0]);
       }
     } catch (error) {
       console.error('Error fetching properties:', error);
@@ -104,6 +127,21 @@ export default function ListingOptimizationScreen({ navigation }) {
       setAnalytics(response.data);
     } catch (error) {
       console.error('Error fetching analytics:', error);
+    }
+  };
+
+  const fetchPricingAnalytics = async (propertyId) => {
+    if (!propertyId) return;
+    
+    try {
+      setLoadingPricing(true);
+      const response = await api.get(`/pricing/${propertyId}/analytics`);
+      setPricingData(response.data);
+    } catch (error) {
+      console.error('Error fetching pricing analytics:', error);
+      Alert.alert('Error', 'Failed to load pricing data. Make sure this property is synced from your PMS.');
+    } finally {
+      setLoadingPricing(false);
     }
   };
 
@@ -269,6 +307,7 @@ export default function ListingOptimizationScreen({ navigation }) {
     setIssues([]);
     setStats(null);
     setAnalytics(null);
+    setPricingData(null);
     setListingData(null);
     setAiAnalysis(null);
     setAiAnalysisDate(null);
@@ -277,6 +316,7 @@ export default function ListingOptimizationScreen({ navigation }) {
     // Fetch issues data
     fetchIssues(property.id);
     fetchAnalytics(property.id);
+    fetchPricingAnalytics(property.id);
     
     // Try to load existing listing optimization data
     try {
@@ -1222,24 +1262,47 @@ export default function ListingOptimizationScreen({ navigation }) {
                   )}
 
                   {/* Analytics Dashboard */}
-                  {analytics && analytics.topIssues && analytics.topIssues.length > 0 && (
+                  {analytics && (
                     <View style={styles.dashboardContainer}>
-                      <Text style={styles.dashboardTitle}>Most Common Issues</Text>
-                      {analytics.topIssues.slice(0, 3).map((issueCategory, index) => (
-                        <View key={index} style={styles.dashboardCard}>
-                          <View style={styles.dashboardHeader}>
-                            <Text style={styles.dashboardCategory}>{issueCategory.category}</Text>
-                            <View style={styles.dashboardBadge}>
-                              <Text style={styles.dashboardBadgeText}>{issueCategory.count}</Text>
-                            </View>
-                          </View>
-                          {issueCategory.examples && issueCategory.examples.length > 0 && (
-                            <Text style={styles.dashboardExample} numberOfLines={2}>
-                              "{issueCategory.examples[0].summary || issueCategory.examples[0]}"
+                      {/* Summary Stats */}
+                      {analytics.summary && (
+                        <View style={styles.analyticsSummary}>
+                          <Text style={styles.analyticsSummaryText}>
+                            {analytics.summary.totalIssues || stats?.total || 0} issues detected from{' '}
+                            {analytics.summary.totalConversations || 0} conversations
+                          </Text>
+                          <Text style={styles.analyticsSummarySubtext}>
+                            ({analytics.summary.issueRate || '0'}% issue rate)
+                          </Text>
+                          {analytics.summary.dateRange && (
+                            <Text style={styles.dateRangeText}>
+                              Last {analytics.summary.dateRange.days || 30} days
                             </Text>
                           )}
                         </View>
-                      ))}
+                      )}
+
+                      {/* Most Common Issues */}
+                      {analytics.topIssues && analytics.topIssues.length > 0 && (
+                        <>
+                          <Text style={styles.dashboardTitle}>Most Common Issues</Text>
+                          {analytics.topIssues.slice(0, 3).map((issueCategory, index) => (
+                            <View key={index} style={styles.dashboardCard}>
+                              <View style={styles.dashboardHeader}>
+                                <Text style={styles.dashboardCategory}>{issueCategory.category}</Text>
+                                <View style={styles.dashboardBadge}>
+                                  <Text style={styles.dashboardBadgeText}>{issueCategory.count}</Text>
+                                </View>
+                              </View>
+                              {issueCategory.examples && issueCategory.examples.length > 0 && (
+                                <Text style={styles.dashboardExample} numberOfLines={2}>
+                                  "{issueCategory.examples[0].summary || issueCategory.examples[0]}"
+                                </Text>
+                              )}
+                            </View>
+                          ))}
+                        </>
+                      )}
                     </View>
                   )}
 
@@ -1300,6 +1363,110 @@ export default function ListingOptimizationScreen({ navigation }) {
                     ))
                   ) : (
                     <Text style={styles.noIssuesText}>No issues detected. Sync messages to check for issues.</Text>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Pricing Analytics Section */}
+            <View style={styles.insightsSection}>
+              <TouchableOpacity
+                style={styles.sectionHeader}
+                onPress={() => setPricingExpanded(!pricingExpanded)}
+              >
+                <View style={styles.sectionHeaderLeft}>
+                  <Ionicons name="cash-outline" size={24} color="#10B981" />
+                  <Text style={styles.sectionHeaderTitle}>Pricing Analytics</Text>
+                </View>
+                <Ionicons 
+                  name={pricingExpanded ? "chevron-up" : "chevron-down"} 
+                  size={24} 
+                  color="#6B7280" 
+                />
+              </TouchableOpacity>
+
+              {pricingExpanded && (
+                <View style={styles.sectionContent}>
+                  {loadingPricing ? (
+                    <ActivityIndicator size="large" color={colors.primary.main} style={{marginTop: 20}} />
+                  ) : pricingData && pricingData.analytics ? (
+                    <>
+                      {/* Last Minute Pricing (Next 7 Days) */}
+                      <View style={styles.dashboardContainer}>
+                        <Text style={styles.dashboardTitle}>Last Minute Price (Next 7 Days)</Text>
+                        <View style={styles.analyticsSummary}>
+                          <Text style={styles.priceValue}>
+                            ${pricingData.analytics.lastMinute.averagePrice.toFixed(2)}
+                          </Text>
+                          <Text style={styles.analyticsSummarySubtext}>
+                            Average for {pricingData.analytics.lastMinute.count} days
+                          </Text>
+                          {pricingData.analytics.lastMinute.min !== pricingData.analytics.lastMinute.max && (
+                            <Text style={styles.priceRange}>
+                              ${pricingData.analytics.lastMinute.min} - ${pricingData.analytics.lastMinute.max}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+
+                      {/* Average by Day of Week */}
+                      <View style={styles.dashboardContainer}>
+                        <Text style={styles.dashboardTitle}>Average Price by Day of Week</Text>
+                        {Object.entries(pricingData.analytics.dayOfWeek.byDay).map(([day, data]) => (
+                          data.count > 0 && (
+                            <View key={day} style={styles.pricingRow}>
+                              <Text style={styles.pricingDay}>{day}</Text>
+                              <Text style={styles.pricingValue}>${data.average.toFixed(2)}</Text>
+                            </View>
+                          )
+                        ))}
+                        {pricingData.analytics.dayOfWeek.highestDay.day && (
+                          <Text style={styles.pricingInsight}>
+                            🔥 Highest: {pricingData.analytics.dayOfWeek.highestDay.day} (${pricingData.analytics.dayOfWeek.highestDay.averagePrice.toFixed(2)})
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Average by Month */}
+                      <View style={styles.dashboardContainer}>
+                        <Text style={styles.dashboardTitle}>Average Price by Month</Text>
+                        {pricingData.analytics.monthly.byMonth.slice(0, 6).map((month) => (
+                          <View key={`${month.year}-${month.monthNumber}`} style={styles.pricingRow}>
+                            <Text style={styles.pricingDay}>{month.month}</Text>
+                            <Text style={styles.pricingValue}>${month.averagePrice.toFixed(2)}</Text>
+                          </View>
+                        ))}
+                        {pricingData.analytics.monthly.highestMonth.month && (
+                          <Text style={styles.pricingInsight}>
+                            📈 Peak: {pricingData.analytics.monthly.highestMonth.month} (${pricingData.analytics.monthly.highestMonth.averagePrice.toFixed(2)})
+                          </Text>
+                        )}
+                      </View>
+
+                      {/* Overall Stats */}
+                      <View style={styles.statsRow}>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statNumber}>${pricingData.analytics.overall.averagePrice.toFixed(0)}</Text>
+                          <Text style={styles.statLabel}>Avg Price</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statNumber}>${pricingData.analytics.overall.minPrice}</Text>
+                          <Text style={styles.statLabel}>Min</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statNumber}>${pricingData.analytics.overall.maxPrice}</Text>
+                          <Text style={styles.statLabel}>Max</Text>
+                        </View>
+                      </View>
+
+                      <Text style={styles.dataRangeText}>
+                        Data: {pricingData.analytics.dataRange.totalDays} days (180 day forecast)
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.noIssuesText}>
+                      No pricing data available. This property must be synced from a PMS (like Hostify).
+                    </Text>
                   )}
                 </View>
               )}
@@ -1440,25 +1607,27 @@ export default function ListingOptimizationScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F2F2F7',
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl * 2,
+    paddingTop: 16,
+    paddingBottom: 40,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#F2F2F7',
   },
   loadingText: {
-    ...typography.body,
-    color: colors.text.secondary,
-    marginTop: spacing.md,
+    fontSize: 15,
+    color: '#8E8E93',
+    marginTop: 12,
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
   emptyContainer: {
     flex: 1,
@@ -1507,25 +1676,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   section: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
+    paddingHorizontal: 16,
+    marginBottom: 20,
   },
   sectionHeaderWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
+    gap: 8,
+    marginBottom: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: 12,
   },
   sectionTitle: {
-    ...typography.h3,
-    color: colors.text.primary,
-    fontWeight: '600',
+    fontSize: 22,
+    color: '#000000',
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
   refreshButton: {
     flexDirection: 'row',
@@ -1537,22 +1707,25 @@ const styles = StyleSheet.create({
     color: colors.primary.main,
   },
   propertyCard: {
-    backgroundColor: colors.background.card,
-    padding: spacing.lg,
-    borderRadius: 16,
-    marginBottom: spacing.md,
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    ...shadows.medium,
-    borderWidth: 2,
-    borderColor: colors.border.light,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+    borderWidth: 0,
   },
   propertyCardSelected: {
     borderWidth: 2,
-    borderColor: colors.primary.main,
-    backgroundColor: colors.primary.main + '08',
-    ...shadows.large,
+    borderColor: '#007AFF',
+    backgroundColor: 'rgba(0, 122, 255, 0.05)',
+    shadowOpacity: 0.08,
   },
   propertyCardLeft: {
     flexDirection: 'row',
@@ -1575,13 +1748,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   propertyName: {
-    ...typography.h4,
-    color: colors.text.primary,
+    fontSize: 17,
+    color: '#000000',
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 3,
+    letterSpacing: -0.4,
   },
   propertyNameSelected: {
-    color: colors.primary.main,
+    color: '#007AFF',
   },
   addressRow: {
     flexDirection: 'row',
@@ -1589,26 +1763,32 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   propertyAddress: {
-    ...typography.caption,
-    color: colors.text.secondary,
+    fontSize: 13,
+    color: '#8E8E93',
     flex: 1,
+    fontWeight: '400',
+    letterSpacing: -0.1,
   },
   selectedBadge: {
     marginLeft: spacing.sm,
   },
   dataCard: {
-    backgroundColor: colors.background.card,
-    padding: spacing.md,
-    borderRadius: 12,
-    marginBottom: spacing.md,
-    ...shadows.small,
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardTitle: {
-    ...typography.h4,
-    color: colors.text.primary,
+    fontSize: 17,
+    color: '#000000',
     fontWeight: '600',
-    marginBottom: spacing.sm,
-    fontSize: 15,
+    marginBottom: 10,
+    letterSpacing: -0.4,
   },
   collapsibleHeader: {
     flexDirection: 'row',
@@ -1629,19 +1809,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   label: {
-    ...typography.body,
-    color: colors.text.secondary,
-    fontSize: 14,
+    fontSize: 15,
+    color: '#8E8E93',
     minWidth: 100,
     paddingTop: 2,
+    fontWeight: '400',
+    letterSpacing: -0.2,
   },
   value: {
-    ...typography.body,
-    color: colors.text.primary,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    color: '#000000',
+    fontWeight: '600',
     textAlign: 'right',
     flexShrink: 1,
+    letterSpacing: -0.2,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -2199,34 +2380,41 @@ const styles = StyleSheet.create({
   },
   // Property Dropdown Styles
   propertyDropdownContainer: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 12,
-    ...shadows.small,
+    marginTop: 8,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   dropdownLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
+    color: '#8E8E93',
     marginBottom: 8,
+    letterSpacing: -0.1,
   },
   dropdownButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderWidth: 0.5,
+    borderColor: 'rgba(60, 60, 67, 0.18)',
     borderRadius: 8,
-    padding: 14,
-    backgroundColor: '#FFF',
+    padding: 11,
+    backgroundColor: '#FFFFFF',
   },
   dropdownButtonText: {
-    fontSize: 16,
-    color: '#1F2937',
+    fontSize: 17,
+    color: '#000000',
     flex: 1,
+    fontWeight: '400',
+    letterSpacing: -0.4,
   },
   modalOverlay: {
     flex: 1,
@@ -2303,17 +2491,21 @@ const styles = StyleSheet.create({
   },
   // Insights Section Styles
   insightsSection: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 12,
-    ...shadows.small,
+    marginTop: 12,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 14,
   },
   sectionHeaderLeft: {
     flexDirection: 'row',
@@ -2321,15 +2513,16 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionHeaderTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000000',
+    letterSpacing: -0.4,
   },
   badge: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#FF3B30',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   badgeText: {
     fontSize: 12,
@@ -2347,20 +2540,26 @@ const styles = StyleSheet.create({
   },
   statItem: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(60, 60, 67, 0.08)',
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000000',
+    letterSpacing: -0.4,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 11,
+    color: '#8E8E93',
     marginTop: 4,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    textTransform: 'uppercase',
   },
   syncButton: {
     backgroundColor: '#007AFF',
@@ -2395,21 +2594,53 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   dashboardContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  analyticsSummary: {
+    backgroundColor: 'rgba(0, 122, 255, 0.05)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 122, 255, 0.15)',
+  },
+  analyticsSummaryText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
+    textAlign: 'center',
+    lineHeight: 22,
+    letterSpacing: -0.2,
+  },
+  analyticsSummarySubtext: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginTop: 4,
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+  dateRangeText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 6,
+    fontWeight: '500',
+    letterSpacing: -0.1,
   },
   dashboardTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 16,
+    color: '#000000',
+    marginBottom: 12,
+    letterSpacing: -0.4,
   },
   dashboardCard: {
     backgroundColor: '#F9FAFB',
@@ -2449,10 +2680,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   issueCard: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    borderRadius: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   issueHeader: {
     flexDirection: 'row',
@@ -2466,28 +2702,33 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   severityText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
+    letterSpacing: -0.1,
   },
   statusBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
     color: '#FFF',
+    letterSpacing: 0.2,
   },
   issueCategory: {
-    fontSize: 11,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#8E8E93',
     marginBottom: 4,
+    fontWeight: '400',
+    letterSpacing: -0.1,
   },
   issueSummary: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#000000',
+    letterSpacing: -0.2,
   },
   noIssuesText: {
     textAlign: 'center',
@@ -2511,9 +2752,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
   },
   issueModalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000000',
+    letterSpacing: -0.5,
   },
   issueModalScroll: {
     padding: 20,
@@ -2579,6 +2821,54 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontSize: 15,
     fontWeight: '600',
+  },
+  // Pricing Analytics Styles
+  priceValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#10B981',
+    letterSpacing: -1,
+    marginBottom: 4,
+  },
+  priceRange: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 4,
+    letterSpacing: -0.2,
+  },
+  pricingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
+  },
+  pricingDay: {
+    fontSize: 16,
+    color: '#000000',
+    fontWeight: '500',
+    letterSpacing: -0.3,
+  },
+  pricingValue: {
+    fontSize: 17,
+    color: '#10B981',
+    fontWeight: '600',
+    letterSpacing: -0.4,
+  },
+  pricingInsight: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginTop: 12,
+    fontWeight: '500',
+    letterSpacing: -0.2,
+  },
+  dataRangeText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginTop: 12,
+    letterSpacing: -0.1,
   },
 });
 

@@ -26,11 +26,42 @@ export default function CreatePropertyScreen({ navigation }) {
   const [rooms, setRooms] = useState([]);
   const [editingRoom, setEditingRoom] = useState(null);
   const [showRoomPicker, setShowRoomPicker] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [selectedRoomType, setSelectedRoomType] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   
   // Loading
   const [loading, setLoading] = useState(false);
 
-  const addRoomFromType = (roomType) => {
+  const addRoomFromType = async (roomType) => {
+    setSelectedRoomType(roomType);
+    setShowRoomPicker(false);
+    
+    // Fetch templates for this room type
+    setLoadingTemplates(true);
+    try {
+      const response = await api.get('/room-templates');
+      const allTemplates = response.data.templates || [];
+      const typeTemplates = allTemplates.filter(t => t.room_type === roomType);
+      
+      if (typeTemplates.length > 0) {
+        setTemplates(typeTemplates);
+        setShowTemplatePicker(true);
+      } else {
+        // No templates, create room from scratch
+        createRoomFromScratch(roomType);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      // If error, create from scratch
+      createRoomFromScratch(roomType);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const createRoomFromScratch = (roomType) => {
     const suggestion = getRoomSuggestionByType(roomType);
     const count = rooms.filter(r => r.room_type === roomType).length;
     
@@ -43,7 +74,21 @@ export default function CreatePropertyScreen({ navigation }) {
     };
     
     setEditingRoom(newRoom);
-    setShowRoomPicker(false);
+  };
+
+  const createRoomFromTemplate = (template) => {
+    const count = rooms.filter(r => r.room_type === template.room_type).length;
+    
+    const newRoom = {
+      id: Date.now().toString(),
+      name: count > 0 ? `${template.name} ${count + 1}` : template.name,
+      room_type: template.room_type,
+      tips: template.tips || '',
+      exampleTips: getRoomSuggestionByType(template.room_type).exampleTips,
+    };
+    
+    setEditingRoom(newRoom);
+    setShowTemplatePicker(false);
   };
 
   const saveRoom = () => {
@@ -454,6 +499,85 @@ export default function CreatePropertyScreen({ navigation }) {
                       <Text style={styles.roomTypeHint}>
                         {suggestion.exampleTips[0].substring(0, 40)}...
                       </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={24} color="#ccc" />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Template Picker Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showTemplatePicker}
+        onRequestClose={() => setShowTemplatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Choose Template</Text>
+              <TouchableOpacity onPress={() => setShowTemplatePicker(false)}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.templateList}>
+              {/* Create from Scratch Option */}
+              <TouchableOpacity
+                style={styles.templateOption}
+                onPress={() => {
+                  setShowTemplatePicker(false);
+                  createRoomFromScratch(selectedRoomType);
+                }}
+              >
+                <View style={styles.templateLeft}>
+                  <View style={[styles.templateIconContainer, { backgroundColor: '#F2F2F7' }]}>
+                    <Ionicons name="create-outline" size={28} color="#8E8E93" />
+                  </View>
+                  <View style={styles.templateInfo}>
+                    <Text style={styles.templateLabel}>Create from Scratch</Text>
+                    <Text style={styles.templateHint}>Start with a blank room</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#ccc" />
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.templateDivider}>
+                <View style={styles.templateDividerLine} />
+                <Text style={styles.templateDividerText}>OR USE TEMPLATE</Text>
+                <View style={styles.templateDividerLine} />
+              </View>
+
+              {/* Templates */}
+              {templates.map((template) => (
+                <TouchableOpacity
+                  key={template.id}
+                  style={styles.templateOption}
+                  onPress={() => createRoomFromTemplate(template)}
+                >
+                  <View style={styles.templateLeft}>
+                    <View style={styles.templateIconContainer}>
+                      <Ionicons name={getRoomIcon(template.room_type)} size={28} color="#007AFF" />
+                    </View>
+                    <View style={styles.templateInfo}>
+                      <View style={styles.templateNameRow}>
+                        <Text style={styles.templateLabel}>{template.name}</Text>
+                        {template.is_default && (
+                          <View style={styles.defaultBadge}>
+                            <Text style={styles.defaultBadgeText}>Default</Text>
+                          </View>
+                        )}
+                      </View>
+                      {template.tips && (
+                        <Text style={styles.templateHint} numberOfLines={2}>
+                          {template.tips}
+                        </Text>
+                      )}
                     </View>
                   </View>
                   <Ionicons name="chevron-forward" size={24} color="#ccc" />
@@ -1026,5 +1150,84 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 17,
     fontWeight: 'bold',
+  },
+  // Template Picker Styles
+  templateList: {
+    paddingTop: 8,
+    paddingBottom: 40,
+  },
+  templateOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  templateLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  templateIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  templateInfo: {
+    flex: 1,
+  },
+  templateNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  templateLabel: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  templateHint: {
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 20,
+  },
+  defaultBadge: {
+    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  defaultBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#34C759',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  templateDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  templateDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  templateDividerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#999',
+    marginHorizontal: 12,
+    letterSpacing: 0.5,
   },
 });
