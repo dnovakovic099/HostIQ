@@ -156,7 +156,7 @@ export default function CreateInspectionScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#4A90E2" />
+            <Ionicons name="arrow-back" size={24} color="#60A5FA" />
           </TouchableOpacity>
           <Text style={styles.title}>Create Inspection</Text>
         </View>
@@ -168,7 +168,7 @@ export default function CreateInspectionScreen({ navigation }) {
             style={styles.modeButton}
             onPress={() => setMode('preset')}
           >
-            <Ionicons name="business" size={48} color="#4A90E2" />
+            <Ionicons name="business" size={48} color="#3B82F6" />
             <Text style={styles.modeButtonTitle}>Select Property</Text>
             <Text style={styles.modeButtonDescription}>
               Choose from your assigned properties
@@ -179,7 +179,7 @@ export default function CreateInspectionScreen({ navigation }) {
             style={styles.modeButton}
             onPress={() => setMode('custom')}
           >
-            <Ionicons name="create" size={48} color="#4A90E2" />
+            <Ionicons name="create" size={48} color="#3B82F6" />
             <Text style={styles.modeButtonTitle}>Custom Property</Text>
             <Text style={styles.modeButtonDescription}>
               Enter property details manually
@@ -195,7 +195,7 @@ export default function CreateInspectionScreen({ navigation }) {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => setMode(null)} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#4A90E2" />
+            <Ionicons name="arrow-back" size={24} color="#60A5FA" />
           </TouchableOpacity>
           <Text style={styles.title}>Select Property</Text>
         </View>
@@ -212,12 +212,12 @@ export default function CreateInspectionScreen({ navigation }) {
                   style={styles.listItem}
                   onPress={() => setSelectedProperty(property)}
                 >
-                  <Ionicons name="business" size={24} color="#4A90E2" />
+                  <Ionicons name="business" size={24} color="#3B82F6" />
                   <View style={styles.listItemContent}>
                     <Text style={styles.listItemTitle}>{property.name}</Text>
                     <Text style={styles.listItemSubtitle}>{property.address}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={24} color="#ccc" />
+                  <Ionicons name="chevron-forward" size={24} color="#475569" />
                 </TouchableOpacity>
               ))}
             </View>
@@ -235,7 +235,7 @@ export default function CreateInspectionScreen({ navigation }) {
                   ]}
                   onPress={() => setSelectedUnit(unit)}
                 >
-                  <Ionicons name="home" size={24} color="#4A90E2" />
+                  <Ionicons name="home" size={24} color="#3B82F6" />
                   <View style={styles.listItemContent}>
                     <Text style={styles.listItemTitle}>{unit.name}</Text>
                     {unit.notes && (
@@ -243,7 +243,7 @@ export default function CreateInspectionScreen({ navigation }) {
                     )}
                   </View>
                   {selectedUnit?.id === unit.id && (
-                    <Ionicons name="checkmark-circle" size={24} color="#4A90E2" />
+                    <Ionicons name="checkmark-circle" size={24} color="#3B82F6" />
                   )}
                 </TouchableOpacity>
               ))}
@@ -259,7 +259,7 @@ export default function CreateInspectionScreen({ navigation }) {
               {selectedUnit && selectedUnit.rooms && selectedUnit.rooms.length > 0 && (
                 <View style={styles.roomTipsSection}>
                   <View style={styles.roomTipsHeader}>
-                    <Ionicons name="information-circle" size={20} color="#4A90E2" />
+                    <Ionicons name="information-circle" size={20} color="#60A5FA" />
                     <Text style={styles.roomTipsTitle}>Room Tips ({selectedUnit.rooms.length} rooms)</Text>
                   </View>
                   <Text style={styles.roomTipsSubtitle}>
@@ -299,7 +299,7 @@ export default function CreateInspectionScreen({ navigation }) {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setMode(null)} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#4A90E2" />
+          <Ionicons name="arrow-back" size={24} color="#60A5FA" />
         </TouchableOpacity>
         <Text style={styles.title}>Custom Property</Text>
       </View>
@@ -366,7 +366,7 @@ export default function CreateInspectionScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#0F172A', // Dark slate background
   },
   header: {
     flexDirection: 'row',
@@ -374,7 +374,8 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: 'rgba(148, 163, 184, 0.1)',
+    backgroundColor: '#1E293B',
   },
   backButton: {
     marginRight: 15,
@@ -382,7 +383,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#F1F5F9',
   },
   content: {
     flex: 1,
@@ -395,53 +396,59 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 18,
-    color: '#666',
+    color: '#94A3B8',
     marginBottom: 30,
     textAlign: 'center',
   },
   modeButton: {
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#1E293B',
     borderWidth: 2,
-    borderColor: '#4A90E2',
-    borderRadius: 12,
+    borderColor: '#3B82F6',
+    borderRadius: 16,
     padding: 30,
     marginBottom: 20,
     alignItems: 'center',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   modeButtonTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#F1F5F9',
     marginTop: 15,
     marginBottom: 5,
   },
   modeButtonDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#94A3B8',
     textAlign: 'center',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#F1F5F9',
     marginTop: 10,
     marginBottom: 15,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#666',
+    color: '#CBD5E1',
     marginBottom: 8,
     marginTop: 10,
   },
   input: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: '#334155',
+    borderRadius: 12,
     paddingHorizontal: 15,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#1E293B',
+    color: '#F1F5F9',
   },
   textArea: {
     height: 100,
@@ -450,15 +457,21 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 50,
-    backgroundColor: '#4A90E2',
-    borderRadius: 8,
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 30,
     marginBottom: 20,
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
   },
   buttonDisabled: {
-    backgroundColor: '#93BFED',
+    backgroundColor: '#475569',
+    shadowOpacity: 0.1,
   },
   buttonText: {
     color: '#fff',
@@ -472,15 +485,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 15,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: '#334155',
   },
   listItemSelected: {
-    borderColor: '#4A90E2',
-    backgroundColor: '#E8F4FF',
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderWidth: 2,
   },
   listItemContent: {
     flex: 1,
@@ -489,21 +503,21 @@ const styles = StyleSheet.create({
   listItemTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#F1F5F9',
   },
   listItemSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#94A3B8',
     marginTop: 4,
   },
   roomTipsSection: {
     marginTop: 20,
     marginBottom: 20,
-    backgroundColor: '#f0f7ff',
-    borderRadius: 12,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#d0e7ff',
+    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
   roomTipsHeader: {
     flexDirection: 'row',
@@ -513,45 +527,45 @@ const styles = StyleSheet.create({
   roomTipsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#4A90E2',
+    color: '#60A5FA',
     marginLeft: 8,
   },
   roomTipsSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#94A3B8',
     marginBottom: 16,
   },
   roomTipCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
     padding: 12,
     marginBottom: 12,
     borderLeftWidth: 3,
-    borderLeftColor: '#4A90E2',
+    borderLeftColor: '#3B82F6',
   },
   roomTipName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#F1F5F9',
     marginBottom: 6,
   },
   roomTipText: {
     fontSize: 14,
-    color: '#555',
+    color: '#CBD5E1',
     lineHeight: 20,
   },
   debugSection: {
-    backgroundColor: '#FFE082',
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
     padding: 12,
     marginVertical: 10,
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#FFA000',
+    borderColor: '#FBBF24',
   },
   debugText: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#FCD34D',
     textAlign: 'center',
   },
 });
