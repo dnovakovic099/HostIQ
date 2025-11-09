@@ -1061,7 +1061,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7', // iOS system grouped background
+    backgroundColor: '#0F172A', // Modern dark background
   },
   scrollContent: {
     flex: 1,
@@ -1073,36 +1073,36 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#0F172A',
   },
   errorText: {
     fontSize: 17,
     fontWeight: '500',
-    color: '#FF3B30',
+    color: '#F87171',
     letterSpacing: -0.4,
   },
   emptyText: {
     fontSize: 17,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: '#94A3B8',
     letterSpacing: -0.4,
   },
   processingText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F1F5F9',
     marginTop: 16,
     letterSpacing: -0.4,
   },
   
-  // COMPACT HEADER - More iOS-like
+  // COMPACT HEADER - Modern dark
   compactHeader: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1E293B',
     paddingTop: 12,
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
+    borderBottomColor: 'rgba(148, 163, 184, 0.2)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -1117,14 +1117,14 @@ const styles = StyleSheet.create({
   headerAddress: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
+    color: '#F1F5F9',
     marginBottom: 2,
     letterSpacing: -0.5,
   },
   headerDate: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#8E8E93',
+    color: '#94A3B8',
     letterSpacing: -0.1,
   },
   headerRight: {
@@ -1139,7 +1139,7 @@ const styles = StyleSheet.create({
   scoreBoxLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: '#94A3B8',
     marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -1147,7 +1147,7 @@ const styles = StyleSheet.create({
   scoreBoxValue: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#3B82F6',
     letterSpacing: -0.5,
   },
   gradeBox: {
@@ -1157,21 +1157,23 @@ const styles = StyleSheet.create({
   gradeBoxLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#8E8E93',
+    color: '#94A3B8',
     marginBottom: 4,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   gradeBadge: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
   gradeBadgeText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000000',
+    color: '#60A5FA',
     letterSpacing: -0.3,
   },
   statusBox: {
@@ -1185,19 +1187,21 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
   
-  // CARD - iOS grouped style
+  // CARD - Modern dark style
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1E293B',
     marginHorizontal: 16,
     marginTop: 10,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(148, 163, 184, 0.1)',
   },
   
   // SECTIONS
@@ -1210,13 +1214,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#000000',
+    color: '#F1F5F9',
     letterSpacing: -0.4,
   },
   expandIcon: {
     fontSize: 22,
     fontWeight: '400',
-    color: '#C7C7CC',
+    color: '#64748B',
   },
   
   // ISSUES - Better spacing
@@ -1233,14 +1237,14 @@ const styles = StyleSheet.create({
     width: 5,
     height: 5,
     borderRadius: 2.5,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3B82F6',
     marginTop: 8,
   },
   issueText: {
     flex: 1,
     fontSize: 15,
     lineHeight: 22,
-    color: '#3C3C43',
+    color: '#CBD5E1',
     letterSpacing: -0.2,
   },
   
