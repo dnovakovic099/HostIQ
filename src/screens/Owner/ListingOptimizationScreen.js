@@ -134,12 +134,28 @@ export default function ListingOptimizationScreen({ navigation }) {
     if (!propertyId) return;
     
     try {
+      console.log('🔄 Fetching pricing analytics for property:', propertyId);
       setLoadingPricing(true);
-      const response = await api.get(`/pricing/${propertyId}/analytics`);
-      console.log('Pricing data received:', response.data);
-      setPricingData(response.data);
+      setPricingData(null); // Clear old data first
+      // Add cache busting to prevent 304 responses with stale data
+      const response = await api.get(`/pricing/${propertyId}/analytics`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      console.log('💰 Pricing data received:', JSON.stringify(response.data, null, 2));
+      
+      if (response.data && response.data.calendarAnalytics) {
+        setPricingData(response.data);
+      } else {
+        console.warn('⚠️ Pricing data is missing calendarAnalytics');
+        setPricingData(null);
+      }
     } catch (error) {
-      console.error('Error fetching pricing analytics:', error);
+      console.error('❌ Error fetching pricing analytics:', error);
+      console.error('Error response:', error.response?.data);
+      setPricingData(null);
       Alert.alert('Error', 'Failed to load pricing data. Make sure this property is synced from your PMS.');
     } finally {
       setLoadingPricing(false);
@@ -1375,8 +1391,8 @@ export default function ListingOptimizationScreen({ navigation }) {
                 style={styles.sectionHeader}
                 onPress={() => {
                   setPricingExpanded(!pricingExpanded);
-                  // Fetch data when expanding
-                  if (!pricingExpanded && selectedProperty && !pricingData) {
+                  // Fetch data when expanding (always refetch to get latest data)
+                  if (!pricingExpanded && selectedProperty) {
                     fetchPricingAnalytics(selectedProperty.id);
                   }
                 }}
