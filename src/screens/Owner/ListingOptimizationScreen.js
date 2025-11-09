@@ -1608,6 +1608,7 @@ export default function ListingOptimizationScreen({ navigation }) {
 
                     {renderAIAnalysisResults()}
                     {!fetchingData && renderListingData()}
+                    {!fetchingData && renderAIAnalyzeButton()}
 
                     {!fetchingData && !listingData && (
                       <View style={styles.noDataContainerSmall}>
