@@ -30,7 +30,7 @@ export default function ListingOptimizationScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   
   // Issues Section State
-  const [issuesExpanded, setIssuesExpanded] = useState(true);
+  const [issuesExpanded, setIssuesExpanded] = useState(false);
   const [issues, setIssues] = useState([]);
   const [stats, setStats] = useState(null);
   const [analytics, setAnalytics] = useState(null);
@@ -61,11 +61,11 @@ export default function ListingOptimizationScreen({ navigation }) {
   const [imagesExpanded, setImagesExpanded] = useState(false);
   const [descriptionAIExpanded, setDescriptionAIExpanded] = useState(false);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchProperties();
-    }, [])
-  );
+  // Only fetch properties once on mount, not on every focus
+  // User can manually refresh if needed
+  useEffect(() => {
+    fetchProperties();
+  }, []);
 
   const fetchProperties = async () => {
     try {
@@ -136,6 +136,7 @@ export default function ListingOptimizationScreen({ navigation }) {
     try {
       setLoadingPricing(true);
       const response = await api.get(`/pricing/${propertyId}/analytics`);
+      console.log('Pricing data received:', response.data);
       setPricingData(response.data);
     } catch (error) {
       console.error('Error fetching pricing analytics:', error);
@@ -1372,7 +1373,13 @@ export default function ListingOptimizationScreen({ navigation }) {
             <View style={styles.insightsSection}>
               <TouchableOpacity
                 style={styles.sectionHeader}
-                onPress={() => setPricingExpanded(!pricingExpanded)}
+                onPress={() => {
+                  setPricingExpanded(!pricingExpanded);
+                  // Fetch data when expanding
+                  if (!pricingExpanded && selectedProperty && !pricingData) {
+                    fetchPricingAnalytics(selectedProperty.id);
+                  }
+                }}
               >
                 <View style={styles.sectionHeaderLeft}>
                   <Ionicons name="cash-outline" size={24} color="#10B981" />
@@ -1389,30 +1396,108 @@ export default function ListingOptimizationScreen({ navigation }) {
                 <View style={styles.sectionContent}>
                   {loadingPricing ? (
                     <ActivityIndicator size="large" color={colors.primary.main} style={{marginTop: 20}} />
-                  ) : pricingData && pricingData.analytics ? (
+                  ) : pricingData && pricingData.calendarAnalytics ? (
                     <>
-                      {/* Last Minute Pricing (Next 7 Days) */}
+                      {/* ACTUAL PERFORMANCE (Reservations) */}
+                      {pricingData.reservationAnalytics && pricingData.reservationAnalytics.overall.totalBookings > 0 && (
+                        <>
+                          <View style={styles.sectionBanner}>
+                            <Text style={styles.sectionBannerTitle}>💰 Actual Performance (Last 180 Days)</Text>
+                          </View>
+
+                          {/* Overall ADR & Revenue */}
+                          <View style={styles.dashboardContainer}>
+                            <View style={styles.statsRow}>
+                              <View style={styles.statItem}>
+                                <Text style={styles.statNumber}>
+                                  ${pricingData.reservationAnalytics.overall.averageNightlyRate.toFixed(0)}
+                                </Text>
+                                <Text style={styles.statLabel}>Avg ADR</Text>
+                              </View>
+                              <View style={styles.statItem}>
+                                <Text style={styles.statNumber}>
+                                  {pricingData.reservationAnalytics.overall.totalBookings}
+                                </Text>
+                                <Text style={styles.statLabel}>Bookings</Text>
+                              </View>
+                              <View style={styles.statItem}>
+                                <Text style={styles.statNumber}>
+                                  ${pricingData.reservationAnalytics.overall.totalRevenue.toFixed(0)}
+                                </Text>
+                                <Text style={styles.statLabel}>Revenue</Text>
+                              </View>
+                            </View>
+                          </View>
+
+                          {/* Actual Booked Prices by Day of Week */}
+                          <View style={styles.dashboardContainer}>
+                            <Text style={styles.dashboardTitle}>Booked Prices by Day of Week</Text>
+                            {Object.entries(pricingData.reservationAnalytics.dayOfWeek.byDay).map(([day, data]) => (
+                              data.count > 0 && (
+                                <View key={day} style={styles.pricingRow}>
+                                  <Text style={styles.pricingDay}>{day}</Text>
+                                  <View style={{alignItems: 'flex-end'}}>
+                                    <Text style={styles.pricingValue}>${data.average.toFixed(2)}</Text>
+                                    <Text style={styles.pricingCount}>({data.count} nights)</Text>
+                                  </View>
+                                </View>
+                              )
+                            ))}
+                            {pricingData.reservationAnalytics.dayOfWeek.highestDay.day && (
+                              <Text style={styles.pricingInsight}>
+                                🔥 Best: {pricingData.reservationAnalytics.dayOfWeek.highestDay.day} (${pricingData.reservationAnalytics.dayOfWeek.highestDay.averagePrice.toFixed(2)})
+                              </Text>
+                            )}
+                          </View>
+
+                          {/* Monthly ADR & Occupancy */}
+                          <View style={styles.dashboardContainer}>
+                            <Text style={styles.dashboardTitle}>Monthly ADR & Occupancy</Text>
+                            {pricingData.reservationAnalytics.monthly.byMonth.slice(0, 6).map((month) => (
+                              <View key={`${month.year}-${month.monthNumber}`} style={styles.monthlyRow}>
+                                <Text style={styles.pricingDay}>{month.month}</Text>
+                                <View style={{alignItems: 'flex-end'}}>
+                                  <Text style={styles.pricingValue}>${month.adr.toFixed(2)} ADR</Text>
+                                  <Text style={styles.occupancyText}>{month.occupancy}% occupancy</Text>
+                                </View>
+                              </View>
+                            ))}
+                            {pricingData.reservationAnalytics.monthly.highestADR.month && (
+                              <Text style={styles.pricingInsight}>
+                                📈 Peak ADR: {pricingData.reservationAnalytics.monthly.highestADR.month} (${pricingData.reservationAnalytics.monthly.highestADR.adr.toFixed(2)})
+                              </Text>
+                            )}
+                          </View>
+                        </>
+                      )}
+
+                      {/* ASKING PRICES (Calendar) */}
+                      <View style={styles.sectionBanner}>
+                        <Text style={styles.sectionBannerTitle}>📅 Listed Prices (Next 180 Days)</Text>
+                      </View>
+
+                      {/* Last Minute Pricing */}
                       <View style={styles.dashboardContainer}>
                         <Text style={styles.dashboardTitle}>Last Minute Price (Next 7 Days)</Text>
                         <View style={styles.analyticsSummary}>
                           <Text style={styles.priceValue}>
-                            ${pricingData.analytics.lastMinute.averagePrice.toFixed(2)}
+                            ${pricingData.calendarAnalytics.lastMinute.averagePrice.toFixed(2)}
                           </Text>
                           <Text style={styles.analyticsSummarySubtext}>
-                            Average for {pricingData.analytics.lastMinute.count} days
+                            Average for {pricingData.calendarAnalytics.lastMinute.count} days
                           </Text>
-                          {pricingData.analytics.lastMinute.min !== pricingData.analytics.lastMinute.max && (
+                          {pricingData.calendarAnalytics.lastMinute.min !== pricingData.calendarAnalytics.lastMinute.max && (
                             <Text style={styles.priceRange}>
-                              ${pricingData.analytics.lastMinute.min} - ${pricingData.analytics.lastMinute.max}
+                              ${pricingData.calendarAnalytics.lastMinute.min} - ${pricingData.calendarAnalytics.lastMinute.max}
                             </Text>
                           )}
                         </View>
                       </View>
 
-                      {/* Average by Day of Week */}
+                      {/* Listed Prices by Day of Week */}
                       <View style={styles.dashboardContainer}>
-                        <Text style={styles.dashboardTitle}>Average Price by Day of Week</Text>
-                        {Object.entries(pricingData.analytics.dayOfWeek.byDay).map(([day, data]) => (
+                        <Text style={styles.dashboardTitle}>Listed Prices by Day of Week</Text>
+                        {Object.entries(pricingData.calendarAnalytics.dayOfWeek.byDay).map(([day, data]) => (
                           data.count > 0 && (
                             <View key={day} style={styles.pricingRow}>
                               <Text style={styles.pricingDay}>{day}</Text>
@@ -1420,47 +1505,21 @@ export default function ListingOptimizationScreen({ navigation }) {
                             </View>
                           )
                         ))}
-                        {pricingData.analytics.dayOfWeek.highestDay.day && (
-                          <Text style={styles.pricingInsight}>
-                            🔥 Highest: {pricingData.analytics.dayOfWeek.highestDay.day} (${pricingData.analytics.dayOfWeek.highestDay.averagePrice.toFixed(2)})
-                          </Text>
-                        )}
                       </View>
 
-                      {/* Average by Month */}
+                      {/* Listed Prices by Month */}
                       <View style={styles.dashboardContainer}>
-                        <Text style={styles.dashboardTitle}>Average Price by Month</Text>
-                        {pricingData.analytics.monthly.byMonth.slice(0, 6).map((month) => (
+                        <Text style={styles.dashboardTitle}>Listed Prices by Month</Text>
+                        {pricingData.calendarAnalytics.monthly.byMonth.slice(0, 6).map((month) => (
                           <View key={`${month.year}-${month.monthNumber}`} style={styles.pricingRow}>
                             <Text style={styles.pricingDay}>{month.month}</Text>
                             <Text style={styles.pricingValue}>${month.averagePrice.toFixed(2)}</Text>
                           </View>
                         ))}
-                        {pricingData.analytics.monthly.highestMonth.month && (
-                          <Text style={styles.pricingInsight}>
-                            📈 Peak: {pricingData.analytics.monthly.highestMonth.month} (${pricingData.analytics.monthly.highestMonth.averagePrice.toFixed(2)})
-                          </Text>
-                        )}
-                      </View>
-
-                      {/* Overall Stats */}
-                      <View style={styles.statsRow}>
-                        <View style={styles.statItem}>
-                          <Text style={styles.statNumber}>${pricingData.analytics.overall.averagePrice.toFixed(0)}</Text>
-                          <Text style={styles.statLabel}>Avg Price</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                          <Text style={styles.statNumber}>${pricingData.analytics.overall.minPrice}</Text>
-                          <Text style={styles.statLabel}>Min</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                          <Text style={styles.statNumber}>${pricingData.analytics.overall.maxPrice}</Text>
-                          <Text style={styles.statLabel}>Max</Text>
-                        </View>
                       </View>
 
                       <Text style={styles.dataRangeText}>
-                        Data: {pricingData.analytics.dataRange.totalDays} days (180 day forecast)
+                        Listed prices: 180-day forecast from today
                       </Text>
                     </>
                   ) : (
@@ -2869,6 +2928,41 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 12,
     letterSpacing: -0.1,
+  },
+  sectionBanner: {
+    backgroundColor: 'rgba(0, 122, 255, 0.08)',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+  },
+  sectionBannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    letterSpacing: -0.3,
+  },
+  pricingCount: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 2,
+    letterSpacing: -0.1,
+  },
+  monthlyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
+  },
+  occupancyText: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginTop: 2,
+    fontWeight: '500',
+    letterSpacing: -0.2,
   },
 });
 

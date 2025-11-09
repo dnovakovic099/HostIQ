@@ -8,12 +8,10 @@ export default function UsageIndicator({ navigation, compact = false }) {
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Refresh usage data whenever the screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      loadUsage();
-    }, [])
-  );
+  // Only load usage data once on mount, not on every focus
+  useEffect(() => {
+    loadUsage();
+  }, []);
 
   const loadUsage = async () => {
     try {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -30,10 +30,18 @@ export default function PropertiesScreen({ navigation }) {
   const [pmsNotes, setPmsNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const lastFetchTime = useRef(0);
 
+  // Only refetch if it's been more than 30 seconds since last fetch
   useFocusEffect(
     useCallback(() => {
-      fetchProperties();
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastFetchTime.current;
+      
+      if (timeSinceLastFetch > 30000 || lastFetchTime.current === 0) {
+        lastFetchTime.current = now;
+        fetchProperties();
+      }
     }, [])
   );
 

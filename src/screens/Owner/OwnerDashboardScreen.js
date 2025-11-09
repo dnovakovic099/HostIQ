@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -30,10 +30,20 @@ export default function OwnerDashboardScreen({ navigation }) {
   const [lowRatingProperties, setLowRatingProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const lastFetchTime = useRef(0);
 
+  // Only refetch dashboard data if it's been more than 30 seconds since last fetch
+  // This prevents excessive API calls when navigating between tabs
   useFocusEffect(
     React.useCallback(() => {
-      fetchDashboardData();
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastFetchTime.current;
+      
+      // Only fetch if more than 30 seconds have passed, or if it's the first load
+      if (timeSinceLastFetch > 30000 || lastFetchTime.current === 0) {
+        lastFetchTime.current = now;
+        fetchDashboardData();
+      }
     }, [])
   );
 
