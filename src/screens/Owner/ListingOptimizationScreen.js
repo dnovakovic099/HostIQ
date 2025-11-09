@@ -378,6 +378,16 @@ export default function ListingOptimizationScreen({ navigation }) {
       return;
     }
 
+    // Check if this is a PMS property
+    if (selectedProperty.isPMSProperty || selectedProperty.pms_listing_id) {
+      Alert.alert(
+        'Not Available for PMS Properties',
+        'Airbnb listing optimization is only available for manually created properties. PMS-synced properties (like those from Hostify) are managed through your PMS system.'
+      );
+      setShowUrlModal(false);
+      return;
+    }
+
     try {
       setFetchingData(true);
       setShowUrlModal(false);
@@ -1568,52 +1578,54 @@ export default function ListingOptimizationScreen({ navigation }) {
               )}
             </View>
 
-            {/* Listing Optimization Section */}
-            <View style={styles.insightsSection}>
-              <TouchableOpacity
-                style={styles.sectionHeader}
-                onPress={() => setOptimizationExpanded(!optimizationExpanded)}
-              >
-                <View style={styles.sectionHeaderLeft}>
-                  <Ionicons name="bulb" size={24} color="#F59E0B" />
-                  <Text style={styles.sectionHeaderTitle}>Listing Optimization</Text>
-                </View>
-                <Ionicons 
-                  name={optimizationExpanded ? "chevron-up" : "chevron-down"} 
-                  size={24} 
-                  color="#6B7280" 
-                />
-              </TouchableOpacity>
+            {/* Listing Optimization Section - Only for manually created properties */}
+            {!selectedProperty?.isPMSProperty && !selectedProperty?.pms_listing_id && (
+              <View style={styles.insightsSection}>
+                <TouchableOpacity
+                  style={styles.sectionHeader}
+                  onPress={() => setOptimizationExpanded(!optimizationExpanded)}
+                >
+                  <View style={styles.sectionHeaderLeft}>
+                    <Ionicons name="bulb" size={24} color="#F59E0B" />
+                    <Text style={styles.sectionHeaderTitle}>Listing Optimization</Text>
+                  </View>
+                  <Ionicons 
+                    name={optimizationExpanded ? "chevron-up" : "chevron-down"} 
+                    size={24} 
+                    color="#6B7280" 
+                  />
+                </TouchableOpacity>
 
-              {optimizationExpanded && (
-                <View style={styles.sectionContent}>
-                  {fetchingData && (
-                    <View style={styles.fetchingContainer}>
-                      <ActivityIndicator size="large" color={colors.primary.main} />
-                      <Text style={styles.fetchingText}>Fetching listing data...</Text>
-                    </View>
-                  )}
+                {optimizationExpanded && (
+                  <View style={styles.sectionContent}>
+                    {fetchingData && (
+                      <View style={styles.fetchingContainer}>
+                        <ActivityIndicator size="large" color={colors.primary.main} />
+                        <Text style={styles.fetchingText}>Fetching listing data...</Text>
+                      </View>
+                    )}
 
-                  {renderAIAnalysisResults()}
-                  {!fetchingData && renderListingData()}
+                    {renderAIAnalysisResults()}
+                    {!fetchingData && renderListingData()}
 
-                  {!fetchingData && !listingData && (
-                    <View style={styles.noDataContainerSmall}>
-                      <Text style={styles.noDataText}>
-                        Add your Airbnb listing URL to get optimization insights.
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.addUrlButton}
-                        onPress={() => setShowUrlModal(true)}
-                      >
-                        <Ionicons name="link" size={18} color="#007AFF" />
-                        <Text style={styles.addUrlButtonText}>Add Listing URL</Text>
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
+                    {!fetchingData && !listingData && (
+                      <View style={styles.noDataContainerSmall}>
+                        <Text style={styles.noDataText}>
+                          Add your Airbnb listing URL to get optimization insights.
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.addUrlButton}
+                          onPress={() => setShowUrlModal(true)}
+                        >
+                          <Ionicons name="link" size={18} color="#007AFF" />
+                          <Text style={styles.addUrlButtonText}>Add Listing URL</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
           </>
         )}
       </ScrollView>
