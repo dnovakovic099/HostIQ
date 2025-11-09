@@ -71,31 +71,32 @@ export default function ListingOptimizationScreen({ navigation }) {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      // Try to fetch PMS properties first (for Guest Issues)
+      
+      let allProperties = [];
+      
+      // Fetch PMS properties (for Guest Issues & Pricing Analytics)
       try {
         const pmsResponse = await api.get('/issues/properties');
         const pmsProperties = pmsResponse.data.properties || [];
-        
-        if (pmsProperties.length > 0) {
-          setProperties(pmsProperties);
-          // Auto-select first property if none selected
-          if (!selectedProperty && pmsProperties.length > 0) {
-            handleSelectProperty(pmsProperties[0]);
-          }
-          return;
-        }
+        allProperties = [...pmsProperties];
       } catch (pmsError) {
-        console.log('No PMS properties found, fetching manual properties...');
+        console.log('No PMS properties found');
       }
 
-      // Fallback to manual properties if no PMS properties
-      const response = await api.get('/owner/properties');
-      const manualProperties = response.data.manualProperties || response.data || [];
-      setProperties(manualProperties);
+      // Fetch manual properties (for Listing Optimization)
+      try {
+        const response = await api.get('/owner/properties');
+        const manualProperties = response.data.manualProperties || response.data || [];
+        allProperties = [...allProperties, ...manualProperties];
+      } catch (manualError) {
+        console.log('No manual properties found');
+      }
+
+      setProperties(allProperties);
       
       // Auto-select first property if none selected
-      if (!selectedProperty && manualProperties.length > 0) {
-        handleSelectProperty(manualProperties[0]);
+      if (!selectedProperty && allProperties.length > 0) {
+        handleSelectProperty(allProperties[0]);
       }
     } catch (error) {
       console.error('Error fetching properties:', error);
