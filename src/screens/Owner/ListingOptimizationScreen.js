@@ -82,9 +82,8 @@ export default function ListingOptimizationScreen({ navigation }) {
           isPMSProperty: true  // Mark as PMS property
         }));
         allProperties = [...pmsProperties];
-        console.log(`Found ${pmsProperties.length} PMS properties`);
       } catch (pmsError) {
-        console.log('No PMS properties found');
+        // Silently continue
       }
 
       // Fetch manual properties (for Listing Optimization)
@@ -95,16 +94,16 @@ export default function ListingOptimizationScreen({ navigation }) {
           isPMSProperty: false  // Mark as manual property
         }));
         allProperties = [...allProperties, ...manualProperties];
-        console.log(`Found ${manualProperties.length} manual properties`);
       } catch (manualError) {
-        console.log('No manual properties found');
+        // Silently continue
       }
 
       setProperties(allProperties);
       
-      // Auto-select first property if none selected
+      // Auto-select first MANUAL property if available, otherwise first property
       if (!selectedProperty && allProperties.length > 0) {
-        handleSelectProperty(allProperties[0]);
+        const firstManualProperty = allProperties.find(p => !p.isPMSProperty);
+        handleSelectProperty(firstManualProperty || allProperties[0]);
       }
     } catch (error) {
       console.error('Error fetching properties:', error);
@@ -326,11 +325,6 @@ export default function ListingOptimizationScreen({ navigation }) {
   };
 
   const handleSelectProperty = async (property) => {
-    console.log('📍 Selected property:', property.name);
-    console.log('   isPMSProperty:', property.isPMSProperty);
-    console.log('   pms_listing_id:', property.pms_listing_id);
-    console.log('   Will show Listing Optimization?', !property.isPMSProperty && !property.pms_listing_id);
-    
     setSelectedProperty(property);
     setPropertyPickerVisible(false);
     setSearchQuery('');
@@ -1532,55 +1526,50 @@ export default function ListingOptimizationScreen({ navigation }) {
                         </>
                       )}
 
-                      {/* ASKING PRICES (Calendar) */}
-                      <View style={styles.sectionBanner}>
-                        <Text style={styles.sectionBannerTitle}>📅 Listed Prices (Next 180 Days)</Text>
-                      </View>
-
-                      {/* Last Minute Pricing */}
-                      <View style={styles.dashboardContainer}>
-                        <Text style={styles.dashboardTitle}>Last Minute Price (Next 7 Days)</Text>
-                        <View style={styles.analyticsSummary}>
-                          <Text style={styles.priceValue}>
-                            ${pricingData.calendarAnalytics.lastMinute.averagePrice.toFixed(2)}
+                      {/* Compact Summary Stats */}
+                      <View style={styles.compactStatsRow}>
+                        <View style={styles.compactStatBox}>
+                          <Text style={styles.compactStatValue}>
+                            ${pricingData.calendarAnalytics.overall.averagePrice?.toFixed(0) || 0}
                           </Text>
-                          <Text style={styles.analyticsSummarySubtext}>
-                            Average for {pricingData.calendarAnalytics.lastMinute.count} days
+                          <Text style={styles.compactStatLabel}>Avg Nightly</Text>
+                        </View>
+                        <View style={styles.compactStatBox}>
+                          <Text style={styles.compactStatValue}>
+                            ${pricingData.calendarAnalytics.monthly.highestMonth?.averagePrice?.toFixed(0) || 0}
                           </Text>
-                          {pricingData.calendarAnalytics.lastMinute.min !== pricingData.calendarAnalytics.lastMinute.max && (
-                            <Text style={styles.priceRange}>
-                              ${pricingData.calendarAnalytics.lastMinute.min} - ${pricingData.calendarAnalytics.lastMinute.max}
-                            </Text>
-                          )}
+                          <Text style={styles.compactStatLabel}>Peak Month</Text>
+                        </View>
+                        <View style={styles.compactStatBox}>
+                          <Text style={styles.compactStatValue}>
+                            {pricingData.calendarAnalytics.dayOfWeek.highestDay?.day?.substring(0, 3) || 'N/A'}
+                          </Text>
+                          <Text style={styles.compactStatLabel}>Best Day</Text>
                         </View>
                       </View>
 
-                      {/* Listed Prices by Day of Week */}
+                      {/* Monthly ADR & Occupancy */}
                       <View style={styles.dashboardContainer}>
-                        <Text style={styles.dashboardTitle}>Listed Prices by Day of Week</Text>
-                        {Object.entries(pricingData.calendarAnalytics.dayOfWeek.byDay).map(([day, data]) => (
-                          data.count > 0 && (
-                            <View key={day} style={styles.pricingRow}>
-                              <Text style={styles.pricingDay}>{day}</Text>
-                              <Text style={styles.pricingValue}>${data.average.toFixed(2)}</Text>
-                            </View>
-                          )
-                        ))}
-                      </View>
-
-                      {/* Listed Prices by Month */}
-                      <View style={styles.dashboardContainer}>
-                        <Text style={styles.dashboardTitle}>Listed Prices by Month</Text>
+                        <Text style={styles.dashboardTitle}>Monthly ADR & Occupancy</Text>
                         {pricingData.calendarAnalytics.monthly.byMonth.slice(0, 6).map((month) => (
-                          <View key={`${month.year}-${month.monthNumber}`} style={styles.pricingRow}>
+                          <View key={`${month.year}-${month.monthNumber}`} style={styles.monthlyRow}>
                             <Text style={styles.pricingDay}>{month.month}</Text>
-                            <Text style={styles.pricingValue}>${month.averagePrice.toFixed(2)}</Text>
+                            <View style={{alignItems: 'flex-end'}}>
+                              <Text style={styles.pricingValue}>${month.averagePrice.toFixed(2)} ADR</Text>
+                              <Text style={styles.occupancyText}>{month.occupancy}% occupancy</Text>
+                            </View>
                           </View>
                         ))}
+                        <Text style={styles.pricingInsight}>
+                          🔥 Best: {pricingData.calendarAnalytics.dayOfWeek.highestDay?.day} (${pricingData.calendarAnalytics.dayOfWeek.highestDay?.averagePrice?.toFixed(2)})
+                        </Text>
+                        <Text style={styles.pricingInsight}>
+                          📈 Peak ADR: {pricingData.calendarAnalytics.monthly.highestMonth?.month} (${pricingData.calendarAnalytics.monthly.highestMonth?.averagePrice?.toFixed(2)})
+                        </Text>
                       </View>
 
                       <Text style={styles.dataRangeText}>
-                        Listed prices: 180-day forecast from today
+                        Next 180 days • Updated daily
                       </Text>
                     </>
                   ) : (
@@ -1593,7 +1582,14 @@ export default function ListingOptimizationScreen({ navigation }) {
             </View>
 
             {/* Listing Optimization Section - Only for manually created properties */}
-            {!selectedProperty?.isPMSProperty && !selectedProperty?.pms_listing_id && (
+            {selectedProperty?.isPMSProperty || selectedProperty?.pms_listing_id ? (
+              <View style={styles.infoBox}>
+                <Ionicons name="information-circle" size={20} color="#007AFF" />
+                <Text style={styles.infoText}>
+                  Listing Optimization is only available for manually created properties. This property is synced from your PMS.
+                </Text>
+              </View>
+            ) : (
               <View style={styles.insightsSection}>
                 <TouchableOpacity
                   style={styles.sectionHeader}
@@ -2993,6 +2989,51 @@ const styles = StyleSheet.create({
     marginTop: 12,
     letterSpacing: -0.1,
   },
+  compactStatsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  compactStatBox: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+  },
+  compactStatValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#007AFF',
+    letterSpacing: -0.3,
+  },
+  compactStatLabel: {
+    fontSize: 10,
+    color: '#6B7280',
+    marginTop: 2,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  infoBox: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 122, 255, 0.08)',
+    padding: 12,
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginTop: 16,
+    gap: 10,
+    alignItems: 'center',
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 18,
+  },
   sectionBanner: {
     backgroundColor: 'rgba(0, 122, 255, 0.08)',
     padding: 12,
@@ -3029,4 +3070,5 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
 });
+
 
