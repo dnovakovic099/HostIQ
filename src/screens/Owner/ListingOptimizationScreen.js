@@ -100,10 +100,10 @@ export default function ListingOptimizationScreen({ navigation }) {
 
       setProperties(allProperties);
       
-      // Auto-select first MANUAL property if available, otherwise first property
+      // Auto-select first PMS property if available, otherwise first property
       if (!selectedProperty && allProperties.length > 0) {
-        const firstManualProperty = allProperties.find(p => !p.isPMSProperty);
-        handleSelectProperty(firstManualProperty || allProperties[0]);
+        const firstPMSProperty = allProperties.find(p => p.isPMSProperty);
+        handleSelectProperty(firstPMSProperty || allProperties[0]);
       }
     } catch (error) {
       console.error('Error fetching properties:', error);
@@ -383,16 +383,6 @@ export default function ListingOptimizationScreen({ navigation }) {
     // Basic URL validation
     if (!airbnbUrl.includes('airbnb.com')) {
       Alert.alert('Error', 'Please enter a valid Airbnb URL');
-      return;
-    }
-
-    // Check if this is a PMS property
-    if (selectedProperty.isPMSProperty || selectedProperty.pms_listing_id) {
-      Alert.alert(
-        'Not Available for PMS Properties',
-        'Airbnb listing optimization is only available for manually created properties. PMS-synced properties (like those from Hostify) are managed through your PMS system.'
-      );
-      setShowUrlModal(false);
       return;
     }
 
@@ -1581,12 +1571,12 @@ export default function ListingOptimizationScreen({ navigation }) {
               )}
             </View>
 
-            {/* Listing Optimization Section - Only for manually created properties */}
-            {selectedProperty?.isPMSProperty || selectedProperty?.pms_listing_id ? (
+            {/* Listing Optimization Section - Only for PMS-synced properties */}
+            {!selectedProperty?.isPMSProperty && !selectedProperty?.pms_listing_id ? (
               <View style={styles.infoBox}>
                 <Ionicons name="information-circle" size={20} color="#007AFF" />
                 <Text style={styles.infoText}>
-                  Listing Optimization is only available for manually created properties. This property is synced from your PMS.
+                  Listing Optimization is only available for properties synced from a PMS (like Hostify).
                 </Text>
               </View>
             ) : (
