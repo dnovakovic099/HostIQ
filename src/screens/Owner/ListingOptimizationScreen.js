@@ -77,8 +77,12 @@ export default function ListingOptimizationScreen({ navigation }) {
       // Fetch PMS properties (for Guest Issues & Pricing Analytics)
       try {
         const pmsResponse = await api.get('/issues/properties');
-        const pmsProperties = pmsResponse.data.properties || [];
+        const pmsProperties = (pmsResponse.data.properties || []).map(prop => ({
+          ...prop,
+          isPMSProperty: true  // Mark as PMS property
+        }));
         allProperties = [...pmsProperties];
+        console.log(`Found ${pmsProperties.length} PMS properties`);
       } catch (pmsError) {
         console.log('No PMS properties found');
       }
@@ -86,8 +90,12 @@ export default function ListingOptimizationScreen({ navigation }) {
       // Fetch manual properties (for Listing Optimization)
       try {
         const response = await api.get('/owner/properties');
-        const manualProperties = response.data.manualProperties || response.data || [];
+        const manualProperties = (response.data.manualProperties || response.data || []).map(prop => ({
+          ...prop,
+          isPMSProperty: false  // Mark as manual property
+        }));
         allProperties = [...allProperties, ...manualProperties];
+        console.log(`Found ${manualProperties.length} manual properties`);
       } catch (manualError) {
         console.log('No manual properties found');
       }
@@ -318,6 +326,11 @@ export default function ListingOptimizationScreen({ navigation }) {
   };
 
   const handleSelectProperty = async (property) => {
+    console.log('📍 Selected property:', property.name);
+    console.log('   isPMSProperty:', property.isPMSProperty);
+    console.log('   pms_listing_id:', property.pms_listing_id);
+    console.log('   Will show Listing Optimization?', !property.isPMSProperty && !property.pms_listing_id);
+    
     setSelectedProperty(property);
     setPropertyPickerVisible(false);
     setSearchQuery('');
