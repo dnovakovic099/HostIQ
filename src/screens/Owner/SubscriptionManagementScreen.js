@@ -97,7 +97,8 @@ export default function SubscriptionManagementScreen({ navigation }) {
         });
 
       } catch (error) {
-        console.error('❌ IAP initialization failed:', error);
+        // IAP not available (Expo Go doesn't support native modules)
+        console.log('ℹ️ IAP not available - running in Expo Go or simulator without entitlements');
         setIapAvailable(false);
       }
     };
