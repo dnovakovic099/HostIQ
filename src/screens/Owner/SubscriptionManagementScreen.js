@@ -8,10 +8,18 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
+import * as RNIap from 'react-native-iap';
+
+// Product IDs - These must match what you configure in App Store Connect & Google Play Console
+const SUBSCRIPTION_SKUS = Platform.select({
+  ios: ['property_subscription_monthly'], // Replace with your Apple product ID
+  android: ['property_subscription_monthly'], // Replace with your Google product ID
+});
 
 export default function SubscriptionManagementScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
@@ -19,6 +27,7 @@ export default function SubscriptionManagementScreen({ navigation }) {
   const [usage, setUsage] = useState(null);
   const [properties, setProperties] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [iapAvailable, setIapAvailable] = useState(false);
 
   const loadData = async () => {
     try {
@@ -57,6 +66,56 @@ export default function SubscriptionManagementScreen({ navigation }) {
     }
   };
 
+  // Initialize IAP
+  useEffect(() => {
+    let purchaseUpdateSubscription;
+    let purchaseErrorSubscription;
+
+    const initIAP = async () => {
+      try {
+        console.log('🛒 Initializing IAP...');
+        const result = await RNIap.initConnection();
+        console.log('✅ IAP initialized:', result);
+        setIapAvailable(true);
+
+        // Set up purchase listeners
+        purchaseUpdateSubscription = RNIap.purchaseUpdatedListener(async (purchase) => {
+          console.log('📦 Purchase update:', purchase);
+          
+          const receipt = purchase.transactionReceipt;
+          if (receipt) {
+            // Purchase successful, validate with backend
+            await finishPurchase(purchase);
+          }
+        });
+
+        purchaseErrorSubscription = RNIap.purchaseErrorListener((error) => {
+          console.warn('❌ Purchase error:', error);
+          if (error.code !== 'E_USER_CANCELLED') {
+            Alert.alert('Purchase Error', error.message);
+          }
+        });
+
+      } catch (error) {
+        console.error('❌ IAP initialization failed:', error);
+        setIapAvailable(false);
+      }
+    };
+
+    initIAP();
+
+    // Cleanup
+    return () => {
+      if (purchaseUpdateSubscription) {
+        purchaseUpdateSubscription.remove();
+      }
+      if (purchaseErrorSubscription) {
+        purchaseErrorSubscription.remove();
+      }
+      RNIap.endConnection();
+    };
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       loadData();
@@ -68,42 +127,94 @@ export default function SubscriptionManagementScreen({ navigation }) {
     loadData();
   };
 
+  const finishPurchase = async (purchase) => {
+    try {
+      console.log('🔄 Finishing purchase and validating with backend...');
+
+      const propertyId = purchase.productId.split('_')[0]; // Extract property ID from product ID (if encoded)
+      
+      if (Platform.OS === 'ios') {
+        // Send Apple receipt to backend
+        await api.post(`/subscriptions/properties/${propertyId}/apple`, {
+          receiptData: purchase.transactionReceipt,
+          transactionId: purchase.transactionId
+        });
+      } else {
+        // Send Google purchase token to backend
+        await api.post(`/subscriptions/properties/${propertyId}/google`, {
+          productId: purchase.productId,
+          purchaseToken: purchase.purchaseToken
+        });
+      }
+
+      // Finish the transaction
+      await RNIap.finishTransaction(purchase);
+      console.log('✅ Purchase finished successfully');
+
+      Alert.alert('Success!', 'Subscription activated! You now have unlimited image processing for this property.');
+      loadData(); // Refresh subscription data
+
+    } catch (error) {
+      console.error('❌ Failed to finish purchase:', error);
+      Alert.alert('Error', 'Failed to activate subscription. Please contact support.');
+    }
+  };
+
   const handleSubscribe = async (propertyId, propertyName) => {
-    Alert.alert(
-      'Subscribe to Property',
-      `Subscribe to "${propertyName}" for $5.00/month?\n\nThis will allow unlimited image processing for this property.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Subscribe',
-          onPress: async () => {
-            try {
-              // Step 1: Create payment intent (mock payment for now)
-              console.log(`💳 Creating payment intent for property ${propertyId}...`);
-              const paymentIntentResponse = await api.post(`/subscriptions/properties/${propertyId}/payment-intent`);
-              const { client_secret } = paymentIntentResponse.data;
-              
-              console.log(`💳 Payment intent created: ${client_secret}`);
-              
-              // Step 2: "Process payment" (in production, this would be Stripe Elements)
-              // For now, we immediately proceed with the mock payment intent
-              
-              // Step 3: Create subscription after "payment success"
-              console.log(`✅ Creating subscription with payment intent...`);
-              await api.post(`/subscriptions/properties/${propertyId}`, {
-                payment_intent_id: client_secret
-              });
-              
-              Alert.alert('Success', 'Subscription activated!');
-              loadData();
-            } catch (error) {
-              console.error('Subscribe error:', error);
-              Alert.alert('Error', error.response?.data?.message || error.response?.data?.error || 'Failed to subscribe');
-            }
+    if (!iapAvailable) {
+      Alert.alert('Error', 'In-app purchases are not available on this device');
+      return;
+    }
+
+    try {
+      console.log(`🛒 Starting IAP subscription for property ${propertyId}...`);
+
+      // Get available subscriptions from the store
+      const products = await RNIap.getSubscriptions(SUBSCRIPTION_SKUS);
+      console.log('📦 Available products:', products);
+
+      if (!products || products.length === 0) {
+        Alert.alert('Error', 'Subscription not available. Please try again later.');
+        return;
+      }
+
+      const subscriptionProduct = products[0];
+
+      // Show confirmation with actual price from the store
+      Alert.alert(
+        'Subscribe to Property',
+        `Subscribe to "${propertyName}"?\n\nPrice: ${subscriptionProduct.localizedPrice}/month\n\nYou'll get unlimited image processing for this property.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Subscribe',
+            onPress: async () => {
+              try {
+                console.log(`💳 Requesting subscription purchase...`);
+                
+                // Request the subscription purchase
+                // The purchaseUpdatedListener will handle the rest
+                await RNIap.requestSubscription({
+                  sku: subscriptionProduct.productId,
+                  // Store property ID in the purchase for later validation
+                  appAccountToken: propertyId, // iOS only
+                });
+
+                console.log('✅ Purchase request sent');
+              } catch (error) {
+                console.error('❌ Purchase request failed:', error);
+                if (error.code !== 'E_USER_CANCELLED') {
+                  Alert.alert('Error', 'Failed to start purchase. Please try again.');
+                }
+              }
+            },
           },
-        },
-      ]
-    );
+        ]
+      );
+    } catch (error) {
+      console.error('❌ Failed to get subscription products:', error);
+      Alert.alert('Error', 'Failed to load subscription options. Please try again.');
+    }
   };
 
   const handleCancelSubscription = async (propertyId, propertyName) => {

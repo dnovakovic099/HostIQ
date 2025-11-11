@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,23 +11,18 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  RefreshControl,
-  Animated,
-  Pressable,
-  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/client';
 import colors, { getScoreColor } from '../../theme/colors';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function InspectionDetailScreen({ route, navigation }) {
   const { inspectionId, userRole } = route?.params || {};
   const [inspection, setInspection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     issues: true,
     photos: true,
@@ -40,17 +35,6 @@ export default function InspectionDetailScreen({ route, navigation }) {
   const [failedRoomIds, setFailedRoomIds] = useState([]);
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejecting, setRejecting] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [showPhotoModal, setShowPhotoModal] = useState(false);
-  
-  // Animation refs for smooth expand/collapse
-  const sectionAnimations = useRef({
-    issues: new Animated.Value(1),
-    photos: new Animated.Value(1),
-    inventory: new Animated.Value(1),
-    photoQuality: new Animated.Value(1),
-    instructions: new Animated.Value(1),
-  }).current;
 
   useEffect(() => {
     if (inspectionId) {
@@ -119,30 +103,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
   };
 
   const toggleSection = (section) => {
-    const isExpanded = expandedSections[section];
-    
-    // Animate the expansion/collapse
-    Animated.timing(sectionAnimations[section], {
-      toValue: isExpanded ? 0 : 1,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-    
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
-  };
-  
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchInspection();
-    setRefreshing(false);
-  };
-  
-  const handlePhotoPress = (photo) => {
-    setSelectedPhoto(photo);
-    setShowPhotoModal(true);
   };
 
   const handleEditInspection = () => {
@@ -521,17 +485,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
             </View>
           </View>
 
-          <ScrollView 
-            style={styles.scrollContent} 
-            contentContainerStyle={styles.content}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={handleRefresh}
-                tintColor="#007AFF"
-              />
-            }
-          >
+          <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
             {/* CRITICAL ERROR BANNER */}
             {improvements.length > 0 && improvements.some(item => 
               String(item).includes('❌') || 
@@ -690,19 +644,6 @@ export default function InspectionDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
                 {expandedSections.instructions ? (
                   <View>
-                    {/* MISSED REQUIREMENTS FIRST */}
-                    {selectedRoomData.instruction_adherence.requirements_missed && selectedRoomData.instruction_adherence.requirements_missed.length > 0 && (
-                      <View style={styles.missedSection}>
-                        <Text style={styles.missedTitle}>⚠️ Missed Requirements:</Text>
-                        {selectedRoomData.instruction_adherence.requirements_missed.map((missed, idx) => (
-                          <View key={idx} style={styles.bulletPoint}>
-                            <Text style={styles.bullet}>•</Text>
-                            <Text style={styles.missedText}>{safeString(missed)}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
-
                     {selectedRoomData.instruction_adherence.feedback && (
                       <View style={styles.feedbackSection}>
                         <Text style={styles.feedbackTitle}>📋 Overall Assessment</Text>
@@ -736,6 +677,18 @@ export default function InspectionDetailScreen({ route, navigation }) {
                       </View>
                     )}
 
+                    {selectedRoomData.instruction_adherence.requirements_missed && selectedRoomData.instruction_adherence.requirements_missed.length > 0 && (
+                      <View style={styles.missedSection}>
+                        <Text style={styles.missedTitle}>⚠️ Missed Requirements:</Text>
+                        {selectedRoomData.instruction_adherence.requirements_missed.map((missed, idx) => (
+                          <View key={idx} style={styles.bulletPoint}>
+                            <Text style={styles.bullet}>•</Text>
+                            <Text style={styles.missedText}>{safeString(missed)}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
                     {selectedRoomData.instruction_adherence.improvements_needed && selectedRoomData.instruction_adherence.improvements_needed.length > 0 && (
                       <View style={styles.feedbackSection}>
                         <Text style={styles.feedbackTitle}>💡 How to Improve</Text>
@@ -763,111 +716,62 @@ export default function InspectionDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
                 {expandedSections.photoQuality ? (
                   <View>
-                    {/* Photo Quality Scores with Progress Bars */}
-                    <View style={styles.photoQualityList}>
-                      {/* Overall Score - Highlighted */}
-                      <View style={styles.qualityRowHighlight}>
-                        <View style={styles.qualityRowHeader}>
-                          <Text style={styles.qualityRowLabelBold}>Overall Quality</Text>
-                          <Text style={[styles.qualityRowValueLarge, { 
-                            color: getRatingColor(roomPhotoQuality.photo_quality_score || 0)
-                          }]}>
-                            {safeNumber(roomPhotoQuality.photo_quality_score, 0)}/10
-                          </Text>
-                        </View>
-                        <View style={styles.progressBarContainer}>
-                          <View style={[styles.progressBarFill, {
-                            width: `${(roomPhotoQuality.photo_quality_score || 0) * 10}%`,
-                            backgroundColor: getRatingColor(roomPhotoQuality.photo_quality_score || 0)
-                          }]} />
-                        </View>
+                    <View style={styles.photoQualityScores}>
+                      <View style={styles.qualityMetric}>
+                        <Text style={styles.metricLabel}>Overall</Text>
+                        <Text style={[styles.metricValue, { 
+                          color: getRatingColor(roomPhotoQuality.photo_quality_score || 0)
+                        }]}>
+                          {safeNumber(roomPhotoQuality.photo_quality_score, 0)}/10
+                        </Text>
                       </View>
-
-                      {/* Detailed Scores */}
-                      <View style={styles.qualityDetailSection}>
-                        <View style={styles.qualityRowCompact}>
-                          <Text style={styles.qualityRowLabel}>Composition</Text>
-                          <View style={styles.qualityRowRight}>
-                            <View style={styles.miniProgressBar}>
-                              <View style={[styles.miniProgressFill, {
-                                width: `${(roomPhotoQuality.composition_score || 0) * 10}%`,
-                                backgroundColor: getRatingColor(roomPhotoQuality.composition_score || 0)
-                              }]} />
-                            </View>
-                            <Text style={[styles.qualityRowValue, { 
-                              color: getRatingColor(roomPhotoQuality.composition_score || 0)
-                            }]}>
-                              {safeNumber(roomPhotoQuality.composition_score, 0)}
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View style={styles.qualityRowCompact}>
-                          <Text style={styles.qualityRowLabel}>Lighting</Text>
-                          <View style={styles.qualityRowRight}>
-                            <View style={styles.miniProgressBar}>
-                              <View style={[styles.miniProgressFill, {
-                                width: `${(roomPhotoQuality.lighting_score || 0) * 10}%`,
-                                backgroundColor: getRatingColor(roomPhotoQuality.lighting_score || 0)
-                              }]} />
-                            </View>
-                            <Text style={[styles.qualityRowValue, { 
-                              color: getRatingColor(roomPhotoQuality.lighting_score || 0)
-                            }]}>
-                              {safeNumber(roomPhotoQuality.lighting_score, 0)}
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View style={styles.qualityRowCompact}>
-                          <Text style={styles.qualityRowLabel}>Technical</Text>
-                          <View style={styles.qualityRowRight}>
-                            <View style={styles.miniProgressBar}>
-                              <View style={[styles.miniProgressFill, {
-                                width: `${(roomPhotoQuality.technical_score || 0) * 10}%`,
-                                backgroundColor: getRatingColor(roomPhotoQuality.technical_score || 0)
-                              }]} />
-                            </View>
-                            <Text style={[styles.qualityRowValue, { 
-                              color: getRatingColor(roomPhotoQuality.technical_score || 0)
-                            }]}>
-                              {safeNumber(roomPhotoQuality.technical_score, 0)}
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View style={styles.qualityRowCompact}>
-                          <Text style={styles.qualityRowLabel}>Coverage</Text>
-                          <View style={styles.qualityRowRight}>
-                            <View style={styles.miniProgressBar}>
-                              <View style={[styles.miniProgressFill, {
-                                width: `${(roomPhotoQuality.coverage_score || 0) * 10}%`,
-                                backgroundColor: getRatingColor(roomPhotoQuality.coverage_score || 0)
-                              }]} />
-                            </View>
-                            <Text style={[styles.qualityRowValue, { 
-                              color: getRatingColor(roomPhotoQuality.coverage_score || 0)
-                            }]}>
-                              {safeNumber(roomPhotoQuality.coverage_score, 0)}
-                            </Text>
-                          </View>
-                        </View>
+                      <View style={styles.qualityMetric}>
+                        <Text style={styles.metricLabel}>Composition</Text>
+                        <Text style={[styles.metricValue, { 
+                          color: getRatingColor(roomPhotoQuality.composition_score || 0)
+                        }]}>
+                          {safeNumber(roomPhotoQuality.composition_score, 0)}/10
+                        </Text>
+                      </View>
+                      <View style={styles.qualityMetric}>
+                        <Text style={styles.metricLabel}>Lighting</Text>
+                        <Text style={[styles.metricValue, { 
+                          color: getRatingColor(roomPhotoQuality.lighting_score || 0)
+                        }]}>
+                          {safeNumber(roomPhotoQuality.lighting_score, 0)}/10
+                        </Text>
+                      </View>
+                      <View style={styles.qualityMetric}>
+                        <Text style={styles.metricLabel}>Technical</Text>
+                        <Text style={[styles.metricValue, { 
+                          color: getRatingColor(roomPhotoQuality.technical_score || 0)
+                        }]}>
+                          {safeNumber(roomPhotoQuality.technical_score, 0)}/10
+                        </Text>
+                      </View>
+                      <View style={styles.qualityMetric}>
+                        <Text style={styles.metricLabel}>Coverage</Text>
+                        <Text style={[styles.metricValue, { 
+                          color: getRatingColor(roomPhotoQuality.coverage_score || 0)
+                        }]}>
+                          {safeNumber(roomPhotoQuality.coverage_score, 0)}/10
+                        </Text>
                       </View>
                     </View>
 
-                    {/* Coverage Percentage - Inline */}
+                    {/* Coverage Percentage */}
                     {roomPhotoQuality.coverage_percentage !== undefined && roomPhotoQuality.coverage_percentage !== null ? (
-                      <View style={styles.coverageInline}>
-                        <Text style={styles.coverageInlineLabel}>Room Coverage:</Text>
-                        <Text style={[styles.coverageInlineValue, { 
+                      <View style={styles.coveragePercentageSection}>
+                        <Text style={styles.coveragePercentageLabel}>Room Coverage</Text>
+                        <Text style={[styles.coveragePercentageValue, { 
                           color: roomPhotoQuality.coverage_percentage >= 70 ? colors.success : 
                                  roomPhotoQuality.coverage_percentage >= 30 ? colors.warning : colors.error
                         }]}>
                           {roomPhotoQuality.coverage_percentage}%
                         </Text>
-                        <Text style={styles.coverageInlineHint}>
-                          {roomPhotoQuality.coverage_percentage >= 70 ? '(Good)' : 
-                           roomPhotoQuality.coverage_percentage >= 30 ? '(Aim for 70%+)' : '(Below 30%)'}
+                        <Text style={styles.coveragePercentageHint}>
+                          {roomPhotoQuality.coverage_percentage >= 70 ? 'Good coverage' : 
+                           roomPhotoQuality.coverage_percentage >= 30 ? 'Minimum met • Aim for 70%+' : 'Below minimum (30%)'}
                         </Text>
                       </View>
                     ) : null}
@@ -876,20 +780,16 @@ export default function InspectionDetailScreen({ route, navigation }) {
                     {roomPhotoQuality.missing_areas && roomPhotoQuality.missing_areas.length > 0 ? (
                       <View style={styles.feedbackSection}>
                         <Text style={styles.feedbackTitle}>Missing from Photos</Text>
-                        {roomPhotoQuality.missing_areas.map((area, idx) => (
-                          <View key={idx} style={styles.feedbackTipRow}>
-                            <Text style={styles.feedbackTipText}>• {area.charAt(0).toUpperCase() + area.slice(1)}</Text>
-                          </View>
-                        ))}
+                        <Text style={styles.feedbackSubtext}>
+                          {roomPhotoQuality.missing_areas.join(', ')}
+                        </Text>
                       </View>
                     ) : null}
 
                     {roomPhotoQuality.what_to_improve ? (
                       <View style={styles.feedbackSection}>
                         <Text style={styles.feedbackTitle}>Recommendations</Text>
-                        <View style={styles.feedbackTipRow}>
-                          <Text style={styles.feedbackText}>• {safeString(roomPhotoQuality.what_to_improve)}</Text>
-                        </View>
+                        <Text style={styles.feedbackText}>{safeString(roomPhotoQuality.what_to_improve)}</Text>
                       </View>
                     ) : null}
 
@@ -922,12 +822,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
                 {expandedSections.photos ? (
                   <View style={styles.photosGrid}>
                     {roomMedia.map((media, index) => (
-                      <TouchableOpacity 
-                        key={media.id || index} 
-                        style={styles.photoContainer}
-                        onPress={() => handlePhotoPress(media)}
-                        activeOpacity={0.8}
-                      >
+                      <View key={media.id || index} style={styles.photoContainer}>
                         <Image
                           source={{ uri: media.url }}
                           style={styles.photoThumbnail}
@@ -936,7 +831,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
                         {media.room_name && (
                           <Text style={styles.photoRoomLabel}>{media.room_name}</Text>
                         )}
-                      </TouchableOpacity>
+                      </View>
                     ))}
                   </View>
                 ) : null}
@@ -945,42 +840,6 @@ export default function InspectionDetailScreen({ route, navigation }) {
           </ScrollView>
         </>
       ) : null}
-
-      {/* Full-Screen Photo Modal */}
-      <Modal
-        visible={showPhotoModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowPhotoModal(false)}
-      >
-        <SafeAreaView style={styles.photoModalContainer}>
-          <Pressable 
-            style={styles.photoModalOverlay}
-            onPress={() => setShowPhotoModal(false)}
-          >
-            <View style={styles.photoModalHeader}>
-              <Text style={styles.photoModalTitle}>
-                {selectedPhoto?.room_name || 'Inspection Photo'}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowPhotoModal(false)}
-                style={styles.photoModalCloseButton}
-              >
-                <Ionicons name="close-circle" size={32} color="#FFFFFF" />
-              </TouchableOpacity>
-            </View>
-            <Pressable style={styles.photoModalImageContainer}>
-              {selectedPhoto && (
-                <Image
-                  source={{ uri: selectedPhoto.url }}
-                  style={styles.photoModalImage}
-                  resizeMode="contain"
-                />
-              )}
-            </Pressable>
-          </Pressable>
-        </SafeAreaView>
-      </Modal>
 
       {/* Rejection Modal */}
       <Modal
@@ -1061,7 +920,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A', // Modern dark background
+    backgroundColor: colors.background.primary,
   },
   scrollContent: {
     flex: 1,
@@ -1073,82 +932,77 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background.primary,
   },
   errorText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '500',
-    color: '#F87171',
-    letterSpacing: -0.4,
+    color: colors.status.error,
   },
   emptyText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '500',
-    color: '#94A3B8',
-    letterSpacing: -0.4,
+    color: colors.text.muted,
   },
   processingText: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#F1F5F9',
+    color: colors.text.primary,
     marginTop: 16,
-    letterSpacing: -0.4,
   },
   
-  // COMPACT HEADER - Modern dark
+  // COMPACT HEADER
   compactHeader: {
-    backgroundColor: '#1E293B',
-    paddingTop: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(148, 163, 184, 0.2)',
+    backgroundColor: colors.background.card,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
+    gap: 16,
   },
   headerLeft: {
     flex: 1,
   },
   headerAddress: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#F1F5F9',
-    marginBottom: 2,
-    letterSpacing: -0.5,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 4,
   },
   headerDate: {
     fontSize: 13,
     fontWeight: '400',
-    color: '#94A3B8',
-    letterSpacing: -0.1,
+    color: colors.text.muted,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
   },
   scoreBox: {
     alignItems: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
   },
   scoreBoxLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#94A3B8',
+    color: colors.text.muted,
     marginBottom: 2,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   scoreBoxValue: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#3B82F6',
-    letterSpacing: -0.5,
+    color: colors.primary.main,
   },
   gradeBox: {
     alignItems: 'center',
@@ -1157,51 +1011,42 @@ const styles = StyleSheet.create({
   gradeBoxLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#94A3B8',
+    color: colors.text.muted,
     marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   gradeBadge: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    backgroundColor: colors.background.secondary,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
   },
   gradeBadgeText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#60A5FA',
-    letterSpacing: -0.3,
+    color: colors.text.primary,
   },
   statusBox: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   statusBoxText: {
     fontSize: 12,
     fontWeight: '600',
-    letterSpacing: -0.1,
   },
   
-  // CARD - Modern dark style
+  // CARD
   card: {
-    backgroundColor: '#1E293B',
+    backgroundColor: colors.background.card,
     marginHorizontal: 16,
-    marginTop: 10,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(148, 163, 184, 0.1)',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   
   // SECTIONS
@@ -1209,43 +1054,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#F1F5F9',
-    letterSpacing: -0.4,
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text.primary,
   },
   expandIcon: {
-    fontSize: 22,
-    fontWeight: '400',
-    color: '#64748B',
+    fontSize: 24,
+    fontWeight: '300',
+    color: colors.text.muted,
   },
   
-  // ISSUES - Better spacing
+  // ISSUES
   issuesList: {
-    gap: 12,
-    marginTop: 8,
+    gap: 14,
   },
   issueItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 12,
   },
   bulletDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#3B82F6',
-    marginTop: 8,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary.main,
+    marginTop: 9,
   },
   issueText: {
     flex: 1,
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#CBD5E1',
-    letterSpacing: -0.2,
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.text.secondary,
   },
   
   // ITEMS
@@ -1256,26 +1098,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
+    gap: 16,
+    paddingVertical: 14,
   },
   itemInfo: {
     flex: 1,
   },
   itemName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
-    marginBottom: 3,
-    letterSpacing: -0.2,
+    color: colors.text.primary,
+    marginBottom: 4,
   },
   itemIssue: {
-    fontSize: 14,
-    color: '#8E8E93',
-    lineHeight: 20,
-    letterSpacing: -0.1,
+    fontSize: 15,
+    color: colors.text.secondary,
+    lineHeight: 22,
   },
   scoreBadge: {
     paddingHorizontal: 8,
@@ -1285,90 +1123,36 @@ const styles = StyleSheet.create({
   scoreBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    letterSpacing: -0.1,
   },
   thinDivider: {
-    height: 0.5,
-    backgroundColor: 'rgba(60, 60, 67, 0.12)',
-    marginVertical: 8,
+    height: 1,
+    backgroundColor: colors.border.light,
   },
   
-  // PHOTO QUALITY - iOS system design
-  photoQualityList: {
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  qualityRowHighlight: {
-    backgroundColor: 'rgba(120, 120, 128, 0.05)',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(60, 60, 67, 0.08)',
-  },
-  qualityRowHeader: {
+  // PHOTO QUALITY
+  photoQualityScores: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 20,
+  },
+  qualityMetric: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: colors.background.secondary,
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 12,
   },
-  qualityRowLabelBold: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-    letterSpacing: -0.4,
+  metricLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.text.secondary,
+    marginBottom: 8,
   },
-  qualityRowValueLarge: {
+  metricValue: {
     fontSize: 24,
     fontWeight: '700',
-    letterSpacing: -0.6,
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: 'rgba(60, 60, 67, 0.08)',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  qualityDetailSection: {
-    gap: 12,
-  },
-  qualityRowCompact: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  qualityRowLabel: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: '#3C3C43',
-    letterSpacing: -0.2,
-  },
-  qualityRowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  miniProgressBar: {
-    width: 60,
-    height: 6,
-    backgroundColor: 'rgba(60, 60, 67, 0.08)',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  miniProgressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  qualityRowValue: {
-    fontSize: 17,
-    fontWeight: '600',
-    letterSpacing: -0.4,
-    minWidth: 24,
-    textAlign: 'right',
   },
   qualityIssues: {
     gap: 16,
@@ -1387,19 +1171,19 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   
-  // PHOTOS - iOS grid style
+  // PHOTOS
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 12,
+    gap: 8,
+    marginTop: 20,
   },
   photoWrapper: {
     width: (width - 112) / 3,
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: colors.border.light,
   },
   photo: {
     width: '100%',
@@ -1407,96 +1191,90 @@ const styles = StyleSheet.create({
   },
   roomSelectorContainer: {
     marginTop: 12,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   roomSelectorLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.text.secondary,
     marginBottom: 8,
-    marginLeft: 2,
-    letterSpacing: -0.1,
   },
   roomSelectorScroll: {
     flexDirection: 'row',
   },
   roomTab: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    marginRight: 8,
-    borderRadius: 8,
-    backgroundColor: '#F2F2F7',
-    borderWidth: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginRight: 10,
+    borderRadius: 10,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
     alignItems: 'center',
   },
   roomTabSelected: {
-    backgroundColor: '#007AFF',
-    borderWidth: 0,
+    backgroundColor: colors.primary.main,
+    borderColor: colors.primary.main,
   },
   roomTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: 2,
-    letterSpacing: -0.2,
+    marginBottom: 3,
   },
   roomTabTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   roomTabCount: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: colors.text.secondary,
     textAlign: 'center',
-    letterSpacing: -0.1,
   },
   roomTabCountSelected: {
     color: '#FFFFFF',
-    opacity: 0.85,
+    opacity: 0.9,
   },
   actionButtons: {
     marginTop: 12,
-    gap: 8,
+    gap: 10,
   },
   editButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 12,
+    backgroundColor: colors.primary.main,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   editButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
-    letterSpacing: -0.2,
   },
   redoButton: {
-    backgroundColor: '#FF9500',
-    paddingVertical: 12,
+    backgroundColor: '#F59E0B',
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   redoButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
-    letterSpacing: -0.2,
   },
   rejectButton: {
-    backgroundColor: '#FF3B30',
-    paddingVertical: 12,
+    backgroundColor: '#DC2626',
+    paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   rejectButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
-    letterSpacing: -0.2,
   },
   roomResultsList: {
     marginTop: 12,
@@ -1579,14 +1357,13 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
     paddingHorizontal: 16,
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 8,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 12,
   },
   emptyStateText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#3C3C43',
-    letterSpacing: -0.2,
+    color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -1600,11 +1377,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: 12,
-    gap: 8,
+    marginHorizontal: -4,
   },
   photoContainer: {
     width: '48%',
-    marginBottom: 8,
+    marginHorizontal: '1%',
+    marginBottom: 12,
     borderRadius: 8,
     overflow: 'hidden',
     backgroundColor: colors.background.secondary,
@@ -1623,9 +1401,9 @@ const styles = StyleSheet.create({
   
   // Critical Error Banner Styles
   criticalErrorBanner: {
-    backgroundColor: '#FFEBEE',
-    borderLeftWidth: 3,
-    borderLeftColor: '#FF3B30',
+    backgroundColor: '#FFF5F5',
+    borderLeftWidth: 4,
+    borderLeftColor: '#EF4444',
     borderRadius: 8,
     padding: 16,
     marginHorizontal: 16,
@@ -1646,10 +1424,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   criticalErrorTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#C62828',
-    letterSpacing: -0.4,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#DC2626',
     flex: 1,
   },
   criticalErrorText: {
@@ -1674,26 +1451,23 @@ const styles = StyleSheet.create({
   
   // Photo Quality Feedback Styles
   feedbackSection: {
-    marginTop: 16,
+    marginTop: 20,
     padding: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(60, 60, 67, 0.08)',
+    borderColor: '#E2E8F0',
   },
   feedbackTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    letterSpacing: -0.2,
-    color: '#000000',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1E293B',
     marginBottom: 12,
   },
   feedbackText: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#3C3C43',
-    fontWeight: '400',
-    letterSpacing: -0.2,
+    color: '#475569',
   },
   feedbackRow: {
     flexDirection: 'row',
@@ -1702,14 +1476,12 @@ const styles = StyleSheet.create({
     paddingLeft: 4,
   },
   feedbackTipRow: {
-    marginBottom: 6,
+    marginBottom: 8,
   },
   feedbackTipText: {
     fontSize: 15,
-    lineHeight: 21,
-    color: '#3C3C43',
-    fontWeight: '400',
-    letterSpacing: -0.2,
+    lineHeight: 22,
+    color: '#475569',
   },
   
   // Instruction Adherence Styles
@@ -1721,15 +1493,12 @@ const styles = StyleSheet.create({
   },
   adherenceScoreBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-    minWidth: 50,
-    alignItems: 'center',
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   adherenceScoreText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
-    letterSpacing: -0.2,
   },
   requirementsSection: {
     marginTop: 16,
@@ -1737,17 +1506,16 @@ const styles = StyleSheet.create({
   requirementsSectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#000000',
+    color: colors.text.primary,
     marginBottom: 12,
-    letterSpacing: -0.3,
   },
   requirementItem: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background.secondary,
     padding: 12,
     borderRadius: 8,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(60, 60, 67, 0.08)',
+    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.primary.main,
   },
   requirementHeader: {
     flexDirection: 'row',
@@ -1782,48 +1550,34 @@ const styles = StyleSheet.create({
   },
   missedSection: {
     marginTop: 16,
-    padding: 14,
-    backgroundColor: 'rgba(255, 149, 0, 0.1)',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 149, 0, 0.3)',
+    padding: 12,
+    backgroundColor: '#FFF4E6',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#F57F17',
   },
   missedTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FF9500',
-    marginBottom: 10,
-    letterSpacing: -0.2,
+    color: '#E65100',
+    marginBottom: 8,
   },
   missedText: {
     flex: 1,
-    fontSize: 15,
-    lineHeight: 21,
-    color: '#D17900',
-    fontWeight: '500',
-    letterSpacing: -0.1,
-  },
-  bulletPoint: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 6,
-  },
-  bullet: {
-    fontSize: 15,
-    color: '#D17900',
-    marginRight: 8,
-    fontWeight: '600',
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#E65100',
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     padding: 20,
     maxHeight: '80%',
   },
@@ -1834,10 +1588,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.5,
+    color: colors.text.primary,
   },
   modalSubtitle: {
     fontSize: 14,
@@ -1879,10 +1632,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   modalInput: {
-    borderWidth: 0.5,
-    borderColor: 'rgba(60, 60, 67, 0.18)',
-    borderRadius: 10,
-    backgroundColor: '#F2F2F7',
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    borderRadius: 8,
     padding: 12,
     fontSize: 14,
     color: colors.text.primary,
@@ -1923,70 +1675,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   // Coverage Percentage Section
-  coverageInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: 'rgba(60, 60, 67, 0.03)',
+  coveragePercentageSection: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#F9FAFB',
     borderRadius: 8,
-    marginTop: 12,
-    marginBottom: 12,
-    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    alignItems: 'center',
   },
-  coverageInlineLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#3C3C43',
-    letterSpacing: -0.2,
-  },
-  coverageInlineValue: {
-    fontSize: 17,
+  coveragePercentageLabel: {
+    fontSize: 12,
     fontWeight: '600',
-    letterSpacing: -0.4,
+    color: colors.text.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
-  coverageInlineHint: {
-    fontSize: 13,
-    color: '#8E8E93',
-    letterSpacing: -0.1,
-    marginLeft: 4,
+  coveragePercentageValue: {
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  coveragePercentageHint: {
+    fontSize: 12,
+    color: colors.text.secondary,
   },
   feedbackSubtext: {
     fontSize: 14,
     color: colors.text.secondary,
     lineHeight: 20,
-  },
-  // Full-screen Photo Modal
-  photoModalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-  },
-  photoModalOverlay: {
-    flex: 1,
-  },
-  photoModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  photoModalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
-  },
-  photoModalCloseButton: {
-    padding: 4,
-  },
-  photoModalImageContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photoModalImage: {
-    width: width,
-    height: height * 0.8,
   },
 });
