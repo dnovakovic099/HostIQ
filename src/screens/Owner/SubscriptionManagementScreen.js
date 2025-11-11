@@ -78,12 +78,27 @@ export default function SubscriptionManagementScreen({ navigation }) {
           text: 'Subscribe',
           onPress: async () => {
             try {
-              await api.post(`/subscriptions/properties/${propertyId}`);
+              // Step 1: Create payment intent (mock payment for now)
+              console.log(`💳 Creating payment intent for property ${propertyId}...`);
+              const paymentIntentResponse = await api.post(`/subscriptions/properties/${propertyId}/payment-intent`);
+              const { client_secret } = paymentIntentResponse.data;
+              
+              console.log(`💳 Payment intent created: ${client_secret}`);
+              
+              // Step 2: "Process payment" (in production, this would be Stripe Elements)
+              // For now, we immediately proceed with the mock payment intent
+              
+              // Step 3: Create subscription after "payment success"
+              console.log(`✅ Creating subscription with payment intent...`);
+              await api.post(`/subscriptions/properties/${propertyId}`, {
+                payment_intent_id: client_secret
+              });
+              
               Alert.alert('Success', 'Subscription activated!');
               loadData();
             } catch (error) {
               console.error('Subscribe error:', error);
-              Alert.alert('Error', error.response?.data?.error || 'Failed to subscribe');
+              Alert.alert('Error', error.response?.data?.message || error.response?.data?.error || 'Failed to subscribe');
             }
           },
         },
