@@ -5,11 +5,11 @@
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
+      "backgroundColor": "#0A1628"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -27,16 +27,16 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/app-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#0A1628"
       },
       "splash": {
         "image": "./assets/splash.png",
         "resizeMode": "contain",
-        "backgroundColor": "#FFFFFF",
+        "backgroundColor": "#0A1628",
         "dark": {
           "image": "./assets/splash.png",
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFFF"
+          "backgroundColor": "#0A1628"
         }
       },
       "package": "com.hostiq.app",

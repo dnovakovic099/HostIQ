@@ -38,7 +38,7 @@ export default function OwnerDashboardScreen({ navigation }) {
     React.useCallback(() => {
       const now = Date.now();
       const timeSinceLastFetch = now - lastFetchTime.current;
-      
+
       // Only fetch if more than 30 seconds have passed, or if it's the first load
       if (timeSinceLastFetch > 30000 || lastFetchTime.current === 0) {
         lastFetchTime.current = now;
@@ -52,20 +52,20 @@ export default function OwnerDashboardScreen({ navigation }) {
       const statsRes = await api.get('/owner/stats');
       const inspectionsRes = await api.get('/owner/inspections/recent?limit=5');
       const propertiesRes = await api.get('/owner/properties');
-      
+
       setStats({
         properties: Number(statsRes.data.properties) || 0,
         units: Number(statsRes.data.units) || 0,
         cleaners: Number(statsRes.data.cleaners) || 0,
         inspections_today: Number(statsRes.data.inspections_today) || 0,
       });
-      
+
       // Ensure inspections is an array with properly structured data
       const inspections = Array.isArray(inspectionsRes.data) ? inspectionsRes.data : [];
-      const validInspections = inspections.filter(inspection => 
-        inspection && 
-        inspection.unit && 
-        inspection.unit.property && 
+      const validInspections = inspections.filter(inspection =>
+        inspection &&
+        inspection.unit &&
+        inspection.unit.property &&
         inspection.creator
       );
       setRecentInspections(validInspections);
@@ -106,13 +106,13 @@ export default function OwnerDashboardScreen({ navigation }) {
     const status = inspection.status || 'UNKNOWN';
     const isReady = inspection.airbnb_grade_analysis?.guest_ready;
     const errorMsg = inspection.summary_json?.error || '';
-    
+
     // Check for app/technical failures
-    const isAppFailed = errorMsg.includes('blurred') || 
-                        errorMsg.includes('technical') || 
-                        errorMsg.includes('processing') ||
-                        errorMsg.includes('WRONG ROOM TYPE') ||
-                        errorMsg.includes('CRITICAL ERROR');
+    const isAppFailed = errorMsg.includes('blurred') ||
+      errorMsg.includes('technical') ||
+      errorMsg.includes('processing') ||
+      errorMsg.includes('WRONG ROOM TYPE') ||
+      errorMsg.includes('CRITICAL ERROR');
 
     if (status === 'FAILED' || isAppFailed) {
       return {
@@ -203,8 +203,8 @@ export default function OwnerDashboardScreen({ navigation }) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor="#007AFF"
           />
@@ -271,8 +271,8 @@ export default function OwnerDashboardScreen({ navigation }) {
                 </Text>
               </View>
               <Text style={styles.alertSubtext}>
-                {lowRatingProperties.length === 1 
-                  ? `${lowRatingProperties[0].name}: ${lowRatingProperties[0].rating}` 
+                {lowRatingProperties.length === 1
+                  ? `${lowRatingProperties[0].name}: ${lowRatingProperties[0].rating}`
                   : 'Ratings ≤ 4.7'}
               </Text>
               {lowRatingProperties.length > 1 && (
@@ -345,7 +345,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                     </View>
                     <View style={styles.headerRight}>
                       <View style={[styles.statusBadge, { backgroundColor: statusDisplay.color + '15' }]}>
-                        <Ionicons name={statusDisplay.icon} size={14} color={statusDisplay.color} />
+                        <View style={[styles.statusDot, { backgroundColor: statusDisplay.color }]} />
                         <Text style={[styles.statusText, { color: statusDisplay.color }]}>
                           {statusDisplay.label}
                         </Text>
@@ -404,7 +404,7 @@ export default function OwnerDashboardScreen({ navigation }) {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
-    </View>
+    </View >
   );
 }
 
@@ -458,16 +458,16 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 8,
     alignItems: 'center',
     borderWidth: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   actionIcon: {
     width: 44,
@@ -580,15 +580,15 @@ const styles = StyleSheet.create({
   },
   inspectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 0,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -620,10 +620,15 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   statusText: {
     fontSize: 12,

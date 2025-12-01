@@ -104,8 +104,8 @@ export default function UsageIndicator({ navigation, compact = false }) {
                 backgroundColor: isAtLimit
                   ? '#F44336'
                   : isNearLimit
-                  ? '#FF9800'
-                  : '#4A90E2',
+                    ? '#FF9800'
+                    : '#4A90E2',
               },
             ]}
           />

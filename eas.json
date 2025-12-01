@@ -21,6 +21,9 @@
         "simulator": false,
         "image": "latest"
       },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://roomify-server-production.up.railway.app/api"
       }
@@ -32,6 +35,10 @@
         "appleId": "dnovakovic21@gmail.com",
         "ascAppId": "6754794421",
         "appleTeamId": "48AXH55PRT"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal"
       }
     }
   }

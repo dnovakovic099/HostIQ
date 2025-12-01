@@ -29,7 +29,7 @@ export default function ListingOptimizationScreen({ navigation }) {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [propertyPickerVisible, setPropertyPickerVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Issues Section State
   const [issuesExpanded, setIssuesExpanded] = useState(false);
   const [issues, setIssues] = useState([]);
@@ -40,12 +40,12 @@ export default function ListingOptimizationScreen({ navigation }) {
   const [loadingIssues, setLoadingIssues] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [issueModalVisible, setIssueModalVisible] = useState(false);
-  
+
   // Pricing Analytics Section State
   const [pricingExpanded, setPricingExpanded] = useState(false);
   const [pricingData, setPricingData] = useState(null);
   const [loadingPricing, setLoadingPricing] = useState(false);
-  
+
   // Listing Optimization Section State
   const [optimizationExpanded, setOptimizationExpanded] = useState(false);
   const [showUrlModal, setShowUrlModal] = useState(false);
@@ -71,9 +71,9 @@ export default function ListingOptimizationScreen({ navigation }) {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      
+
       let allProperties = [];
-      
+
       // Fetch PMS properties (for Guest Issues & Pricing Analytics)
       try {
         const pmsResponse = await api.get('/issues/properties');
@@ -99,7 +99,7 @@ export default function ListingOptimizationScreen({ navigation }) {
       }
 
       setProperties(allProperties);
-      
+
       // Auto-select first PMS property if available, otherwise first property
       if (!selectedProperty && allProperties.length > 0) {
         const firstPMSProperty = allProperties.find(p => p.isPMSProperty);
@@ -115,7 +115,7 @@ export default function ListingOptimizationScreen({ navigation }) {
 
   const fetchIssues = async (propertyId) => {
     if (!propertyId) return;
-    
+
     try {
       setLoadingIssues(true);
       const response = await api.get(`/issues/${propertyId}`);
@@ -130,7 +130,7 @@ export default function ListingOptimizationScreen({ navigation }) {
 
   const fetchAnalytics = async (propertyId) => {
     if (!propertyId) return;
-    
+
     try {
       const response = await api.get(`/issues/${propertyId}/analytics?days=90`);
       setAnalytics(response.data);
@@ -141,7 +141,7 @@ export default function ListingOptimizationScreen({ navigation }) {
 
   const fetchPricingAnalytics = async (propertyId) => {
     if (!propertyId) return;
-    
+
     try {
       console.log('🔄 Fetching pricing analytics for property:', propertyId);
       setLoadingPricing(true);
@@ -154,7 +154,7 @@ export default function ListingOptimizationScreen({ navigation }) {
         }
       });
       console.log('💰 Pricing data received:', JSON.stringify(response.data, null, 2));
-      
+
       if (response.data && response.data.calendarAnalytics) {
         setPricingData(response.data);
       } else {
@@ -181,7 +181,7 @@ export default function ListingOptimizationScreen({ navigation }) {
         const { status, progress, message, results, error } = response.data;
 
         console.log(`Sync status: ${status} - ${progress}% - ${message || ''}`);
-        
+
         // Update status message
         setSyncStatus(message || 'Processing...');
 
@@ -243,11 +243,11 @@ export default function ListingOptimizationScreen({ navigation }) {
             try {
               setSyncing(true);
               setSyncStatus('Starting sync...');
-              
+
               const response = await api.post(`/issues/sync/${selectedProperty.id}`, {
                 daysBack: 90
               });
-              
+
               if (response.data.jobId) {
                 setSyncStatus('This may take a while. Checking progress every 30 seconds...');
                 // Start polling for status
@@ -271,7 +271,7 @@ export default function ListingOptimizationScreen({ navigation }) {
 
   const getFilteredProperties = () => {
     if (!searchQuery.trim()) return properties;
-    
+
     const query = searchQuery.toLowerCase();
     return properties.filter(property => {
       const name = (property.nickname || property.name || '').toLowerCase();
@@ -328,7 +328,7 @@ export default function ListingOptimizationScreen({ navigation }) {
     setSelectedProperty(property);
     setPropertyPickerVisible(false);
     setSearchQuery('');
-    
+
     // Reset states
     setIssues([]);
     setStats(null);
@@ -338,19 +338,19 @@ export default function ListingOptimizationScreen({ navigation }) {
     setAiAnalysis(null);
     setAiAnalysisDate(null);
     setAiFromCache(false);
-    
+
     // Fetch issues data
     fetchIssues(property.id);
     fetchAnalytics(property.id);
     fetchPricingAnalytics(property.id);
-    
+
     // Try to load existing listing optimization data
     try {
       const response = await api.get(`/airbnb/property/${property.id}`);
       if (response.data.success) {
         setListingData(response.data.data);
         setAirbnbUrl(response.data.airbnb_url || '');
-        
+
         // Try to load existing AI analysis
         try {
           const analysisResponse = await api.get(`/airbnb/ai-analysis/${property.id}`);
@@ -368,6 +368,9 @@ export default function ListingOptimizationScreen({ navigation }) {
     } catch (error) {
       if (error.response?.status === 404) {
         // No existing listing data, user can add URL later
+      } else if (error.response?.status === 403) {
+        // Permission denied or feature not available, silently skip
+        console.log('Listing data access denied (403)');
       } else {
         console.error('Error fetching listing data:', error);
       }
@@ -433,7 +436,7 @@ export default function ListingOptimizationScreen({ navigation }) {
 
         console.log('🔄 Re-fetching listing data from HasData API...');
         setFetchingData(true);
-        
+
         const fetchResponse = await api.post(`/airbnb/property/${selectedProperty.id}/fetch`, {
           airbnb_url: airbnbUrl
         });
@@ -442,7 +445,7 @@ export default function ListingOptimizationScreen({ navigation }) {
           setListingData(fetchResponse.data.data);
           console.log('✅ Fresh listing data fetched successfully');
         }
-        
+
         setFetchingData(false);
       }
 
@@ -455,14 +458,14 @@ export default function ListingOptimizationScreen({ navigation }) {
       const analysis = response.data.analysis;
       const fromCache = response.data.from_cache;
       const analyzedAt = response.data.analyzed_at;
-      
+
       console.log('AI Analysis received:', JSON.stringify(analysis, null, 2));
       console.log('From cache:', fromCache, 'Analyzed at:', analyzedAt);
-      
+
       setAiAnalysis(analysis);
       setAiAnalysisDate(analyzedAt);
       setAiFromCache(fromCache);
-      
+
       Alert.alert(
         'Success',
         forceRefresh ? 'Fresh data fetched and analyzed!' : 'AI analysis completed and saved!'
@@ -487,7 +490,7 @@ export default function ListingOptimizationScreen({ navigation }) {
         onPress={() => setPropertyPickerVisible(true)}
       >
         <Text style={styles.dropdownButtonText} numberOfLines={1}>
-          {selectedProperty 
+          {selectedProperty
             ? (selectedProperty.nickname || selectedProperty.name || 'Select Property')
             : 'Select Property'}
         </Text>
@@ -519,7 +522,7 @@ export default function ListingOptimizationScreen({ navigation }) {
               <Ionicons name="close" size={24} color="#1F2937" />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={20} color="#9CA3AF" />
             <TextInput
@@ -593,16 +596,16 @@ export default function ListingOptimizationScreen({ navigation }) {
               </View>
               {isSelected && (
                 <Ionicons name="checkmark-circle" size={20} color={colors.primary.main} />
-            )}
-          </TouchableOpacity>
-        );
-      })
+              )}
+            </TouchableOpacity>
+          );
+        })
       ) : (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No properties found. Please add a property first.</Text>
         </View>
       )}
-      
+
       {/* Inline Analyze Button */}
       {selectedProperty && listingData && (
         <View style={styles.analyzeContainer}>
@@ -669,7 +672,7 @@ export default function ListingOptimizationScreen({ navigation }) {
     const renderScoreBar = (score, maxScore = 5) => {
       const percentage = (score / maxScore) * 100;
       const color = score >= 4 ? colors.accent.success : score >= 3 ? colors.accent.warning : colors.accent.error;
-      
+
       return (
         <View style={styles.scoreContainer}>
           <Text style={styles.scoreNumber}>{score}/{maxScore}</Text>
@@ -693,10 +696,10 @@ export default function ListingOptimizationScreen({ navigation }) {
               <Ionicons name="text" size={20} color={colors.primary.main} />
               <Text style={styles.analysisHeaderTitle}>Title Optimization</Text>
             </View>
-            <Ionicons 
-              name={titleExpanded ? "chevron-up" : "chevron-down"} 
-              size={20} 
-              color={colors.text.secondary} 
+            <Ionicons
+              name={titleExpanded ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={colors.text.secondary}
             />
           </TouchableOpacity>
 
@@ -761,10 +764,10 @@ export default function ListingOptimizationScreen({ navigation }) {
               <Ionicons name="images" size={20} color={colors.primary.main} />
               <Text style={styles.analysisHeaderTitle}>Photo Gallery</Text>
             </View>
-            <Ionicons 
-              name={imagesExpanded ? "chevron-up" : "chevron-down"} 
-              size={20} 
-              color={colors.text.secondary} 
+            <Ionicons
+              name={imagesExpanded ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={colors.text.secondary}
             />
           </TouchableOpacity>
 
@@ -802,8 +805,8 @@ export default function ListingOptimizationScreen({ navigation }) {
               {aiAnalysis.photos.recommended_order && aiAnalysis.photos.recommended_order.length > 0 && (
                 <View style={styles.subsection}>
                   <Text style={styles.subsectionTitle}>Recommended Photo Order:</Text>
-                  <ScrollView 
-                    horizontal 
+                  <ScrollView
+                    horizontal
                     showsHorizontalScrollIndicator={false}
                     style={styles.photoScrollView}
                   >
@@ -811,15 +814,15 @@ export default function ListingOptimizationScreen({ navigation }) {
                       const property = listingData?.property || listingData;
                       const photos = property?.photos || [];
                       const photoUrl = photos[photoObj.index_from_input];
-                      
+
                       return (
                         <View key={idx} style={styles.photoOrderCard}>
                           <View style={styles.photoOrderBadge}>
                             <Text style={styles.photoOrderBadgeText}>{idx + 1}</Text>
                           </View>
                           {photoUrl ? (
-                            <Image 
-                              source={{ uri: photoUrl }} 
+                            <Image
+                              source={{ uri: photoUrl }}
                               style={styles.photoOrderImage}
                               resizeMode="cover"
                             />
@@ -868,10 +871,10 @@ export default function ListingOptimizationScreen({ navigation }) {
               <Ionicons name="document-text" size={20} color={colors.primary.main} />
               <Text style={styles.analysisHeaderTitle}>Description Optimization</Text>
             </View>
-            <Ionicons 
-              name={descriptionAIExpanded ? "chevron-up" : "chevron-down"} 
-              size={20} 
-              color={colors.text.secondary} 
+            <Ionicons
+              name={descriptionAIExpanded ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={colors.text.secondary}
             />
           </TouchableOpacity>
 
@@ -1044,15 +1047,15 @@ export default function ListingOptimizationScreen({ navigation }) {
                 Property Photos ({photos.length})
               </Text>
             </View>
-            <ScrollView 
-              horizontal 
+            <ScrollView
+              horizontal
               showsHorizontalScrollIndicator={false}
               style={styles.photosScroll}
               contentContainerStyle={styles.photosContent}
             >
               {photos.map((photoUrl, index) => (
-                <TouchableOpacity 
-                  key={index} 
+                <TouchableOpacity
+                  key={index}
                   style={styles.photoContainer}
                   activeOpacity={0.8}
                 >
@@ -1074,15 +1077,15 @@ export default function ListingOptimizationScreen({ navigation }) {
         {/* Description Card */}
         {description && (
           <View style={styles.dataCard}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.collapsibleHeader}
               onPress={() => setDescriptionExpanded(!descriptionExpanded)}
             >
               <Text style={[styles.cardTitle, { marginBottom: 0 }]}>Description</Text>
-              <Ionicons 
-                name={descriptionExpanded ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color={colors.text.secondary} 
+              <Ionicons
+                name={descriptionExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={colors.text.secondary}
               />
             </TouchableOpacity>
             {descriptionExpanded && (
@@ -1100,10 +1103,10 @@ export default function ListingOptimizationScreen({ navigation }) {
             <View style={styles.safetyList}>
               {safetyAndPropertyInfo.map((item, index) => (
                 <View key={index} style={styles.safetyItem}>
-                  <Ionicons 
-                    name={item.type.includes('NO_') ? 'alert-circle' : 'shield-checkmark'} 
-                    size={16} 
-                    color={item.type.includes('NO_') ? colors.accent.warning : colors.accent.info} 
+                  <Ionicons
+                    name={item.type.includes('NO_') ? 'alert-circle' : 'shield-checkmark'}
+                    size={16}
+                    color={item.type.includes('NO_') ? colors.accent.warning : colors.accent.info}
                   />
                   <View style={styles.safetyTextContainer}>
                     <Text style={styles.safetyTitle}>{item.title}</Text>
@@ -1120,7 +1123,7 @@ export default function ListingOptimizationScreen({ navigation }) {
         {/* Collapsible Amenities Section */}
         {availableAmenities.length > 0 && (
           <View style={styles.dataCard}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.amenitiesHeader}
               onPress={() => setAmenitiesExpanded(!amenitiesExpanded)}
               activeOpacity={0.7}
@@ -1131,13 +1134,13 @@ export default function ListingOptimizationScreen({ navigation }) {
                   Amenities ({availableAmenities.length})
                 </Text>
               </View>
-              <Ionicons 
-                name={amenitiesExpanded ? "chevron-up" : "chevron-down"} 
-                size={24} 
-                color={colors.text.secondary} 
+              <Ionicons
+                name={amenitiesExpanded ? "chevron-up" : "chevron-down"}
+                size={24}
+                color={colors.text.secondary}
               />
             </TouchableOpacity>
-            
+
             {amenitiesExpanded && (
               <View style={styles.amenitiesList}>
                 {availableAmenities.map((amenity, index) => (
@@ -1161,13 +1164,13 @@ export default function ListingOptimizationScreen({ navigation }) {
       animationType="fade"
       onRequestClose={() => setShowUrlModal(false)}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.modalOverlay}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={() => setShowUrlModal(false)}
         >
           <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
@@ -1259,7 +1262,7 @@ export default function ListingOptimizationScreen({ navigation }) {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Property Dropdown Selector */}
         {renderPropertyDropdown()}
-        
+
         {selectedProperty && (
           <>
             {/* Guest Issues Section */}
@@ -1277,10 +1280,10 @@ export default function ListingOptimizationScreen({ navigation }) {
                     </View>
                   )}
                 </View>
-                <Ionicons 
-                  name={issuesExpanded ? "chevron-up" : "chevron-down"} 
-                  size={24} 
-                  color="#6B7280" 
+                <Ionicons
+                  name={issuesExpanded ? "chevron-up" : "chevron-down"}
+                  size={24}
+                  color="#6B7280"
                 />
               </TouchableOpacity>
 
@@ -1293,13 +1296,13 @@ export default function ListingOptimizationScreen({ navigation }) {
                         <Text style={styles.statLabel}>Total</Text>
                       </View>
                       <View style={styles.statItem}>
-                        <Text style={[styles.statNumber, {color: '#EF4444'}]}>
+                        <Text style={[styles.statNumber, { color: '#EF4444' }]}>
                           {stats.bySeverity?.BLOCKER || 0}
                         </Text>
                         <Text style={styles.statLabel}>Blockers</Text>
                       </View>
                       <View style={styles.statItem}>
-                        <Text style={[styles.statNumber, {color: '#10B981'}]}>
+                        <Text style={[styles.statNumber, { color: '#10B981' }]}>
                           {stats.byStatus?.RESOLVED || 0}
                         </Text>
                         <Text style={styles.statLabel}>Resolved</Text>
@@ -1375,7 +1378,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                   )}
 
                   {loadingIssues ? (
-                    <ActivityIndicator size="large" color={colors.primary.main} style={{marginTop: 20}} />
+                    <ActivityIndicator size="large" color={colors.primary.main} style={{ marginTop: 20 }} />
                   ) : issues.length > 0 ? (
                     issues.slice(0, 5).map((issue) => (
                       <TouchableOpacity
@@ -1393,11 +1396,11 @@ export default function ListingOptimizationScreen({ navigation }) {
                               size={14}
                               color={getSeverityColor(issue.severity)}
                             />
-                            <Text style={[styles.severityText, {color: getSeverityColor(issue.severity)}]}>
+                            <Text style={[styles.severityText, { color: getSeverityColor(issue.severity) }]}>
                               {issue.severity}
                             </Text>
                           </View>
-                          <View style={[styles.statusBadge, {backgroundColor: getStatusColor(issue.status)}]}>
+                          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(issue.status) }]}>
                             <Text style={styles.statusText}>{issue.status}</Text>
                           </View>
                         </View>
@@ -1430,17 +1433,17 @@ export default function ListingOptimizationScreen({ navigation }) {
                   <Ionicons name="cash-outline" size={24} color="#10B981" />
                   <Text style={styles.sectionHeaderTitle}>Pricing Analytics</Text>
                 </View>
-                <Ionicons 
-                  name={pricingExpanded ? "chevron-up" : "chevron-down"} 
-                  size={24} 
-                  color="#6B7280" 
+                <Ionicons
+                  name={pricingExpanded ? "chevron-up" : "chevron-down"}
+                  size={24}
+                  color="#6B7280"
                 />
               </TouchableOpacity>
 
               {pricingExpanded && (
                 <View style={styles.sectionContent}>
                   {loadingPricing ? (
-                    <ActivityIndicator size="large" color={colors.primary.main} style={{marginTop: 20}} />
+                    <ActivityIndicator size="large" color={colors.primary.main} style={{ marginTop: 20 }} />
                   ) : pricingData && pricingData.calendarAnalytics ? (
                     <>
                       {/* ACTUAL PERFORMANCE (Reservations) */}
@@ -1481,7 +1484,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                               data.count > 0 && (
                                 <View key={day} style={styles.pricingRow}>
                                   <Text style={styles.pricingDay}>{day}</Text>
-                                  <View style={{alignItems: 'flex-end'}}>
+                                  <View style={{ alignItems: 'flex-end' }}>
                                     <Text style={styles.pricingValue}>${data.average.toFixed(2)}</Text>
                                     <Text style={styles.pricingCount}>({data.count} nights)</Text>
                                   </View>
@@ -1501,7 +1504,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                             {pricingData.reservationAnalytics.monthly.byMonth.slice(0, 6).map((month) => (
                               <View key={`${month.year}-${month.monthNumber}`} style={styles.monthlyRow}>
                                 <Text style={styles.pricingDay}>{month.month}</Text>
-                                <View style={{alignItems: 'flex-end'}}>
+                                <View style={{ alignItems: 'flex-end' }}>
                                   <Text style={styles.pricingValue}>${month.adr.toFixed(2)} ADR</Text>
                                   <Text style={styles.occupancyText}>{month.occupancy}% occupancy</Text>
                                 </View>
@@ -1544,7 +1547,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                         {pricingData.calendarAnalytics.monthly.byMonth.slice(0, 6).map((month) => (
                           <View key={`${month.year}-${month.monthNumber}`} style={styles.monthlyRow}>
                             <Text style={styles.pricingDay}>{month.month}</Text>
-                            <View style={{alignItems: 'flex-end'}}>
+                            <View style={{ alignItems: 'flex-end' }}>
                               <Text style={styles.pricingValue}>${month.averagePrice.toFixed(2)} ADR</Text>
                               <Text style={styles.occupancyText}>{month.occupancy}% occupancy</Text>
                             </View>
@@ -1589,10 +1592,10 @@ export default function ListingOptimizationScreen({ navigation }) {
                     <Ionicons name="bulb" size={24} color="#F59E0B" />
                     <Text style={styles.sectionHeaderTitle}>Listing Optimization</Text>
                   </View>
-                  <Ionicons 
-                    name={optimizationExpanded ? "chevron-up" : "chevron-down"} 
-                    size={24} 
-                    color="#6B7280" 
+                  <Ionicons
+                    name={optimizationExpanded ? "chevron-up" : "chevron-down"}
+                    size={24}
+                    color="#6B7280"
                   />
                 </TouchableOpacity>
 
@@ -1633,7 +1636,7 @@ export default function ListingOptimizationScreen({ navigation }) {
 
       {renderPropertyPickerModal()}
       {renderUrlModal()}
-      
+
       {/* Issue Detail Modal */}
       <Modal
         visible={issueModalVisible}
@@ -1660,11 +1663,11 @@ export default function ListingOptimizationScreen({ navigation }) {
                         size={16}
                         color={getSeverityColor(selectedIssue.severity)}
                       />
-                      <Text style={[styles.severityText, {color: getSeverityColor(selectedIssue.severity)}]}>
+                      <Text style={[styles.severityText, { color: getSeverityColor(selectedIssue.severity) }]}>
                         {selectedIssue.severity}
                       </Text>
                     </View>
-                    <View style={[styles.statusBadge, {backgroundColor: getStatusColor(selectedIssue.status)}]}>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(selectedIssue.status) }]}>
                       <Text style={styles.statusText}>{selectedIssue.status}</Text>
                     </View>
                   </View>
@@ -1682,7 +1685,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                 {selectedIssue.status === 'DETECTED' && (
                   <View style={styles.issueModalActions}>
                     <TouchableOpacity
-                      style={[styles.issueModalButton, {backgroundColor: '#10B981'}]}
+                      style={[styles.issueModalButton, { backgroundColor: '#10B981' }]}
                       onPress={() => {
                         updateIssueStatus(selectedIssue.id, 'RESOLVED');
                         setIssueModalVisible(false);
@@ -1693,7 +1696,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[styles.issueModalButton, {backgroundColor: '#6B7280'}]}
+                      style={[styles.issueModalButton, { backgroundColor: '#6B7280' }]}
                       onPress={() => {
                         updateIssueStatus(selectedIssue.id, 'FALSE_POSITIVE');
                         setIssueModalVisible(false);
