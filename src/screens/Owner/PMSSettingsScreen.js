@@ -74,23 +74,62 @@ export default function PMSSettingsScreen({ navigation }) {
     }
   };
 
+  const [syncStatus, setSyncStatus] = useState(null);
+
   const handleSync = async (integrationId) => {
     try {
       setSyncing(true);
+      setSyncStatus('Starting sync...');
+      
+      // Start background sync
       const response = await api.post(`/pms/${integrationId}/sync`);
       
-      if (response.data.success) {
+      if (response.data.success && response.data.jobId) {
+        const jobId = response.data.jobId;
+        
+        // Poll for status
+        const pollInterval = setInterval(async () => {
+          try {
+            const statusResponse = await api.get(`/pms/sync-status/${jobId}`);
+            const status = statusResponse.data;
+            
+            setSyncStatus(status.message || 'Syncing...');
+            
+            if (status.status === 'completed') {
+              clearInterval(pollInterval);
+              setSyncing(false);
+              setSyncStatus(null);
         Alert.alert(
           'Sync Complete',
-          `Successfully synced ${response.data.synced} listings`
+                `Synced ${status.total} listings with ${status.airbnbUrlsFound} Airbnb URLs`
         );
         await fetchIntegrations();
+            } else if (status.status === 'failed') {
+              clearInterval(pollInterval);
+              setSyncing(false);
+              setSyncStatus(null);
+              Alert.alert('Sync Failed', status.message);
+            }
+          } catch (pollError) {
+            console.error('Poll error:', pollError);
+          }
+        }, 2000); // Poll every 2 seconds
+        
+        // Timeout after 10 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          if (syncing) {
+            setSyncing(false);
+            setSyncStatus(null);
+            Alert.alert('Sync Running', 'Sync is still running in background. Check back later.');
+          }
+        }, 600000);
       }
     } catch (error) {
       console.error('Sync error:', error);
-      Alert.alert('Error', error.response?.data?.error || 'Failed to sync listings');
-    } finally {
+      Alert.alert('Error', error.response?.data?.error || 'Failed to start sync');
       setSyncing(false);
+      setSyncStatus(null);
     }
   };
 
@@ -257,7 +296,12 @@ export default function PMSSettingsScreen({ navigation }) {
               disabled={syncing}
             >
               {syncing ? (
+                <>
                 <ActivityIndicator color={colors.primary} size="small" />
+                  {syncStatus && (
+                    <Text style={styles.syncStatusText}>{syncStatus}</Text>
+                  )}
+                </>
               ) : (
                 <>
                   <Ionicons name="sync" size={20} color={colors.primary} />
@@ -476,6 +520,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#6366F1',
     marginLeft: spacing.xs,
+  },
+  syncStatusText: {
+    fontSize: 12,
+    color: '#6366F1',
+    marginLeft: spacing.xs,
+    flex: 1,
   },
 });
 

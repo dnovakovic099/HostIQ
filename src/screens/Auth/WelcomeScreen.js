@@ -299,9 +299,9 @@ export default function WelcomeScreen({ navigation }) {
       {/* Floating Particles - Removed */}
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.content}>
-          {/* Logo Section */}
-          <View style={styles.logoSection}>
+      <View style={styles.content}>
+        {/* Logo Section */}
+        <View style={styles.logoSection}>
             {/* Logo */}
             <Animated.View
               style={{
@@ -314,13 +314,13 @@ export default function WelcomeScreen({ navigation }) {
               }}
             >
               <Animated.Image 
-                source={require('../../../assets/logo.png')} 
+            source={require('../../../assets/logo.png')} 
                 style={[
                   styles.logo,
                   { tintColor: logoTintColor },
                 ]}
-                resizeMode="contain"
-              />
+            resizeMode="contain"
+          />
             </Animated.View>
             
             <Animated.Text
@@ -360,12 +360,12 @@ export default function WelcomeScreen({ navigation }) {
             >
               Start your Short Term Rental AI Journey.
             </Animated.Text>
-          </View>
+        </View>
 
-          <View style={styles.spacer} />
+        <View style={styles.spacer} />
 
           {/* Bottom Buttons - Dark Theme */}
-          <View style={styles.buttonContainer}>
+        <View style={styles.buttonContainer}>
             <Animated.View
               style={{
                 opacity: loginButtonOpacity,
@@ -374,7 +374,7 @@ export default function WelcomeScreen({ navigation }) {
                 ],
               }}
             >
-              <TouchableOpacity
+          <TouchableOpacity
                 style={styles.loginButtonWrapper}
                 onPress={() => navigation.navigate('Login')}
                 activeOpacity={0.85}
@@ -383,11 +383,11 @@ export default function WelcomeScreen({ navigation }) {
                   colors={['#3B82F6', '#2563EB']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={styles.loginButton}
-                >
-                  <Text style={styles.loginButtonText}>Log in</Text>
+            style={styles.loginButton}
+          >
+            <Text style={styles.loginButtonText}>Log in</Text>
                 </LinearGradient>
-              </TouchableOpacity>
+          </TouchableOpacity>
             </Animated.View>
 
             <Animated.View
@@ -398,20 +398,20 @@ export default function WelcomeScreen({ navigation }) {
                 ],
               }}
             >
-              <TouchableOpacity
+          <TouchableOpacity
                 style={styles.signupButtonWrapper}
-                onPress={() => navigation.navigate('Register')}
+            onPress={() => navigation.navigate('Register')}
                 activeOpacity={0.85}
-              >
+          >
                 <View style={styles.signupButton}>
-                  <Text style={styles.signupButtonText}>Sign up</Text>
+            <Text style={styles.signupButtonText}>Sign up</Text>
                 </View>
-              </TouchableOpacity>
+          </TouchableOpacity>
             </Animated.View>
           </View>
         </View>
       </SafeAreaView>
-    </View>
+      </View>
   );
 }
 

@@ -10,6 +10,7 @@ import PropertiesScreen from '../screens/Owner/PropertiesScreen';
 import PropertyDetailScreen from '../screens/Owner/PropertyDetailScreen';
 import CreatePropertyScreen from '../screens/Owner/CreatePropertyScreen';
 import ListingOptimizationScreen from '../screens/Owner/ListingOptimizationScreen';
+import PricingScreen from '../screens/Owner/PricingScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -90,6 +91,39 @@ function InsightsStack() {
   );
 }
 
+// Pricing Stack
+function PricingStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#FFFFFF',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 0.5 },
+          shadowOpacity: 0.1,
+          shadowRadius: 0,
+          elevation: 1,
+          borderBottomWidth: 0.5,
+          borderBottomColor: '#E5E5EA',
+        },
+        headerTintColor: '#007AFF',
+        headerTitleStyle: {
+          fontWeight: '600',
+          fontSize: 17,
+          color: '#1D1D1F',
+        },
+        headerBackTitleVisible: false,
+      }}
+    >
+      <Stack.Screen 
+        name="PricingAnalysis" 
+        component={PricingScreen}
+        options={{ title: 'Market Analysis' }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function MainTabs() {
   const { user } = useAuthStore();
   const isCleaner = user?.role === 'CLEANER';
@@ -107,6 +141,8 @@ export default function MainTabs() {
             iconName = focused ? 'clipboard' : 'clipboard-outline';
           } else if (route.name === 'Properties') {
             iconName = focused ? 'business' : 'business-outline';
+          } else if (route.name === 'Pricing') {
+            iconName = focused ? 'pricetag' : 'pricetag-outline';
           } else if (route.name === 'Insights') {
             iconName = focused ? 'bar-chart' : 'bar-chart-outline';
           } else if (route.name === 'Settings') {
@@ -139,6 +175,11 @@ export default function MainTabs() {
             name="Properties" 
             component={PropertiesStack}
             options={{ title: 'Properties' }}
+          />
+          <Tab.Screen 
+            name="Pricing" 
+            component={PricingStack}
+            options={{ title: 'Pricing' }}
           />
           <Tab.Screen 
             name="Insights" 

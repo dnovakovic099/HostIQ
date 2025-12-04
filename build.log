@@ -1,0 +1,905 @@
+env: load .env
+env: export EXPO_PUBLIC_API_URL
+› Skipping dev server
+› Building app...
+Starting a Gradle Daemon, 1 busy and 1 incompatible Daemons could not be reused, use --status for details
+Configuration on demand is an incubating feature.
+> Task :gradle-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:compileJava NO-SOURCE
+> Task :gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :gradle-plugin:processResources UP-TO-DATE
+> Task :gradle-plugin:classes UP-TO-DATE
+> Task :gradle-plugin:jar UP-TO-DATE
+> Task :gradle-plugin:inspectClassesForKotlinIC UP-TO-DATE
+
+> Configure project :expo
+
+Using expo modules
+  - [32mexpo-application[0m (5.3.1)
+  - [32mexpo-blur[0m (12.4.1)
+  - [32mexpo-camera[0m (13.4.4)
+  - [32mexpo-constants[0m (14.4.2)
+  - [32mexpo-document-picker[0m (11.5.4)
+  - [32mexpo-file-system[0m (15.4.5)
+  - [32mexpo-font[0m (11.4.0)
+  - [32mexpo-image-loader[0m (4.3.0)
+  - [32mexpo-image-manipulator[0m (11.3.0)
+  - [32mexpo-image-picker[0m (14.3.2)
+  - [32mexpo-keep-awake[0m (12.3.0)
+  - [32mexpo-linear-gradient[0m (12.3.0)
+  - [32mexpo-local-authentication[0m (13.4.1)
+  - [32mexpo-modules-core[0m (1.5.13)
+  - [32mexpo-modules-core$android-annotation[0m (1.5.13)
+  - [32mexpo-modules-core$android-annotation-processor[0m (1.5.13)
+  - [32mexpo-secure-store[0m (12.3.1)
+  - [32mexpo-splash-screen[0m (0.20.5)
+
+
+The Kotlin Gradle plugin was loaded multiple times in different subprojects, which is not supported and may break the build. 
+This might happen in subprojects that apply the Kotlin plugins with the Gradle 'plugins { ... }' DSL if they specify explicit versions, even if the versions are equal.
+Please add the Kotlin plugin to the common parent project or the root project, then remove the versions in the subprojects.
+If the parent project does not need the plugin, add 'apply false' to the plugin line.
+See: https://docs.gradle.org/current/userguide/plugins.html#sec:subprojects_plugins_dsl
+The Kotlin plugin was loaded in the following projects: ':expo', ':expo-modules-core', ':react-native-gesture-handler', ':react-native-iap', ...
+
+> Task :app:buildCodegenCLI SKIPPED
+> Task :app:generateCodegenSchemaFromJavaScript SKIPPED
+> Task :app:generateCodegenArtifactsFromSchema SKIPPED
+> Task :app:generatePackageList
+> Task :app:preBuild
+> Task :app:preDebugBuild
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :expo-modules-core$android-annotation:compileKotlin UP-TO-DATE
+> Task :expo-modules-core$android-annotation:compileJava NO-SOURCE
+> Task :expo-modules-core$android-annotation:processResources NO-SOURCE
+> Task :expo-modules-core$android-annotation:classes UP-TO-DATE
+> Task :expo-modules-core$android-annotation:jar UP-TO-DATE
+> Task :expo-modules-core$android-annotation:inspectClassesForKotlinIC UP-TO-DATE
+> Task :expo-modules-core$android-annotation-processor:compileKotlin UP-TO-DATE
+> Task :expo-modules-core$android-annotation-processor:compileJava NO-SOURCE
+> Task :expo-modules-core$android-annotation-processor:processResources UP-TO-DATE
+> Task :expo-modules-core$android-annotation-processor:classes UP-TO-DATE
+> Task :expo-modules-core$android-annotation-processor:jar UP-TO-DATE
+> Task :expo-modules-core$android-annotation-processor:inspectClassesForKotlinIC UP-TO-DATE
+> Task :expo:generateExpoModulesPackageList
+> Task :expo:preBuild
+> Task :expo:preDebugBuild
+> Task :expo-application:preBuild UP-TO-DATE
+> Task :expo-application:preDebugBuild UP-TO-DATE
+> Task :expo-modules-core:preBuild UP-TO-DATE
+> Task :expo-modules-core:preDebugBuild UP-TO-DATE
+> Task :expo-modules-core:compileDebugAidl NO-SOURCE
+> Task :expo-application:compileDebugAidl NO-SOURCE
+> Task :expo-blur:preBuild UP-TO-DATE
+> Task :expo-blur:preDebugBuild UP-TO-DATE
+> Task :expo-blur:compileDebugAidl NO-SOURCE
+> Task :expo-camera:preBuild UP-TO-DATE
+> Task :expo-camera:preDebugBuild UP-TO-DATE
+> Task :expo-camera:compileDebugAidl NO-SOURCE
+> Task :expo-constants:preBuild UP-TO-DATE
+> Task :expo-constants:preDebugBuild UP-TO-DATE
+> Task :expo-constants:compileDebugAidl NO-SOURCE
+> Task :expo-document-picker:preBuild UP-TO-DATE
+> Task :expo-document-picker:preDebugBuild UP-TO-DATE
+> Task :expo-document-picker:compileDebugAidl NO-SOURCE
+> Task :expo-file-system:preBuild UP-TO-DATE
+> Task :expo-file-system:preDebugBuild UP-TO-DATE
+> Task :expo-file-system:compileDebugAidl NO-SOURCE
+> Task :expo-font:preBuild UP-TO-DATE
+> Task :expo-font:preDebugBuild UP-TO-DATE
+> Task :expo-font:compileDebugAidl NO-SOURCE
+> Task :expo-image-loader:preBuild UP-TO-DATE
+> Task :expo-image-loader:preDebugBuild UP-TO-DATE
+> Task :expo-image-loader:compileDebugAidl NO-SOURCE
+> Task :expo-image-manipulator:preBuild UP-TO-DATE
+> Task :expo-image-manipulator:preDebugBuild UP-TO-DATE
+> Task :expo-image-manipulator:compileDebugAidl NO-SOURCE
+> Task :expo-image-picker:preBuild UP-TO-DATE
+> Task :expo-image-picker:preDebugBuild UP-TO-DATE
+> Task :expo-image-picker:compileDebugAidl NO-SOURCE
+> Task :expo-keep-awake:preBuild UP-TO-DATE
+> Task :expo-keep-awake:preDebugBuild UP-TO-DATE
+> Task :expo-keep-awake:compileDebugAidl NO-SOURCE
+> Task :expo-linear-gradient:preBuild UP-TO-DATE
+> Task :expo-linear-gradient:preDebugBuild UP-TO-DATE
+> Task :expo-linear-gradient:compileDebugAidl NO-SOURCE
+> Task :expo-local-authentication:preBuild UP-TO-DATE
+> Task :expo-local-authentication:preDebugBuild UP-TO-DATE
+> Task :expo-local-authentication:compileDebugAidl NO-SOURCE
+> Task :expo-secure-store:preBuild UP-TO-DATE
+> Task :expo-secure-store:preDebugBuild UP-TO-DATE
+> Task :expo-secure-store:compileDebugAidl NO-SOURCE
+> Task :expo-splash-screen:preBuild UP-TO-DATE
+> Task :expo-splash-screen:preDebugBuild UP-TO-DATE
+> Task :expo-splash-screen:compileDebugAidl NO-SOURCE
+> Task :expo:compileDebugAidl NO-SOURCE
+> Task :react-native-async-storage_async-storage:preBuild UP-TO-DATE
+> Task :react-native-async-storage_async-storage:preDebugBuild UP-TO-DATE
+> Task :react-native-async-storage_async-storage:compileDebugAidl NO-SOURCE
+> Task :react-native-community_datetimepicker:preBuild UP-TO-DATE
+> Task :react-native-community_datetimepicker:preDebugBuild UP-TO-DATE
+> Task :react-native-community_datetimepicker:compileDebugAidl NO-SOURCE
+> Task :react-native-gesture-handler:assertNoMultipleInstances
+> Task :react-native-gesture-handler:preBuild
+> Task :react-native-gesture-handler:preDebugBuild
+> Task :react-native-gesture-handler:compileDebugAidl NO-SOURCE
+> Task :react-native-iap:preBuild UP-TO-DATE
+> Task :react-native-iap:prePlayDebugBuild UP-TO-DATE
+> Task :react-native-iap:compilePlayDebugAidl NO-SOURCE
+> Task :react-native-picker_picker:preBuild UP-TO-DATE
+> Task :react-native-picker_picker:preDebugBuild UP-TO-DATE
+> Task :react-native-picker_picker:compileDebugAidl NO-SOURCE
+> Task :react-native-safe-area-context:preBuild UP-TO-DATE
+> Task :react-native-safe-area-context:preDebugBuild UP-TO-DATE
+> Task :react-native-safe-area-context:compileDebugAidl NO-SOURCE
+> Task :react-native-screens:preBuild UP-TO-DATE
+> Task :react-native-screens:preDebugBuild UP-TO-DATE
+> Task :react-native-screens:compileDebugAidl NO-SOURCE
+> Task :react-native-webview:preBuild UP-TO-DATE
+> Task :react-native-webview:preDebugBuild UP-TO-DATE
+> Task :react-native-webview:compileDebugAidl NO-SOURCE
+> Task :app:compileDebugAidl NO-SOURCE
+> Task :expo:packageDebugRenderscript NO-SOURCE
+> Task :expo-application:packageDebugRenderscript NO-SOURCE
+> Task :expo-blur:packageDebugRenderscript NO-SOURCE
+> Task :expo-camera:packageDebugRenderscript NO-SOURCE
+> Task :expo-constants:packageDebugRenderscript NO-SOURCE
+> Task :expo-document-picker:packageDebugRenderscript NO-SOURCE
+> Task :expo-file-system:packageDebugRenderscript NO-SOURCE
+> Task :expo-font:packageDebugRenderscript NO-SOURCE
+> Task :expo-image-loader:packageDebugRenderscript NO-SOURCE
+> Task :expo-image-manipulator:packageDebugRenderscript NO-SOURCE
+> Task :expo-image-picker:packageDebugRenderscript NO-SOURCE
+> Task :expo-keep-awake:packageDebugRenderscript NO-SOURCE
+> Task :expo-linear-gradient:packageDebugRenderscript NO-SOURCE
+> Task :expo-local-authentication:packageDebugRenderscript NO-SOURCE
+> Task :expo-modules-core:packageDebugRenderscript NO-SOURCE
+> Task :expo-secure-store:packageDebugRenderscript NO-SOURCE
+> Task :expo-splash-screen:packageDebugRenderscript NO-SOURCE
+> Task :react-native-async-storage_async-storage:packageDebugRenderscript NO-SOURCE
+> Task :react-native-community_datetimepicker:packageDebugRenderscript NO-SOURCE
+> Task :react-native-gesture-handler:packageDebugRenderscript NO-SOURCE
+> Task :react-native-iap:packagePlayDebugRenderscript NO-SOURCE
+> Task :react-native-picker_picker:packageDebugRenderscript NO-SOURCE
+> Task :react-native-safe-area-context:packageDebugRenderscript NO-SOURCE
+> Task :react-native-screens:packageDebugRenderscript NO-SOURCE
+> Task :react-native-webview:packageDebugRenderscript NO-SOURCE
+> Task :app:compileDebugRenderscript NO-SOURCE
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :expo:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-application:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-blur:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-camera:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-constants:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-document-picker:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-file-system:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-font:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-image-loader:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-image-manipulator:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-image-picker:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-keep-awake:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-linear-gradient:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-local-authentication:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-modules-core:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-secure-store:writeDebugAarMetadata UP-TO-DATE
+> Task :expo-splash-screen:writeDebugAarMetadata UP-TO-DATE
+> Task :react-native-async-storage_async-storage:writeDebugAarMetadata UP-TO-DATE
+> Task :react-native-community_datetimepicker:writeDebugAarMetadata UP-TO-DATE
+> Task :react-native-gesture-handler:writeDebugAarMetadata UP-TO-DATE
+> Task :react-native-iap:writePlayDebugAarMetadata UP-TO-DATE
+> Task :react-native-picker_picker:writeDebugAarMetadata UP-TO-DATE
+> Task :react-native-safe-area-context:writeDebugAarMetadata UP-TO-DATE
+> Task :react-native-screens:writeDebugAarMetadata UP-TO-DATE
+> Task :react-native-webview:writeDebugAarMetadata UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :expo:compileDebugRenderscript NO-SOURCE
+> Task :expo:generateDebugResValues UP-TO-DATE
+> Task :expo:generateDebugResources UP-TO-DATE
+> Task :expo:packageDebugResources UP-TO-DATE
+> Task :expo-application:compileDebugRenderscript NO-SOURCE
+> Task :expo-application:generateDebugResValues UP-TO-DATE
+> Task :expo-application:generateDebugResources UP-TO-DATE
+> Task :expo-application:packageDebugResources UP-TO-DATE
+> Task :expo-blur:compileDebugRenderscript NO-SOURCE
+> Task :expo-blur:generateDebugResValues UP-TO-DATE
+> Task :expo-blur:generateDebugResources UP-TO-DATE
+> Task :expo-blur:packageDebugResources UP-TO-DATE
+> Task :expo-camera:compileDebugRenderscript NO-SOURCE
+> Task :expo-camera:generateDebugResValues UP-TO-DATE
+> Task :expo-camera:generateDebugResources UP-TO-DATE
+> Task :expo-camera:packageDebugResources UP-TO-DATE
+> Task :expo-constants:compileDebugRenderscript NO-SOURCE
+> Task :expo-constants:generateDebugResValues UP-TO-DATE
+> Task :expo-constants:generateDebugResources UP-TO-DATE
+> Task :expo-constants:packageDebugResources UP-TO-DATE
+> Task :expo-document-picker:compileDebugRenderscript NO-SOURCE
+> Task :expo-document-picker:generateDebugResValues UP-TO-DATE
+> Task :expo-document-picker:generateDebugResources UP-TO-DATE
+> Task :expo-document-picker:packageDebugResources UP-TO-DATE
+> Task :expo-file-system:compileDebugRenderscript NO-SOURCE
+> Task :expo-file-system:generateDebugResValues UP-TO-DATE
+> Task :expo-file-system:generateDebugResources UP-TO-DATE
+> Task :expo-file-system:packageDebugResources UP-TO-DATE
+> Task :expo-font:compileDebugRenderscript NO-SOURCE
+> Task :expo-font:generateDebugResValues UP-TO-DATE
+> Task :expo-font:generateDebugResources UP-TO-DATE
+> Task :expo-font:packageDebugResources UP-TO-DATE
+> Task :expo-image-loader:compileDebugRenderscript NO-SOURCE
+> Task :expo-image-loader:generateDebugResValues UP-TO-DATE
+> Task :expo-image-loader:generateDebugResources UP-TO-DATE
+> Task :expo-image-loader:packageDebugResources UP-TO-DATE
+> Task :expo-image-manipulator:compileDebugRenderscript NO-SOURCE
+> Task :expo-image-manipulator:generateDebugResValues UP-TO-DATE
+> Task :expo-image-manipulator:generateDebugResources UP-TO-DATE
+> Task :expo-image-manipulator:packageDebugResources UP-TO-DATE
+> Task :expo-image-picker:compileDebugRenderscript NO-SOURCE
+> Task :expo-image-picker:generateDebugResValues UP-TO-DATE
+> Task :expo-image-picker:generateDebugResources UP-TO-DATE
+> Task :expo-image-picker:packageDebugResources UP-TO-DATE
+> Task :expo-keep-awake:compileDebugRenderscript NO-SOURCE
+> Task :expo-keep-awake:generateDebugResValues UP-TO-DATE
+> Task :expo-keep-awake:generateDebugResources UP-TO-DATE
+> Task :expo-keep-awake:packageDebugResources UP-TO-DATE
+> Task :expo-linear-gradient:compileDebugRenderscript NO-SOURCE
+> Task :expo-linear-gradient:generateDebugResValues UP-TO-DATE
+> Task :expo-linear-gradient:generateDebugResources UP-TO-DATE
+> Task :expo-linear-gradient:packageDebugResources UP-TO-DATE
+> Task :expo-local-authentication:compileDebugRenderscript NO-SOURCE
+> Task :expo-local-authentication:generateDebugResValues UP-TO-DATE
+> Task :expo-local-authentication:generateDebugResources UP-TO-DATE
+> Task :expo-local-authentication:packageDebugResources UP-TO-DATE
+> Task :expo-modules-core:compileDebugRenderscript NO-SOURCE
+> Task :expo-modules-core:generateDebugResValues UP-TO-DATE
+> Task :expo-modules-core:generateDebugResources UP-TO-DATE
+> Task :expo-modules-core:packageDebugResources UP-TO-DATE
+> Task :expo-secure-store:compileDebugRenderscript NO-SOURCE
+> Task :expo-secure-store:generateDebugResValues UP-TO-DATE
+> Task :expo-secure-store:generateDebugResources UP-TO-DATE
+> Task :expo-secure-store:packageDebugResources UP-TO-DATE
+> Task :expo-splash-screen:compileDebugRenderscript NO-SOURCE
+> Task :expo-splash-screen:generateDebugResValues UP-TO-DATE
+> Task :expo-splash-screen:generateDebugResources UP-TO-DATE
+> Task :expo-splash-screen:packageDebugResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:compileDebugRenderscript NO-SOURCE
+> Task :react-native-async-storage_async-storage:generateDebugResValues UP-TO-DATE
+> Task :react-native-async-storage_async-storage:generateDebugResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:packageDebugResources UP-TO-DATE
+> Task :react-native-community_datetimepicker:compileDebugRenderscript NO-SOURCE
+> Task :react-native-community_datetimepicker:generateDebugResValues UP-TO-DATE
+> Task :react-native-community_datetimepicker:generateDebugResources UP-TO-DATE
+> Task :react-native-community_datetimepicker:packageDebugResources UP-TO-DATE
+> Task :react-native-gesture-handler:compileDebugRenderscript NO-SOURCE
+> Task :react-native-gesture-handler:generateDebugResValues UP-TO-DATE
+> Task :react-native-gesture-handler:generateDebugResources UP-TO-DATE
+> Task :react-native-gesture-handler:packageDebugResources UP-TO-DATE
+> Task :react-native-iap:compilePlayDebugRenderscript NO-SOURCE
+> Task :react-native-iap:generatePlayDebugResValues UP-TO-DATE
+> Task :react-native-iap:generatePlayDebugResources UP-TO-DATE
+> Task :react-native-iap:packagePlayDebugResources UP-TO-DATE
+> Task :react-native-picker_picker:compileDebugRenderscript NO-SOURCE
+> Task :react-native-picker_picker:generateDebugResValues UP-TO-DATE
+> Task :react-native-picker_picker:generateDebugResources UP-TO-DATE
+> Task :react-native-picker_picker:packageDebugResources UP-TO-DATE
+> Task :react-native-safe-area-context:compileDebugRenderscript NO-SOURCE
+> Task :react-native-safe-area-context:generateDebugResValues UP-TO-DATE
+> Task :react-native-safe-area-context:generateDebugResources UP-TO-DATE
+> Task :react-native-safe-area-context:packageDebugResources UP-TO-DATE
+> Task :react-native-screens:compileDebugRenderscript NO-SOURCE
+> Task :react-native-screens:generateDebugResValues UP-TO-DATE
+> Task :react-native-screens:generateDebugResources UP-TO-DATE
+> Task :react-native-screens:packageDebugResources UP-TO-DATE
+> Task :react-native-webview:compileDebugRenderscript NO-SOURCE
+> Task :react-native-webview:generateDebugResValues UP-TO-DATE
+> Task :react-native-webview:generateDebugResources UP-TO-DATE
+> Task :react-native-webview:packageDebugResources UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :expo:extractDeepLinksDebug UP-TO-DATE
+> Task :expo:processDebugManifest UP-TO-DATE
+> Task :expo-application:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-application:processDebugManifest UP-TO-DATE
+> Task :expo-blur:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-blur:processDebugManifest UP-TO-DATE
+> Task :expo-camera:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-camera:processDebugManifest UP-TO-DATE
+> Task :expo-constants:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-constants:processDebugManifest UP-TO-DATE
+> Task :expo-document-picker:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-document-picker:processDebugManifest UP-TO-DATE
+> Task :expo-file-system:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-file-system:processDebugManifest UP-TO-DATE
+> Task :expo-font:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-font:processDebugManifest UP-TO-DATE
+> Task :expo-image-loader:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-image-loader:processDebugManifest UP-TO-DATE
+> Task :expo-image-manipulator:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-image-manipulator:processDebugManifest UP-TO-DATE
+> Task :expo-image-picker:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-image-picker:processDebugManifest UP-TO-DATE
+> Task :expo-keep-awake:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-keep-awake:processDebugManifest UP-TO-DATE
+> Task :expo-linear-gradient:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-linear-gradient:processDebugManifest UP-TO-DATE
+> Task :expo-local-authentication:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-local-authentication:processDebugManifest UP-TO-DATE
+> Task :expo-modules-core:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-modules-core:processDebugManifest UP-TO-DATE
+> Task :expo-secure-store:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-secure-store:processDebugManifest UP-TO-DATE
+> Task :expo-splash-screen:extractDeepLinksDebug UP-TO-DATE
+> Task :expo-splash-screen:processDebugManifest UP-TO-DATE
+> Task :react-native-async-storage_async-storage:extractDeepLinksDebug UP-TO-DATE
+> Task :react-native-async-storage_async-storage:processDebugManifest UP-TO-DATE
+> Task :react-native-community_datetimepicker:extractDeepLinksDebug UP-TO-DATE
+> Task :react-native-community_datetimepicker:processDebugManifest UP-TO-DATE
+> Task :react-native-gesture-handler:extractDeepLinksDebug UP-TO-DATE
+> Task :react-native-gesture-handler:processDebugManifest UP-TO-DATE
+> Task :react-native-iap:extractDeepLinksPlayDebug UP-TO-DATE
+> Task :react-native-iap:processPlayDebugManifest UP-TO-DATE
+> Task :react-native-picker_picker:extractDeepLinksDebug UP-TO-DATE
+> Task :react-native-picker_picker:processDebugManifest UP-TO-DATE
+> Task :react-native-safe-area-context:extractDeepLinksDebug UP-TO-DATE
+> Task :react-native-safe-area-context:processDebugManifest UP-TO-DATE
+> Task :react-native-screens:extractDeepLinksDebug UP-TO-DATE
+> Task :react-native-screens:processDebugManifest UP-TO-DATE
+> Task :react-native-webview:extractDeepLinksDebug UP-TO-DATE
+> Task :react-native-webview:processDebugManifest UP-TO-DATE
+
+> Task :app:processDebugMainManifest
+/Users/darkonovakovic/software/roomify/mobile/android/app/src/debug/AndroidManifest.xml:6:5-162 Warning:
+	application@android:usesCleartextTraffic was tagged at AndroidManifest.xml:6 to replace other declarations but no other declaration present
+/Users/darkonovakovic/software/roomify/mobile/android/app/src/debug/AndroidManifest.xml:21:9-30:20 Warning:
+	provider#expo.modules.filesystem.FileSystemFileProvider@android:authorities was tagged at AndroidManifest.xml:21 to replace other declarations but no other declaration present
+
+> Task :app:processDebugManifest
+> Task :expo:compileDebugLibraryResources
+> Task :expo:parseDebugLocalResources UP-TO-DATE
+> Task :expo-application:parseDebugLocalResources UP-TO-DATE
+> Task :expo-modules-core:parseDebugLocalResources UP-TO-DATE
+> Task :expo-modules-core:generateDebugRFile FROM-CACHE
+> Task :expo-blur:parseDebugLocalResources UP-TO-DATE
+> Task :expo-application:generateDebugRFile
+> Task :expo-camera:parseDebugLocalResources UP-TO-DATE
+> Task :expo-blur:generateDebugRFile
+> Task :expo-constants:parseDebugLocalResources UP-TO-DATE
+> Task :expo-document-picker:parseDebugLocalResources UP-TO-DATE
+> Task :expo-file-system:parseDebugLocalResources UP-TO-DATE
+> Task :expo-font:parseDebugLocalResources UP-TO-DATE
+> Task :expo-image-loader:parseDebugLocalResources UP-TO-DATE
+> Task :expo-constants:generateDebugRFile
+> Task :expo-document-picker:generateDebugRFile
+> Task :expo-font:generateDebugRFile
+> Task :expo-file-system:generateDebugRFile
+> Task :expo-camera:generateDebugRFile
+> Task :expo-image-manipulator:parseDebugLocalResources UP-TO-DATE
+> Task :expo-image-picker:parseDebugLocalResources UP-TO-DATE
+> Task :expo-image-loader:generateDebugRFile
+> Task :expo-image-manipulator:generateDebugRFile
+> Task :expo-keep-awake:parseDebugLocalResources UP-TO-DATE
+> Task :expo-linear-gradient:parseDebugLocalResources UP-TO-DATE
+> Task :expo-local-authentication:parseDebugLocalResources UP-TO-DATE
+> Task :expo-keep-awake:generateDebugRFile
+> Task :expo-linear-gradient:generateDebugRFile
+> Task :expo-image-picker:generateDebugRFile
+> Task :expo-secure-store:parseDebugLocalResources UP-TO-DATE
+> Task :expo-local-authentication:generateDebugRFile
+> Task :expo-splash-screen:parseDebugLocalResources UP-TO-DATE
+> Task :expo-application:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-blur:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-camera:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-constants:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-document-picker:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-file-system:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-font:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-image-loader:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-image-manipulator:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-image-picker:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-keep-awake:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-linear-gradient:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-local-authentication:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-modules-core:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-secure-store:compileDebugLibraryResources UP-TO-DATE
+> Task :expo-splash-screen:compileDebugLibraryResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:compileDebugLibraryResources UP-TO-DATE
+> Task :react-native-async-storage_async-storage:parseDebugLocalResources UP-TO-DATE
+> Task :expo-secure-store:generateDebugRFile
+> Task :expo-splash-screen:generateDebugRFile
+> Task :react-native-async-storage_async-storage:generateDebugRFile UP-TO-DATE
+> Task :react-native-community_datetimepicker:compileDebugLibraryResources
+> Task :react-native-gesture-handler:compileDebugLibraryResources FROM-CACHE
+> Task :react-native-gesture-handler:parseDebugLocalResources FROM-CACHE
+> Task :react-native-iap:compilePlayDebugLibraryResources FROM-CACHE
+> Task :react-native-iap:parsePlayDebugLocalResources FROM-CACHE
+> Task :react-native-gesture-handler:generateDebugRFile
+> Task :react-native-community_datetimepicker:parseDebugLocalResources
+> Task :expo:generateDebugRFile
+> Task :react-native-community_datetimepicker:generateDebugRFile UP-TO-DATE
+> Task :react-native-safe-area-context:compileDebugLibraryResources FROM-CACHE
+> Task :react-native-safe-area-context:parseDebugLocalResources FROM-CACHE
+> Task :react-native-picker_picker:parseDebugLocalResources
+> Task :react-native-iap:generatePlayDebugRFile
+> Task :react-native-screens:parseDebugLocalResources
+> Task :react-native-safe-area-context:generateDebugRFile
+> Task :react-native-picker_picker:generateDebugRFile
+> Task :react-native-webview:parseDebugLocalResources
+> Task :react-native-webview:compileDebugLibraryResources
+> Task :react-native-picker_picker:compileDebugLibraryResources
+> Task :react-native-screens:compileDebugLibraryResources
+> Task :react-native-screens:generateDebugRFile
+> Task :expo:generateDebugBuildConfig
+> Task :expo-application:generateDebugBuildConfig
+> Task :expo-modules-core:generateDebugBuildConfig
+> Task :react-native-webview:generateDebugRFile
+> Task :expo-modules-core:javaPreCompileDebug FROM-CACHE
+> Task :expo-application:javaPreCompileDebug FROM-CACHE
+> Task :expo-blur:generateDebugBuildConfig
+> Task :expo-blur:javaPreCompileDebug FROM-CACHE
+> Task :expo-camera:generateDebugBuildConfig
+> Task :expo-camera:javaPreCompileDebug FROM-CACHE
+> Task :expo-constants:generateDebugBuildConfig
+> Task :expo-constants:javaPreCompileDebug FROM-CACHE
+> Task :expo-document-picker:generateDebugBuildConfig
+> Task :expo-document-picker:javaPreCompileDebug FROM-CACHE
+> Task :expo-file-system:generateDebugBuildConfig
+> Task :expo-file-system:javaPreCompileDebug FROM-CACHE
+> Task :expo-font:generateDebugBuildConfig
+> Task :expo-font:javaPreCompileDebug FROM-CACHE
+> Task :expo-image-loader:generateDebugBuildConfig
+> Task :expo-image-loader:javaPreCompileDebug FROM-CACHE
+> Task :expo-image-manipulator:generateDebugBuildConfig
+> Task :expo-image-manipulator:javaPreCompileDebug FROM-CACHE
+> Task :expo-image-picker:generateDebugBuildConfig
+> Task :expo-image-picker:javaPreCompileDebug FROM-CACHE
+> Task :expo-keep-awake:generateDebugBuildConfig
+> Task :expo-keep-awake:javaPreCompileDebug FROM-CACHE
+> Task :expo-linear-gradient:generateDebugBuildConfig
+> Task :expo-linear-gradient:javaPreCompileDebug FROM-CACHE
+> Task :expo-local-authentication:generateDebugBuildConfig
+> Task :expo-local-authentication:javaPreCompileDebug FROM-CACHE
+> Task :expo-secure-store:generateDebugBuildConfig
+> Task :expo-secure-store:javaPreCompileDebug FROM-CACHE
+> Task :expo-splash-screen:generateDebugBuildConfig
+> Task :expo-splash-screen:javaPreCompileDebug FROM-CACHE
+> Task :expo:javaPreCompileDebug FROM-CACHE
+> Task :react-native-async-storage_async-storage:generateDebugBuildConfig
+> Task :react-native-async-storage_async-storage:javaPreCompileDebug FROM-CACHE
+
+> Task :react-native-async-storage_async-storage:compileDebugJavaWithJavac
+Note: /Users/darkonovakovic/software/roomify/mobile/node_modules/@react-native-async-storage/async-storage/android/src/main/java/com/reactnativecommunity/asyncstorage/AsyncStorageModule.java uses or overrides a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: /Users/darkonovakovic/software/roomify/mobile/node_modules/@react-native-async-storage/async-storage/android/src/main/java/com/reactnativecommunity/asyncstorage/AsyncStoragePackage.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.
+
+> Task :react-native-community_datetimepicker:generateDebugBuildConfig
+> Task :react-native-community_datetimepicker:javaPreCompileDebug FROM-CACHE
+> Task :react-native-async-storage_async-storage:bundleLibCompileToJarDebug
+
+> Task :react-native-community_datetimepicker:compileDebugJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :react-native-community_datetimepicker:bundleLibCompileToJarDebug
+> Task :react-native-gesture-handler:generateDebugBuildConfig
+> Task :react-native-gesture-handler:javaPreCompileDebug FROM-CACHE
+> Task :react-native-iap:generatePlayDebugBuildConfig
+> Task :react-native-iap:javaPreCompilePlayDebug FROM-CACHE
+> Task :react-native-picker_picker:generateDebugBuildConfig
+> Task :react-native-picker_picker:javaPreCompileDebug FROM-CACHE
+
+> Task :react-native-picker_picker:compileDebugJavaWithJavac
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+
+> Task :react-native-picker_picker:bundleLibCompileToJarDebug
+> Task :react-native-safe-area-context:generateDebugBuildConfig
+> Task :react-native-safe-area-context:javaPreCompileDebug FROM-CACHE
+> Task :react-native-screens:generateDebugBuildConfig
+> Task :react-native-screens:javaPreCompileDebug FROM-CACHE
+> Task :react-native-webview:generateDebugBuildConfig
+> Task :react-native-webview:javaPreCompileDebug FROM-CACHE
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :expo:mergeDebugShaders FROM-CACHE
+> Task :expo:compileDebugShaders NO-SOURCE
+> Task :expo:generateDebugAssets UP-TO-DATE
+> Task :expo:packageDebugAssets FROM-CACHE
+> Task :expo-application:mergeDebugShaders FROM-CACHE
+> Task :expo-application:compileDebugShaders NO-SOURCE
+> Task :expo-application:generateDebugAssets UP-TO-DATE
+> Task :expo-application:packageDebugAssets FROM-CACHE
+> Task :expo-blur:mergeDebugShaders FROM-CACHE
+> Task :expo-blur:compileDebugShaders NO-SOURCE
+> Task :expo-blur:generateDebugAssets UP-TO-DATE
+> Task :expo-blur:packageDebugAssets FROM-CACHE
+> Task :expo-camera:mergeDebugShaders FROM-CACHE
+> Task :expo-camera:compileDebugShaders NO-SOURCE
+> Task :expo-camera:generateDebugAssets UP-TO-DATE
+> Task :expo-camera:packageDebugAssets FROM-CACHE
+> Task :expo-constants:mergeDebugShaders FROM-CACHE
+> Task :expo-constants:compileDebugShaders NO-SOURCE
+> Task :expo-constants:createDebugExpoConfig
+> Task :expo-constants:copyDebugExpoConfig
+> Task :expo-constants:generateDebugAssets UP-TO-DATE
+> Task :expo-constants:packageDebugAssets
+> Task :expo-document-picker:mergeDebugShaders FROM-CACHE
+> Task :expo-document-picker:compileDebugShaders NO-SOURCE
+> Task :expo-document-picker:generateDebugAssets UP-TO-DATE
+> Task :expo-document-picker:packageDebugAssets FROM-CACHE
+> Task :expo-file-system:mergeDebugShaders FROM-CACHE
+> Task :expo-file-system:compileDebugShaders NO-SOURCE
+> Task :expo-file-system:generateDebugAssets UP-TO-DATE
+> Task :expo-file-system:packageDebugAssets FROM-CACHE
+> Task :expo-font:mergeDebugShaders FROM-CACHE
+> Task :expo-font:compileDebugShaders NO-SOURCE
+> Task :expo-font:generateDebugAssets UP-TO-DATE
+> Task :expo-font:packageDebugAssets FROM-CACHE
+> Task :expo-image-loader:mergeDebugShaders FROM-CACHE
+> Task :expo-image-loader:compileDebugShaders NO-SOURCE
+> Task :expo-image-loader:generateDebugAssets UP-TO-DATE
+> Task :expo-image-loader:packageDebugAssets FROM-CACHE
+> Task :expo-image-manipulator:mergeDebugShaders FROM-CACHE
+> Task :expo-image-manipulator:compileDebugShaders NO-SOURCE
+> Task :expo-image-manipulator:generateDebugAssets UP-TO-DATE
+> Task :expo-image-manipulator:packageDebugAssets FROM-CACHE
+> Task :expo-image-picker:mergeDebugShaders FROM-CACHE
+> Task :expo-image-picker:compileDebugShaders NO-SOURCE
+> Task :expo-image-picker:generateDebugAssets UP-TO-DATE
+> Task :expo-image-picker:packageDebugAssets FROM-CACHE
+> Task :expo-keep-awake:mergeDebugShaders FROM-CACHE
+> Task :expo-keep-awake:compileDebugShaders NO-SOURCE
+> Task :expo-keep-awake:generateDebugAssets UP-TO-DATE
+> Task :expo-keep-awake:packageDebugAssets FROM-CACHE
+> Task :expo-linear-gradient:mergeDebugShaders FROM-CACHE
+> Task :expo-linear-gradient:compileDebugShaders NO-SOURCE
+> Task :expo-linear-gradient:generateDebugAssets UP-TO-DATE
+> Task :expo-linear-gradient:packageDebugAssets FROM-CACHE
+> Task :expo-local-authentication:mergeDebugShaders FROM-CACHE
+> Task :expo-local-authentication:compileDebugShaders NO-SOURCE
+> Task :expo-local-authentication:generateDebugAssets UP-TO-DATE
+> Task :expo-local-authentication:packageDebugAssets FROM-CACHE
+> Task :expo-modules-core:mergeDebugShaders FROM-CACHE
+> Task :expo-modules-core:compileDebugShaders NO-SOURCE
+> Task :expo-modules-core:generateDebugAssets UP-TO-DATE
+> Task :expo-modules-core:packageDebugAssets FROM-CACHE
+> Task :expo-secure-store:mergeDebugShaders FROM-CACHE
+> Task :expo-secure-store:compileDebugShaders NO-SOURCE
+> Task :expo-secure-store:generateDebugAssets UP-TO-DATE
+> Task :expo-secure-store:packageDebugAssets FROM-CACHE
+> Task :expo-splash-screen:mergeDebugShaders FROM-CACHE
+> Task :expo-splash-screen:compileDebugShaders NO-SOURCE
+> Task :expo-splash-screen:generateDebugAssets UP-TO-DATE
+> Task :expo-splash-screen:packageDebugAssets FROM-CACHE
+> Task :react-native-async-storage_async-storage:mergeDebugShaders FROM-CACHE
+> Task :react-native-async-storage_async-storage:compileDebugShaders NO-SOURCE
+> Task :react-native-async-storage_async-storage:generateDebugAssets UP-TO-DATE
+> Task :react-native-async-storage_async-storage:packageDebugAssets FROM-CACHE
+> Task :react-native-community_datetimepicker:mergeDebugShaders FROM-CACHE
+> Task :react-native-community_datetimepicker:compileDebugShaders NO-SOURCE
+> Task :react-native-community_datetimepicker:generateDebugAssets UP-TO-DATE
+> Task :react-native-community_datetimepicker:packageDebugAssets FROM-CACHE
+> Task :react-native-gesture-handler:mergeDebugShaders FROM-CACHE
+> Task :react-native-gesture-handler:compileDebugShaders NO-SOURCE
+> Task :react-native-gesture-handler:generateDebugAssets UP-TO-DATE
+> Task :react-native-gesture-handler:packageDebugAssets FROM-CACHE
+> Task :react-native-iap:mergePlayDebugShaders FROM-CACHE
+> Task :react-native-iap:compilePlayDebugShaders NO-SOURCE
+> Task :react-native-iap:generatePlayDebugAssets UP-TO-DATE
+> Task :react-native-iap:packagePlayDebugAssets FROM-CACHE
+> Task :react-native-picker_picker:mergeDebugShaders FROM-CACHE
+> Task :react-native-picker_picker:compileDebugShaders NO-SOURCE
+> Task :react-native-picker_picker:generateDebugAssets UP-TO-DATE
+> Task :react-native-picker_picker:packageDebugAssets FROM-CACHE
+> Task :react-native-safe-area-context:mergeDebugShaders FROM-CACHE
+> Task :react-native-safe-area-context:compileDebugShaders NO-SOURCE
+> Task :react-native-safe-area-context:generateDebugAssets UP-TO-DATE
+> Task :react-native-safe-area-context:packageDebugAssets FROM-CACHE
+> Task :react-native-screens:mergeDebugShaders FROM-CACHE
+> Task :react-native-screens:compileDebugShaders NO-SOURCE
+> Task :react-native-screens:generateDebugAssets UP-TO-DATE
+> Task :react-native-screens:packageDebugAssets FROM-CACHE
+> Task :react-native-webview:mergeDebugShaders FROM-CACHE
+> Task :react-native-webview:compileDebugShaders NO-SOURCE
+> Task :react-native-webview:generateDebugAssets UP-TO-DATE
+> Task :react-native-webview:packageDebugAssets FROM-CACHE
+> Task :app:mergeDebugAssets
+> Task :app:processDebugJavaRes NO-SOURCE
+> Task :expo:processDebugJavaRes NO-SOURCE
+> Task :expo-application:processDebugJavaRes NO-SOURCE
+> Task :expo-blur:processDebugJavaRes NO-SOURCE
+> Task :expo-camera:processDebugJavaRes NO-SOURCE
+> Task :app:compressDebugAssets
+> Task :expo-constants:cleanupDebugExpoConfig
+> Task :expo-constants:processDebugJavaRes NO-SOURCE
+> Task :expo-document-picker:processDebugJavaRes NO-SOURCE
+> Task :expo-file-system:processDebugJavaRes NO-SOURCE
+> Task :expo-font:processDebugJavaRes NO-SOURCE
+> Task :expo-image-loader:processDebugJavaRes NO-SOURCE
+> Task :expo-image-manipulator:processDebugJavaRes NO-SOURCE
+> Task :expo-image-picker:processDebugJavaRes NO-SOURCE
+> Task :expo-keep-awake:processDebugJavaRes NO-SOURCE
+> Task :expo-linear-gradient:processDebugJavaRes NO-SOURCE
+> Task :expo-local-authentication:processDebugJavaRes NO-SOURCE
+> Task :expo-modules-core:processDebugJavaRes NO-SOURCE
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources UP-TO-DATE
+> Task :expo-secure-store:processDebugJavaRes NO-SOURCE
+> Task :expo-splash-screen:processDebugJavaRes NO-SOURCE
+> Task :react-native-async-storage_async-storage:processDebugJavaRes NO-SOURCE
+> Task :react-native-async-storage_async-storage:bundleLibResDebug NO-SOURCE
+> Task :react-native-community_datetimepicker:processDebugJavaRes NO-SOURCE
+> Task :react-native-community_datetimepicker:bundleLibResDebug NO-SOURCE
+> Task :react-native-gesture-handler:processDebugJavaRes NO-SOURCE
+> Task :react-native-iap:processPlayDebugJavaRes NO-SOURCE
+> Task :react-native-picker_picker:processDebugJavaRes NO-SOURCE
+> Task :react-native-picker_picker:bundleLibResDebug NO-SOURCE
+> Task :react-native-safe-area-context:processDebugJavaRes NO-SOURCE
+> Task :react-native-screens:processDebugJavaRes NO-SOURCE
+> Task :react-native-webview:processDebugJavaRes NO-SOURCE
+
+> Task :react-native-gesture-handler:compileDebugKotlin
+'compileDebugJavaWithJavac' task (current target is 11) and 'compileDebugKotlin' task (current target is 17) jvm target compatibility should be set to the same Java version.
+Consider using JVM toolchain: https://kotl.in/gradle/jvm/toolchain
+
+
+> Task :app:checkDebugDuplicateClasses
+
+> Task :react-native-iap:compilePlayDebugKotlin
+'compilePlayDebugJavaWithJavac' task (current target is 11) and 'compilePlayDebugKotlin' task (current target is 17) jvm target compatibility should be set to the same Java version.
+Consider using JVM toolchain: https://kotl.in/gradle/jvm/toolchain
+
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapActivityListener.kt:11:30 Parameter 'activity' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:45:89 'enablePendingPurchases(): BillingClient.Builder' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:194:77 Parameter 'outToken' is never used, could be renamed to _
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:255:40 Unnecessary safe call on a non-null receiver of type String
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:421:27 'queryPurchaseHistoryAsync(QueryPurchaseHistoryParams, PurchaseHistoryResponseListener): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:504:55 Unnecessary safe call on a non-null receiver of type String
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:518:25 Name shadowed: replacementMode
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:551:9 Parameter 'developerPayLoad' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:566:67 There is more than one label with such a name in this scope
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:582:9 Parameter 'developerPayLoad' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:699:21 Parameter 'eventName' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/src/play/java/com/dooboolab/rniap/RNIapModule.kt:704:25 Parameter 'count' is never used
+
+> Task :react-native-iap:compilePlayDebugKotlin FAILED
+> Task :app:desugarDebugFileDependencies
+
+> Task :react-native-safe-area-context:compileDebugKotlin
+'compileDebugJavaWithJavac' task (current target is 11) and 'compileDebugKotlin' task (current target is 17) jvm target compatibility should be set to the same Java version.
+Consider using JVM toolchain: https://kotl.in/gradle/jvm/toolchain
+
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-safe-area-context/android/src/main/java/com/th3rdwave/safeareacontext/SafeAreaView.kt:58:23 'getter for uiImplementation: UIImplementation!' is deprecated. Deprecated in Java
+
+> Task :react-native-webview:compileDebugKotlin FAILED
+'compileDebugJavaWithJavac' task (current target is 11) and 'compileDebugKotlin' task (current target is 17) jvm target compatibility should be set to the same Java version.
+Consider using JVM toolchain: https://kotl.in/gradle/jvm/toolchain
+
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:40:71 Parameter 'webView' is never used, could be renamed to _
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:80:18 'setter for allowFileAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:92:102 Parameter 'contentLength' is never used, could be renamed to _
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:109:32 Variable 'urlObj' initializer is redundant
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:123:21 'allowScanningByMediaScanner(): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:160:36 'setter for systemUiVisibility: Int' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:330:15 Condition 'args == null' is always 'false'
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:339:34 Condition 'args != null' is always 'true'
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:357:23 'setter for allowUniversalAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:413:51 Unchecked cast: Any! to HashMap<String, String>
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:466:23 'setter for savePassword: Boolean' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:467:23 'setter for saveFormData: Boolean' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:519:23 'setter for allowFileAccessFromFileURLs: Boolean' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:603:53 Unchecked cast: ArrayList<Any!> to List<Map<String, String>>
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:620:23 'setter for saveFormData: Boolean' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/RNCWebViewManagerImpl.kt:649:36 Parameter 'view' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopCustomMenuSelectionEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopCustomMenuSelectionEvent.kt:11:3 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopCustomMenuSelectionEvent.kt:22:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopCustomMenuSelectionEvent.kt:23:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopHttpErrorEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopHttpErrorEvent.kt:11:3 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopHttpErrorEvent.kt:22:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopHttpErrorEvent.kt:23:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingErrorEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingErrorEvent.kt:11:3 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingErrorEvent.kt:22:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingErrorEvent.kt:23:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingFinishEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingFinishEvent.kt:11:3 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingFinishEvent.kt:22:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingFinishEvent.kt:23:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingProgressEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingProgressEvent.kt:11:3 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingProgressEvent.kt:22:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingProgressEvent.kt:23:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingStartEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingStartEvent.kt:11:3 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingStartEvent.kt:22:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopLoadingStartEvent.kt:23:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopMessageEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopMessageEvent.kt:10:75 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopMessageEvent.kt:21:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopMessageEvent.kt:22:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopRenderProcessGoneEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopRenderProcessGoneEvent.kt:12:3 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopRenderProcessGoneEvent.kt:23:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopRenderProcessGoneEvent.kt:24:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopShouldStartLoadWithRequestEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopShouldStartLoadWithRequestEvent.kt:10:89 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopShouldStartLoadWithRequestEvent.kt:27:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/src/main/java/com/reactnativecommunity/webview/events/TopShouldStartLoadWithRequestEvent.kt:28:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+
+> Task :react-native-screens:compileDebugKotlin
+'compileDebugJavaWithJavac' task (current target is 11) and 'compileDebugKotlin' task (current target is 17) jvm target compatibility should be set to the same Java version.
+Consider using JVM toolchain: https://kotl.in/gradle/jvm/toolchain
+
+
+> Task :react-native-gesture-handler:compileDebugKotlin
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/noreanimated/src/main/java/com/swmansion/gesturehandler/ReanimatedEventDispatcher.kt:7:31 Parameter 'event' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/noreanimated/src/main/java/com/swmansion/gesturehandler/ReanimatedEventDispatcher.kt:7:41 Parameter 'reactApplicationContext' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/core/GestureHandler.kt:755:11 Name shadowed: size
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerEnabledRootView.kt:9:51 Unreachable code
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerEnabledRootView.kt:10:80 Unreachable code
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerRootHelper.kt:77:18 'onChildStartedNativeGesture(MotionEvent!): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerRootHelper.kt:82:42 Parameter 'disallowIntercept' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerRootHelper.kt:114:28 Parameter 'viewTag' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerTouchEvent.kt:7:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerTouchEvent.kt:14:11 'init(Int): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerTouchEvent.kt:30:42 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-gesture-handler/android/src/main/java/com/swmansion/gesturehandler/react/RNGestureHandlerTouchEvent.kt:31:21 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+
+> Task :react-native-screens:compileDebugKotlin
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/Screen.kt:77:22 'constructor GuardedRunnable(ReactContext!)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:62:28 'setter for targetElevation: Float' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackFragment.kt:119:28 'setter for targetElevation: Float' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfig.kt:85:34 'getter for systemWindowInsetTop: Int' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenStackHeaderConfig.kt:227:37 'setColorFilter(Int, PorterDuff.Mode): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:64:22 'constructor GuardedRunnable(ReactContext!)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:109:22 'constructor GuardedRunnable(ReactContext!)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:118:43 'replaceSystemWindowInsets(Int, Int, Int, Int): WindowInsetsCompat' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:119:47 'getter for systemWindowInsetLeft: Int' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:121:47 'getter for systemWindowInsetRight: Int' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/ScreenWindowTraits.kt:122:47 'getter for systemWindowInsetBottom: Int' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/SearchBarView.kt:141:43 Parameter 'flag' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderAttachedEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderAttachedEvent.kt:7:42 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderAttachedEvent.kt:17:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderAttachedEvent.kt:18:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderBackButtonClickedEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderBackButtonClickedEvent.kt:7:51 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderBackButtonClickedEvent.kt:17:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderBackButtonClickedEvent.kt:18:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderDetachedEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderDetachedEvent.kt:7:42 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderDetachedEvent.kt:17:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/HeaderDetachedEvent.kt:18:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenAppearEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenAppearEvent.kt:7:40 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenAppearEvent.kt:13:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenAppearEvent.kt:14:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenDisappearEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenDisappearEvent.kt:7:43 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenDisappearEvent.kt:13:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenDisappearEvent.kt:14:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenDismissedEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenDismissedEvent.kt:7:43 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenDismissedEvent.kt:13:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenDismissedEvent.kt:17:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenTransitionProgressEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenTransitionProgressEvent.kt:13:5 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenTransitionProgressEvent.kt:22:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenTransitionProgressEvent.kt:27:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillAppearEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillAppearEvent.kt:7:44 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillAppearEvent.kt:13:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillAppearEvent.kt:14:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillDisappearEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillDisappearEvent.kt:7:47 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillDisappearEvent.kt:13:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/ScreenWillDisappearEvent.kt:14:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarBlurEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarBlurEvent.kt:7:41 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarBlurEvent.kt:17:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarBlurEvent.kt:18:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarChangeTextEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarChangeTextEvent.kt:10:5 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarChangeTextEvent.kt:20:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarChangeTextEvent.kt:23:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarCloseEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarCloseEvent.kt:7:42 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarCloseEvent.kt:17:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarCloseEvent.kt:18:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarFocusEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarFocusEvent.kt:7:42 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarFocusEvent.kt:17:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarFocusEvent.kt:18:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarOpenEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarOpenEvent.kt:7:41 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarOpenEvent.kt:17:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarOpenEvent.kt:18:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarSearchButtonPressEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarSearchButtonPressEvent.kt:7:81 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarSearchButtonPressEvent.kt:17:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/SearchBarSearchButtonPressEvent.kt:20:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/StackFinishTransitioningEvent.kt:5:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/StackFinishTransitioningEvent.kt:7:52 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/StackFinishTransitioningEvent.kt:13:44 'RCTEventEmitter' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/main/java/com/swmansion/rnscreens/events/StackFinishTransitioningEvent.kt:14:25 'receiveEvent(Int, String!, WritableMap?): Unit' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/paper/java/com/swmansion/rnscreens/FabricEnabledViewGroup.kt:7:42 Parameter 'width' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-screens/android/src/paper/java/com/swmansion/rnscreens/FabricEnabledViewGroup.kt:7:54 Parameter 'height' is never used
+
+> Task :expo-modules-core:compileDebugKotlin
+w: Argument -Xopt-in is deprecated. Please use -opt-in instead
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/adapters/react/permissions/PermissionsService.kt:157:30 'getPackageInfo(String, Int): PackageInfo!' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/core/utilities/EmulatorUtilities.kt:30:13 'SERIAL: String!' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/Promise.kt:68:18 This declaration overrides deprecated member but not marked as deprecated itself. This deprecation won't be inherited in future releases. Please add @Deprecated annotation or suppress. See https://youtrack.jetbrains.com/issue/KT-47902 for details
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/Utils.kt:8:3 Expected performance impact from inlining is insignificant. Inlining works best for functions with parameters of functional types
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/ActivityResultsManager.kt:52:24 Parameter 'activity' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/AppContextActivityResultRegistry.kt:119:51 'getParcelableExtra(String!): T?' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/AppContextActivityResultRegistry.kt:180:26 'getParcelable(String?): T?' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/AppContextActivityResultRegistry.kt:271:83 'getParcelable(String?): T?' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/DataPersistor.kt:67:20 'getSerializable(String?): Serializable?' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/activityresult/DataPersistor.kt:85:26 'getSerializable(String?): Serializable?' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/devtools/cdp/CdpNetworkTypes.kt:184:54 Parameter 'request' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/devtools/cdp/CdpNetworkTypes.kt:208:54 Parameter 'request' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/devtools/cdp/CdpNetworkTypes.kt:228:15 Parameter 'now' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/devtools/cdp/CdpNetworkTypes.kt:228:54 Parameter 'request' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/events/KModuleEventEmitterWrapper.kt:90:7 'constructor Event<T : Event<(raw) Event<*>>!>(Int)' is deprecated. Deprecated in Java
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/jni/JavaScriptObject.kt:88:33 Parameter 'null' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/jni/JavaScriptObject.kt:89:34 Parameter 'null' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/jni/JavaScriptObject.kt:130:5 Parameter 'null' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/types/Either.kt:24:11 Parameter 'type' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/types/Either.kt:27:11 Parameter 'type' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/types/Either.kt:44:11 Parameter 'type' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/types/Either.kt:59:11 Parameter 'type' is never used
+w: file:///Users/darkonovakovic/software/roomify/mobile/node_modules/expo-modules-core/android/src/main/java/expo/modules/kotlin/types/JSTypeConverterHelper.kt:44:17 'get(String!): Any?' is deprecated. Deprecated in Java
+w: Detected multiple Kotlin daemon sessions at build/kotlin/sessions
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-iap:compilePlayDebugKotlin'.
+> Cannot access output property 'destinationDirectory' of task ':react-native-iap:compilePlayDebugKotlin'. Accessing unreadable inputs or outputs is not supported. Declare the task as untracked by using Task.doNotTrackState(). See https://docs.gradle.org/8.0.1/userguide/incremental_build.html#disable-state-tracking for more details.
+   > Failed to create MD5 hash for file '/Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-iap/android/build/tmp/kotlin-classes/playDebug/META-INF/react-native-iap_playDebug.kotlin_module' as it does not exist.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':react-native-webview:compileDebugKotlin'.
+> Cannot access output property 'destinationDirectory' of task ':react-native-webview:compileDebugKotlin'. Accessing unreadable inputs or outputs is not supported. Declare the task as untracked by using Task.doNotTrackState(). See https://docs.gradle.org/8.0.1/userguide/incremental_build.html#disable-state-tracking for more details.
+   > Failed to create MD5 hash for file '/Users/darkonovakovic/software/roomify/mobile/node_modules/react-native-webview/android/build/tmp/kotlin-classes/debug/META-INF/react-native-webview_debug.kotlin_module' as it does not exist.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+==============================================================================
+
+* Get more help at https://help.gradle.org
+
+BUILD FAILED in 47s
+347 actionable tasks: 83 executed, 81 from cache, 183 up-to-date
+Error: /Users/darkonovakovic/software/roomify/mobile/android/gradlew exited with non-zero code: 1
+Error: /Users/darkonovakovic/software/roomify/mobile/android/gradlew exited with non-zero code: 1
+    at ChildProcess.completionListener (/Users/darkonovakovic/software/roomify/mobile/node_modules/@expo/spawn-async/build/spawnAsync.js:52:23)
+    at Object.onceWrapper (node:events:623:26)
+    at ChildProcess.emit (node:events:508:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5)
+    ...
+    at Object.spawnAsync [as default] (/Users/darkonovakovic/software/roomify/mobile/node_modules/@expo/spawn-async/build/spawnAsync.js:17:21)
+    at spawnGradleAsync (/Users/darkonovakovic/software/roomify/mobile/node_modules/@expo/cli/build/src/start/platforms/android/gradle.js:72:46)
+    at Object.assembleAsync (/Users/darkonovakovic/software/roomify/mobile/node_modules/@expo/cli/build/src/start/platforms/android/gradle.js:52:18)
+    at runAndroidAsync (/Users/darkonovakovic/software/roomify/mobile/node_modules/@expo/cli/build/src/run/android/runAndroidAsync.js:36:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
