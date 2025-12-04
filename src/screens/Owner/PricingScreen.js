@@ -216,10 +216,13 @@ export default function PricingScreen() {
     setSelectedProperty(property);
     setShowPropertyPicker(false);
     
-    // IMPORTANT: Reset all data immediately when switching properties
+    // IMPORTANT: Reset ALL data immediately when switching properties
     setDatesData(null);
     setAnalysisData(null);
     setVisibleCounts({});
+    setAiSuggestions({});      // Reset AI suggestions!
+    setLoadingAI({});          // Reset loading states
+    setExpandedReasoning({});  // Reset expanded states
     
     // Debug: Log property selection
     console.log('[PricingScreen] Selected property:', property.nickname || property.name);
