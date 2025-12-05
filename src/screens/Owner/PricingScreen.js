@@ -291,11 +291,6 @@ export default function PricingScreen() {
   };
 
   const handleAnalyze = async (forceRefresh = false) => {
-    if (!selectedProperty) {
-      Alert.alert('Error', 'Please select a property first');
-      return;
-    }
-    
     if (!url) {
       Alert.alert('Error', 'Please enter a valid Airbnb URL');
       return;
@@ -315,9 +310,10 @@ export default function PricingScreen() {
 
     try {
       // Start the analysis (may return cached data or start background job)
+      // propertyId is optional - scraping works without it
       const datesResponse = await client.post('/pricing/analyze-available-dates', { 
         url,
-        propertyId: selectedProperty.id,
+        propertyId: selectedProperty?.id || null,
         refresh: forceRefresh 
       });
       
@@ -766,7 +762,10 @@ export default function PricingScreen() {
         {/* Property Selection Section */}
         {!isCollapsed && (
           <View style={styles.propertySelectionCard}>
-            <Text style={styles.inputLabel}>Select Property</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.inputLabel}>Select Property</Text>
+              <Text style={styles.optionalLabel}>(Optional)</Text>
+            </View>
             
             {loadingProperties ? (
               <View style={styles.loadingContainer}>
@@ -775,9 +774,9 @@ export default function PricingScreen() {
               </View>
             ) : properties.length === 0 ? (
               <View style={styles.noPropertiesContainer}>
-                <Ionicons name="home-outline" size={40} color={colors.text.tertiary} />
-                <Text style={styles.noPropertiesText}>No properties found</Text>
-                <Text style={styles.noPropertiesSubtext}>Connect Hostify or add properties first</Text>
+                <Ionicons name="analytics-outline" size={40} color={colors.primary.main} />
+                <Text style={styles.noPropertiesText}>Analyze Any Listing</Text>
+                <Text style={styles.noPropertiesSubtext}>Enter an Airbnb URL below to see market pricing</Text>
               </View>
             ) : (
               <>
@@ -861,12 +860,14 @@ export default function PricingScreen() {
           </View>
         )}
         
-        {/* URL Input Section (only show if property selected and needs URL) */}
-        {!isCollapsed && selectedProperty && showUrlInput && (
+        {/* URL Input Section (show if no property OR property needs URL) */}
+        {!isCollapsed && (showUrlInput || !selectedProperty) && (
           <View style={styles.urlInputCard}>
             <Text style={styles.inputLabel}>Airbnb Listing URL</Text>
             <Text style={styles.urlInputHelper}>
-              This property doesn't have an Airbnb URL saved. Please enter it below:
+              {selectedProperty 
+                ? "This property doesn't have an Airbnb URL saved. Please enter it below:"
+                : "Enter any Airbnb listing URL to analyze market pricing:"}
             </Text>
             <View style={styles.inputWrapper}>
               <Ionicons name="link-outline" size={20} color={colors.text.tertiary} style={styles.inputIcon} />
@@ -888,8 +889,8 @@ export default function PricingScreen() {
           </View>
         )}
         
-        {/* Analyze Button */}
-        {!isCollapsed && selectedProperty && url && (
+        {/* Analyze Button - works with or without property */}
+        {!isCollapsed && url && (
           <View style={styles.analyzeButtonCard}>
             <TouchableOpacity 
               style={styles.analyzeButton}
@@ -909,12 +910,12 @@ export default function PricingScreen() {
         )}
         
         {/* Collapsed Property Header */}
-        {isCollapsed && selectedProperty && (
+        {isCollapsed && (selectedProperty || datesData) && (
         <View style={styles.collapsedHeaderContainer}>
           <View style={styles.collapsedHeader}>
             <View style={styles.collapsedLeft}>
               <Text style={styles.collapsedPropertyName} numberOfLines={1}>
-                {selectedProperty.displayName}
+                {selectedProperty?.displayName || datesData?.myListing?.title || 'Analyzed Listing'}
               </Text>
               {datesData?.cached && (
                 <Text style={styles.collapsedCachedLabel}>Cached data</Text>
@@ -1183,11 +1184,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.text.secondary,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: 12,
+    marginBottom: 4,
+  },
+  optionalLabel: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+    fontWeight: '400',
   },
   inputWrapper: {
     flexDirection: 'row',
