@@ -1630,6 +1630,63 @@ export default function ListingOptimizationScreen({ navigation }) {
                 )}
               </View>
             )}
+
+            {/* Cleaner Performance Section - Navigate to dedicated screen */}
+            <TouchableOpacity
+              style={styles.navigationCard}
+              onPress={() => navigation.navigate('CleanerPerformance')}
+            >
+              <View style={styles.navigationCardContent}>
+                <View style={[styles.navigationCardIcon, { backgroundColor: '#EEF2FF' }]}>
+                  <Ionicons name="people" size={24} color="#4F46E5" />
+                </View>
+                <View style={styles.navigationCardText}>
+                  <Text style={styles.navigationCardTitle}>Cleaner Performance</Text>
+                  <Text style={styles.navigationCardSubtitle}>
+                    Track cleaner pass rates, common issues, and reports
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            {/* Pay Cleaners Section */}
+            <TouchableOpacity
+              style={styles.navigationCard}
+              onPress={() => navigation.navigate('PayCleaner')}
+            >
+              <View style={styles.navigationCardContent}>
+                <View style={[styles.navigationCardIcon, { backgroundColor: '#ECFDF5' }]}>
+                  <Ionicons name="card" size={24} color="#10B981" />
+                </View>
+                <View style={styles.navigationCardText}>
+                  <Text style={styles.navigationCardTitle}>Pay Cleaners</Text>
+                  <Text style={styles.navigationCardSubtitle}>
+                    Send payments directly to your cleaners
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            {/* Payment History Section */}
+            <TouchableOpacity
+              style={styles.navigationCard}
+              onPress={() => navigation.navigate('PaymentHistory')}
+            >
+              <View style={styles.navigationCardContent}>
+                <View style={[styles.navigationCardIcon, { backgroundColor: '#FEF3C7' }]}>
+                  <Ionicons name="receipt" size={24} color="#F59E0B" />
+                </View>
+                <View style={styles.navigationCardText}>
+                  <Text style={styles.navigationCardTitle}>Payment History</Text>
+                  <Text style={styles.navigationCardSubtitle}>
+                    View all sent and received payments
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#9CA3AF" />
+            </TouchableOpacity>
           </>
         )}
       </ScrollView>
@@ -3061,6 +3118,48 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontWeight: '500',
     letterSpacing: -0.2,
+  },
+  // Navigation card styles
+  navigationCard: {
+    backgroundColor: '#FFF',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  navigationCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  navigationCardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  navigationCardText: {
+    flex: 1,
+  },
+  navigationCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  navigationCardSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
   },
 });
 

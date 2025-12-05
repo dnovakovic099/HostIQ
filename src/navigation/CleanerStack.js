@@ -6,6 +6,9 @@ import CaptureMediaScreen from '../screens/Cleaner/CaptureMediaScreen';
 // import VideoCaptureScreen from '../screens/Cleaner/VideoCaptureScreen'; // Temporarily disabled - missing expo-av
 import ReviewAndSubmitScreen from '../screens/Cleaner/ReviewAndSubmitScreen';
 import InspectionDetailScreen from '../screens/Common/InspectionDetailScreen';
+import CleanerReportsScreen from '../screens/Cleaner/CleanerReportsScreen';
+import PaymentSettingsScreen from '../screens/Cleaner/PaymentSettingsScreen';
+import PaymentHistoryScreen from '../screens/Common/PaymentHistoryScreen';
 
 const Stack = createStackNavigator();
 
@@ -63,6 +66,21 @@ export default function CleanerStack() {
         name="InspectionDetail" 
         component={InspectionDetailScreen}
         options={{ title: 'Inspection Details' }}
+      />
+      <Stack.Screen 
+        name="CleanerReports" 
+        component={CleanerReportsScreen}
+        options={{ title: 'My Reports' }}
+      />
+      <Stack.Screen 
+        name="PaymentSettings" 
+        component={PaymentSettingsScreen}
+        options={{ title: 'Payment Settings' }}
+      />
+      <Stack.Screen 
+        name="PaymentHistory" 
+        component={PaymentHistoryScreen}
+        options={{ title: 'Payment History' }}
       />
     </Stack.Navigator>
   );

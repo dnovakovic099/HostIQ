@@ -33,17 +33,23 @@ const IssuesScreen = () => {
   const [analytics, setAnalytics] = useState(null);
   const [showDashboard, setShowDashboard] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Damage Reports state
+  const [activeTab, setActiveTab] = useState('guest'); // 'guest' or 'damage'
+  const [damageReports, setDamageReports] = useState([]);
+  const [damageStats, setDamageStats] = useState(null);
 
   // Fetch properties on mount
   useEffect(() => {
     fetchProperties();
   }, []);
 
-  // Fetch issues when property is selected
+  // Fetch issues and damage reports when property is selected
   useEffect(() => {
     if (selectedProperty) {
       fetchIssues();
       fetchAnalytics();
+      fetchDamageReports();
     }
   }, [selectedProperty]);
 
@@ -115,6 +121,21 @@ const IssuesScreen = () => {
       Alert.alert('Error', 'Failed to load issues');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDamageReports = async () => {
+    if (!selectedProperty) return;
+
+    try {
+      const response = await client.get(`/issues/${selectedProperty}/damage-reports`);
+      setDamageReports(response.data.damageReports || []);
+      setDamageStats(response.data.stats);
+      console.log(`📦 Fetched ${response.data.damageReports?.length || 0} damage reports`);
+    } catch (error) {
+      console.error('Error fetching damage reports:', error);
+      // Don't show alert - damage reports are optional/new feature
+      setDamageReports([]);
     }
   };
 
@@ -272,7 +293,7 @@ const IssuesScreen = () => {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    Promise.all([fetchIssues(), fetchAnalytics()])
+    Promise.all([fetchIssues(), fetchAnalytics(), fetchDamageReports()])
       .finally(() => setRefreshing(false));
   }, [selectedProperty]);
 
@@ -320,6 +341,96 @@ const IssuesScreen = () => {
         return '#6B7280';
     }
   };
+
+  const getDamageStatusColor = (status) => {
+    switch (status) {
+      case 'PENDING':
+        return '#EF4444';
+      case 'ACKNOWLEDGED':
+        return '#F59E0B';
+      case 'IN_PROGRESS':
+        return '#3B82F6';
+      case 'RESOLVED':
+        return '#10B981';
+      case 'DISMISSED':
+        return '#6B7280';
+      default:
+        return '#6B7280';
+    }
+  };
+
+  const getDamageSourceIcon = (source) => {
+    return source === 'CLEANER_REPORT' ? 'person' : 'hardware-chip';
+  };
+
+  const getDamageSourceLabel = (source) => {
+    return source === 'CLEANER_REPORT' ? 'Cleaner Report' : 'AI Detected';
+  };
+
+  const renderDamageReportCard = ({ item }) => (
+    <TouchableOpacity
+      style={styles.issueCard}
+      onPress={() => {
+        setSelectedIssue({ ...item, isDamageReport: true });
+        setModalVisible(true);
+      }}
+    >
+      <View style={styles.issueHeader}>
+        <View style={styles.severityBadge}>
+          <Ionicons
+            name={getSeverityIcon(item.severity)}
+            size={16}
+            color={getSeverityColor(item.severity)}
+          />
+          <Text style={[styles.severityText, { color: getSeverityColor(item.severity) }]}>
+            {item.severity}
+          </Text>
+        </View>
+        <View style={[styles.statusBadge, { backgroundColor: getDamageStatusColor(item.status) }]}>
+          <Text style={styles.statusText}>{item.status}</Text>
+        </View>
+      </View>
+
+      {/* Source indicator */}
+      <View style={styles.sourceIndicator}>
+        <Ionicons
+          name={getDamageSourceIcon(item.source)}
+          size={14}
+          color="#6B7280"
+        />
+        <Text style={styles.sourceText}>{getDamageSourceLabel(item.source)}</Text>
+        {item.roomName && (
+          <>
+            <Text style={styles.sourceDivider}>•</Text>
+            <Text style={styles.sourceText}>{item.roomName}</Text>
+          </>
+        )}
+      </View>
+
+      <Text style={styles.issueCategory}>{item.category || 'Property Damage'}</Text>
+      <Text style={styles.issueSummary} numberOfLines={2}>
+        {item.description}
+      </Text>
+
+      {item.itemName && (
+        <View style={styles.damageItemBadge}>
+          <Ionicons name="cube-outline" size={14} color="#6B7280" />
+          <Text style={styles.damageItemText}>{item.itemName}</Text>
+        </View>
+      )}
+
+      <View style={styles.issueFooter}>
+        {item.aiConfidence && (
+          <Text style={styles.confidenceText}>
+            AI Confidence: {Math.round(item.aiConfidence * 100)}%
+          </Text>
+        )}
+        <Text style={styles.dateText}>
+          {new Date(item.createdAt).toLocaleDateString()}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
 
   const renderIssueCard = ({ item }) => (
     <TouchableOpacity
@@ -629,10 +740,50 @@ const IssuesScreen = () => {
         </View>
       </Modal>
 
-      {/* Issues List */}
+      {/* Tab Switcher */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'guest' && styles.activeTab]}
+          onPress={() => setActiveTab('guest')}
+        >
+          <Ionicons 
+            name="chatbubbles-outline" 
+            size={18} 
+            color={activeTab === 'guest' ? '#007AFF' : '#6B7280'} 
+          />
+          <Text style={[styles.tabText, activeTab === 'guest' && styles.activeTabText]}>
+            Guest Issues
+          </Text>
+          {stats?.total > 0 && (
+            <View style={[styles.tabBadge, activeTab === 'guest' && styles.activeTabBadge]}>
+              <Text style={styles.tabBadgeText}>{stats.total}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'damage' && styles.activeTab]}
+          onPress={() => setActiveTab('damage')}
+        >
+          <Ionicons 
+            name="warning-outline" 
+            size={18} 
+            color={activeTab === 'damage' ? '#007AFF' : '#6B7280'} 
+          />
+          <Text style={[styles.tabText, activeTab === 'damage' && styles.activeTabText]}>
+            Damage Reports
+          </Text>
+          {damageStats?.pending > 0 && (
+            <View style={[styles.tabBadge, { backgroundColor: '#EF4444' }]}>
+              <Text style={styles.tabBadgeText}>{damageStats.pending}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Issues/Damage List */}
       <FlatList
-        data={issues}
-        renderItem={renderIssueCard}
+        data={activeTab === 'guest' ? issues : damageReports}
+        renderItem={activeTab === 'guest' ? renderIssueCard : renderDamageReportCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
@@ -641,7 +792,7 @@ const IssuesScreen = () => {
         ListHeaderComponent={
           <>
             {/* Stats */}
-            {stats && (
+            {activeTab === 'guest' && stats && (
               <View style={styles.statsContainer}>
                 <View style={styles.statCard}>
                   <Text style={styles.statNumber}>{stats.total}</Text>
@@ -656,6 +807,28 @@ const IssuesScreen = () => {
                 <View style={styles.statCard}>
                   <Text style={[styles.statNumber, { color: '#10B981' }]}>
                     {stats.byStatus?.RESOLVED || 0}
+                  </Text>
+                  <Text style={styles.statLabel}>Resolved</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Damage Stats */}
+            {activeTab === 'damage' && damageStats && (
+              <View style={styles.statsContainer}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statNumber}>{damageStats.total}</Text>
+                  <Text style={styles.statLabel}>Total Reports</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={[styles.statNumber, { color: '#EF4444' }]}>
+                    {damageStats.pending}
+                  </Text>
+                  <Text style={styles.statLabel}>Pending</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <Text style={[styles.statNumber, { color: '#10B981' }]}>
+                    {damageStats.resolved}
                   </Text>
                   <Text style={styles.statLabel}>Resolved</Text>
                 </View>
@@ -1388,6 +1561,84 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1F2937'
+  },
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    gap: 8
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    gap: 6
+  },
+  activeTab: {
+    backgroundColor: '#EBF5FF'
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280'
+  },
+  activeTabText: {
+    color: '#007AFF'
+  },
+  tabBadge: {
+    backgroundColor: '#6B7280',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 24,
+    alignItems: 'center'
+  },
+  activeTabBadge: {
+    backgroundColor: '#007AFF'
+  },
+  tabBadgeText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700'
+  },
+  // Damage report styles
+  sourceIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 6
+  },
+  sourceText: {
+    fontSize: 12,
+    color: '#6B7280'
+  },
+  sourceDivider: {
+    color: '#D1D5DB'
+  },
+  damageItemBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    gap: 6
+  },
+  damageItemText: {
+    fontSize: 13,
+    color: '#4B5563',
+    fontWeight: '500'
   }
 });
 

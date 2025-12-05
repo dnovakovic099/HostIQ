@@ -489,6 +489,24 @@ export default function CleanerHistoryScreen({ navigation }) {
                 <Ionicons name="chevron-down" size={16} color={colors.text.secondary} />
               )}
             </TouchableOpacity>
+
+            {/* My Reports Button */}
+            <TouchableOpacity 
+              style={styles.reportsButton}
+              onPress={() => navigation.navigate('CleanerReports')}
+            >
+              <Ionicons name="bar-chart-outline" size={20} color="#FFF" />
+              <Text style={styles.reportsButtonText}>Reports</Text>
+            </TouchableOpacity>
+
+            {/* Payment Settings Button */}
+            <TouchableOpacity 
+              style={[styles.reportsButton, { backgroundColor: '#10B981' }]}
+              onPress={() => navigation.navigate('PaymentSettings')}
+            >
+              <Ionicons name="card-outline" size={20} color="#FFF" />
+              <Text style={styles.reportsButtonText}>Pay</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -762,6 +780,20 @@ const styles = StyleSheet.create({
   },
   filterButtonTextActive: {
     color: colors.primary.main,
+    fontWeight: '600',
+  },
+  reportsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary.main || '#007AFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  reportsButtonText: {
+    color: '#FFF',
+    fontSize: 14,
     fontWeight: '600',
   },
   modalOverlay: {

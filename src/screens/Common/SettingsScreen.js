@@ -178,6 +178,25 @@ export default function SettingsScreen({ navigation }) {
         </View>
       </View>
 
+      {user?.role === 'CLEANER' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Payments</Text>
+          <View style={styles.card}>
+            <SettingsItem
+              icon="card-outline"
+              title="Payment Settings"
+              onPress={() => navigation.navigate('HomeTab', { screen: 'PaymentSettings' })}
+            />
+            <View style={styles.divider} />
+            <SettingsItem
+              icon="receipt-outline"
+              title="Payment History"
+              onPress={() => navigation.navigate('HomeTab', { screen: 'PaymentHistory' })}
+            />
+          </View>
+        </View>
+      )}
+
       {(user?.role === 'OWNER' || user?.role === 'ADMIN') && (
         <>
           <View style={styles.section}>

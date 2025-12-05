@@ -11,6 +11,9 @@ import PropertyDetailScreen from '../screens/Owner/PropertyDetailScreen';
 import CreatePropertyScreen from '../screens/Owner/CreatePropertyScreen';
 import ListingOptimizationScreen from '../screens/Owner/ListingOptimizationScreen';
 import PricingScreen from '../screens/Owner/PricingScreen';
+import CleanerPerformanceScreen from '../screens/Owner/CleanerPerformanceScreen';
+import PayCleanerScreen from '../screens/Owner/PayCleanerScreen';
+import PaymentHistoryScreen from '../screens/Common/PaymentHistoryScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -58,7 +61,7 @@ function PropertiesStack() {
   );
 }
 
-// Insights Stack (Combined: Listing Optimization + Guest Issues)
+// Insights Stack (Combined: Listing Optimization + Guest Issues + Cleaner Performance)
 function InsightsStack() {
   return (
     <Stack.Navigator
@@ -86,6 +89,21 @@ function InsightsStack() {
         name="InsightsList" 
         component={ListingOptimizationScreen}
         options={{ title: 'Insights' }}
+      />
+      <Stack.Screen 
+        name="CleanerPerformance" 
+        component={CleanerPerformanceScreen}
+        options={{ title: 'Cleaner Performance' }}
+      />
+      <Stack.Screen 
+        name="PayCleaner" 
+        component={PayCleanerScreen}
+        options={{ title: 'Pay Cleaner' }}
+      />
+      <Stack.Screen 
+        name="PaymentHistory" 
+        component={PaymentHistoryScreen}
+        options={{ title: 'Payment History' }}
       />
     </Stack.Navigator>
   );
