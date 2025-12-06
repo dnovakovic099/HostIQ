@@ -409,6 +409,29 @@ export default function PropertyDetailScreen({ route, navigation }) {
           )}
         </View>
 
+        {/* Inventory Section */}
+        <TouchableOpacity 
+          style={styles.inventoryCard}
+          onPress={() => navigation.navigate('Inventory', { 
+            propertyId: propertyId, 
+            propertyName: property?.name 
+          })}
+          activeOpacity={0.7}
+        >
+          <View style={styles.inventoryLeft}>
+            <View style={styles.inventoryIconContainer}>
+              <Ionicons name="cube-outline" size={24} color="#5856D6" />
+            </View>
+            <View style={styles.inventoryTextContainer}>
+              <Text style={styles.inventoryTitle}>Inventory Tracking</Text>
+              <Text style={styles.inventoryDescription}>
+                Manage supplies and stock levels
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+        </TouchableOpacity>
+
         <View style={styles.section}>
           <View style={styles.modernSectionHeader}>
             <Text style={styles.modernSectionTitle}>Rooms</Text>
@@ -1242,5 +1265,48 @@ const styles = StyleSheet.create({
     color: '#92400E',
     lineHeight: 16,
     letterSpacing: -0.2,
+  },
+  // Inventory Card
+  inventoryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  inventoryLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  inventoryIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#5856D615',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  inventoryTextContainer: {
+    flex: 1,
+  },
+  inventoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  inventoryDescription: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginTop: 2,
   },
 });

@@ -9,6 +9,7 @@ import InspectionDetailScreen from '../screens/Common/InspectionDetailScreen';
 import CleanerReportsScreen from '../screens/Cleaner/CleanerReportsScreen';
 import PaymentSettingsScreen from '../screens/Cleaner/PaymentSettingsScreen';
 import PaymentHistoryScreen from '../screens/Common/PaymentHistoryScreen';
+import InventoryUpdateScreen from '../screens/Cleaner/InventoryUpdateScreen';
 
 const Stack = createStackNavigator();
 
@@ -81,6 +82,11 @@ export default function CleanerStack() {
         name="PaymentHistory" 
         component={PaymentHistoryScreen}
         options={{ title: 'Payment History' }}
+      />
+      <Stack.Screen 
+        name="InventoryUpdate" 
+        component={InventoryUpdateScreen}
+        options={{ title: 'Update Inventory' }}
       />
     </Stack.Navigator>
   );

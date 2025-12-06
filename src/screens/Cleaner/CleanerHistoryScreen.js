@@ -270,6 +270,48 @@ export default function CleanerHistoryScreen({ navigation }) {
     </Animated.View>
   );
 
+  const handleInventoryPress = () => {
+    // Get unique properties from inspections
+    const uniqueProperties = [];
+    const seen = new Set();
+    
+    inspections.forEach(insp => {
+      if (insp.unit?.property?.id && !seen.has(insp.unit.property.id)) {
+        seen.add(insp.unit.property.id);
+        uniqueProperties.push({
+          id: insp.unit.property.id,
+          name: insp.unit.property.name
+        });
+      }
+    });
+
+    if (uniqueProperties.length === 0) {
+      Alert.alert('No Properties', 'Complete an inspection to access inventory.');
+      return;
+    }
+
+    if (uniqueProperties.length === 1) {
+      // Navigate directly
+      navigation.navigate('InventoryUpdate', {
+        propertyId: uniqueProperties[0].id,
+        propertyName: uniqueProperties[0].name
+      });
+    } else {
+      // Show property picker
+      Alert.alert(
+        'Select Property',
+        'Choose a property to update inventory',
+        uniqueProperties.map(p => ({
+          text: p.name,
+          onPress: () => navigation.navigate('InventoryUpdate', {
+            propertyId: p.id,
+            propertyName: p.name
+          })
+        })).concat([{ text: 'Cancel', style: 'cancel' }])
+      );
+    }
+  };
+
   const renderQuickActions = () => (
     <View style={styles.quickActions}>
       <TouchableOpacity
@@ -280,6 +322,16 @@ export default function CleanerHistoryScreen({ navigation }) {
           <Ionicons name="bar-chart" size={20} color="#FFF" />
         </LinearGradient>
         <Text style={styles.quickActionText}>Reports</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={styles.quickActionBtn}
+        onPress={handleInventoryPress}
+      >
+        <LinearGradient colors={['#8B5CF6', '#6D28D9']} style={styles.quickActionGradient}>
+          <Ionicons name="cube" size={20} color="#FFF" />
+        </LinearGradient>
+        <Text style={styles.quickActionText}>Inventory</Text>
       </TouchableOpacity>
       
       <TouchableOpacity
@@ -344,11 +396,11 @@ export default function CleanerHistoryScreen({ navigation }) {
           }
         ]}
       >
-        <TouchableOpacity
+      <TouchableOpacity
           style={styles.card}
-          onPress={handlePress}
-          activeOpacity={0.7}
-        >
+        onPress={handlePress}
+        activeOpacity={0.7}
+      >
           {/* Status Accent Bar */}
           <LinearGradient
             colors={statusConfig.colors}
@@ -359,38 +411,38 @@ export default function CleanerHistoryScreen({ navigation }) {
 
           <View style={styles.cardContent}>
             {/* Header Row */}
-            <View style={styles.cardHeader}>
+        <View style={styles.cardHeader}>
               <View style={styles.propertySection}>
                 <View style={[styles.propertyIcon, { backgroundColor: statusConfig.iconBg }]}>
                   <Ionicons name="business" size={18} color={statusConfig.textColor} />
                 </View>
-                <View style={styles.propertyInfo}>
+          <View style={styles.propertyInfo}>
                   <Text style={styles.propertyName} numberOfLines={1}>{propertyName}</Text>
-                  <Text style={styles.unitName}>{unitName}</Text>
-                </View>
-              </View>
+            <Text style={styles.unitName}>{unitName}</Text>
+          </View>
+            </View>
 
               <View style={styles.headerActions}>
-                {!isAssignment && (
-                  <TouchableOpacity
+            {!isAssignment && (
+              <TouchableOpacity
                     style={styles.deleteBtn}
                     onPress={() => handleDeleteInspection(item.id, propertyName)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                     <Ionicons name="trash-outline" size={18} color={COLORS.lightGray} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
             {/* Stats Row */}
             <View style={styles.statsRow}>
               <View style={styles.statChip}>
                 <Ionicons name="time-outline" size={14} color={COLORS.gray} />
                 <Text style={styles.statChipText}>{formatTimeAgo(item.created_at)}</Text>
-              </View>
-              
-              {roomCount > 0 && (
+            </View>
+            
+            {roomCount > 0 && (
                 <View style={styles.statChip}>
                   <Ionicons name="bed-outline" size={14} color={COLORS.gray} />
                   <Text style={styles.statChipText}>{roomCount} rooms</Text>
@@ -409,8 +461,8 @@ export default function CleanerHistoryScreen({ navigation }) {
                 <Ionicons name={statusConfig.icon} size={14} color={statusConfig.textColor} />
                 <Text style={[styles.statusText, { color: statusConfig.textColor }]}>
                   {statusConfig.label}
-                </Text>
-              </View>
+                  </Text>
+                </View>
 
               {scoreInfo && (
                 <View style={[styles.scoreBadge, { backgroundColor: scoreInfo.color + '15' }]}>
@@ -425,26 +477,26 @@ export default function CleanerHistoryScreen({ navigation }) {
                 </Text>
                 <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
               </View>
-            </View>
+          </View>
 
             {/* Processing Indicator */}
-            {(item.status === 'PROCESSING' || item.status === 'IN_PROGRESS') && (
+          {(item.status === 'PROCESSING' || item.status === 'IN_PROGRESS') && (
               <View style={styles.processingBar}>
                 <View style={styles.processingPulse}>
                   <ActivityIndicator size="small" color={COLORS.processing} />
                 </View>
-                <Text style={styles.processingText}>AI analysis in progress...</Text>
-              </View>
-            )}
+              <Text style={styles.processingText}>AI analysis in progress...</Text>
+            </View>
+          )}
 
             {/* Error Message */}
             {item.summary_json?.error && item.status === 'FAILED' && (
               <View style={styles.errorBar}>
                 <Ionicons name="alert-circle" size={16} color={COLORS.error} />
                 <Text style={styles.errorText} numberOfLines={2}>{item.summary_json.error}</Text>
-              </View>
-            )}
-          </View>
+            </View>
+          )}
+        </View>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -461,7 +513,7 @@ export default function CleanerHistoryScreen({ navigation }) {
       <Text style={styles.emptyTitle}>No Inspections Yet</Text>
       <Text style={styles.emptySubtitle}>
         Start your first inspection by tapping the button below
-      </Text>
+          </Text>
       <TouchableOpacity
         style={styles.emptyButton}
         onPress={() => navigation.navigate('CreateInspection')}
@@ -475,7 +527,7 @@ export default function CleanerHistoryScreen({ navigation }) {
         </LinearGradient>
       </TouchableOpacity>
     </View>
-  );
+    );
 
   if (loading) {
     return (
@@ -528,20 +580,20 @@ export default function CleanerHistoryScreen({ navigation }) {
       </TouchableOpacity>
 
       {/* Property Filter Modal */}
-      <Modal
-        visible={showPropertyDropdown}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowPropertyDropdown(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowPropertyDropdown(false)}
-        >
+          <Modal
+            visible={showPropertyDropdown}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setShowPropertyDropdown(false)}
+          >
+            <TouchableOpacity 
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setShowPropertyDropdown(false)}
+            >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Filter by Property</Text>
-            <TouchableOpacity
+                <TouchableOpacity
               style={[styles.modalOption, selectedProperty === 'all' && styles.modalOptionActive]}
               onPress={() => { setSelectedProperty('all'); setShowPropertyDropdown(false); }}
             >
@@ -549,10 +601,10 @@ export default function CleanerHistoryScreen({ navigation }) {
                 All Properties
               </Text>
               {selectedProperty === 'all' && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
-            </TouchableOpacity>
-            {properties.map(property => (
-              <TouchableOpacity
-                key={property}
+                </TouchableOpacity>
+                {properties.map(property => (
+                  <TouchableOpacity
+                    key={property}
                 style={[styles.modalOption, selectedProperty === property && styles.modalOptionActive]}
                 onPress={() => { setSelectedProperty(property); setShowPropertyDropdown(false); }}
               >
@@ -560,11 +612,11 @@ export default function CleanerHistoryScreen({ navigation }) {
                   {property}
                 </Text>
                 {selectedProperty === property && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </TouchableOpacity>
+          </Modal>
     </View>
   );
 }

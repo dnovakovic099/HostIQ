@@ -14,6 +14,7 @@ import PricingScreen from '../screens/Owner/PricingScreen';
 import CleanerPerformanceScreen from '../screens/Owner/CleanerPerformanceScreen';
 import PayCleanerScreen from '../screens/Owner/PayCleanerScreen';
 import PaymentHistoryScreen from '../screens/Common/PaymentHistoryScreen';
+import InventoryScreen from '../screens/Owner/InventoryScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -56,6 +57,11 @@ function PropertiesStack() {
         name="CreateProperty" 
         component={CreatePropertyScreen}
         options={{ title: 'Create Property' }}
+      />
+      <Stack.Screen 
+        name="Inventory" 
+        component={InventoryScreen}
+        options={{ title: 'Inventory' }}
       />
     </Stack.Navigator>
   );
