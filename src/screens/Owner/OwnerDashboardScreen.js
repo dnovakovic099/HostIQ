@@ -8,34 +8,15 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-  Animated,
+  Image,
   Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 import UsageIndicator from '../../components/UsageIndicator';
 
 const { width } = Dimensions.get('window');
-
-// Premium color palette
-const COLORS = {
-  primary: '#6366F1',
-  primaryDark: '#4F46E5',
-  primaryLight: '#A5B4FC',
-  secondary: '#8B5CF6',
-  success: '#10B981',
-  successDark: '#059669',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  dark: '#1F2937',
-  gray: '#6B7280',
-  lightGray: '#9CA3AF',
-  border: '#E5E7EB',
-  background: '#F8FAFC',
-  card: '#FFFFFF',
-};
 
 export default function OwnerDashboardScreen({ navigation }) {
   const [stats, setStats] = useState({
@@ -49,10 +30,6 @@ export default function OwnerDashboardScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const lastFetchTime = useRef(0);
-  
-  // Animations
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
 
   useFocusEffect(
     useCallback(() => {
@@ -64,23 +41,6 @@ export default function OwnerDashboardScreen({ navigation }) {
       }
     }, [])
   );
-
-  useEffect(() => {
-    if (!loading) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [loading]);
 
   const fetchDashboardData = async () => {
     try {
@@ -117,8 +77,6 @@ export default function OwnerDashboardScreen({ navigation }) {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fadeAnim.setValue(0);
-    slideAnim.setValue(20);
     fetchDashboardData();
   };
 
@@ -129,41 +87,32 @@ export default function OwnerDashboardScreen({ navigation }) {
     const isAppFailed = errorMsg.includes('blurred') || errorMsg.includes('technical');
 
     if (status === 'FAILED' || isAppFailed) {
-      return { label: 'Failed', color: COLORS.error, bgColor: '#FEE2E2', icon: 'close-circle' };
+      return { label: 'Failed', color: '#FF3B30' };
     }
     if (status === 'COMPLETE' && isReady === false) {
-      return { label: 'Needs Work', color: COLORS.error, bgColor: '#FEE2E2', icon: 'alert-circle' };
+      return { label: 'Cleaning Failed', color: '#FF3B30' };
     }
     if (status === 'COMPLETE') {
-      return { label: 'Passed', color: COLORS.success, bgColor: '#D1FAE5', icon: 'checkmark-circle' };
+      return { label: 'Complete', color: '#34C759' };
     }
     if (status === 'PROCESSING') {
-      return { label: 'Processing', color: COLORS.warning, bgColor: '#FEF3C7', icon: 'time' };
+      return { label: 'Processing', color: '#FF9500' };
     }
-    return { label: status, color: COLORS.gray, bgColor: '#F3F4F6', icon: 'ellipse' };
+    return { label: status, color: '#8E8E93' };
   };
 
-  const getScoreGrade = (score) => {
-    if (score >= 9) return { grade: 'A+', color: '#059669' };
-    if (score >= 8) return { grade: 'A', color: '#10B981' };
-    if (score >= 7) return { grade: 'B', color: '#F59E0B' };
-    if (score >= 6) return { grade: 'C', color: '#F97316' };
-    return { grade: 'D', color: '#EF4444' };
-  };
-
-  const formatTimeAgo = (date) => {
+  const formatDate = (date) => {
+    const d = new Date(date);
     const now = new Date();
-    const past = new Date(date);
-    const diffMs = now - past;
+    const diffMs = now - d;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   const handleDeleteInspection = (inspectionId, propertyName) => {
@@ -188,11 +137,16 @@ export default function OwnerDashboardScreen({ navigation }) {
     );
   };
 
+  // Get first 3 media URLs from inspection
+  const getMediaThumbnails = (inspection) => {
+    if (!inspection.media || inspection.media.length === 0) return [];
+    return inspection.media.slice(0, 3).map(m => m.url);
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
+        <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
   }
@@ -203,140 +157,81 @@ export default function OwnerDashboardScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#007AFF" />
         }
       >
-        {/* Stats Header */}
-        <Animated.View style={[styles.headerContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-          <LinearGradient
-            colors={['#6366F1', '#8B5CF6', '#A855F7']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.headerGradient}
-          >
-            <View style={styles.headerContent}>
-              <Text style={styles.headerGreeting}>Welcome back! 👋</Text>
-              <Text style={styles.headerSubtitle}>Here's your property overview</Text>
-            </View>
-            
-            <View style={styles.statsGrid}>
-              <View style={styles.statCard}>
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="business" size={20} color={COLORS.primary} />
-                </View>
-                <Text style={styles.statValue}>{stats.properties}</Text>
-                <Text style={styles.statLabel}>Properties</Text>
-              </View>
-              
-              <View style={styles.statCard}>
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="home" size={20} color={COLORS.secondary} />
-                </View>
-                <Text style={styles.statValue}>{stats.units}</Text>
-                <Text style={styles.statLabel}>Units</Text>
-              </View>
-              
-              <View style={styles.statCard}>
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="people" size={20} color={COLORS.success} />
-                </View>
-                <Text style={styles.statValue}>{stats.cleaners}</Text>
-                <Text style={styles.statLabel}>Cleaners</Text>
-              </View>
-              
-              <View style={styles.statCard}>
-                <View style={styles.statIconContainer}>
-                  <Ionicons name="today" size={20} color={COLORS.warning} />
-                </View>
-                <Text style={styles.statValue}>{stats.inspections_today}</Text>
-                <Text style={styles.statLabel}>Today</Text>
-              </View>
-            </View>
-          </LinearGradient>
-        </Animated.View>
-
         {/* Quick Actions */}
-        <Animated.View style={[styles.section, { opacity: fadeAnim }]}>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionsRow}>
+          <View style={styles.actionsGrid}>
             <TouchableOpacity
               style={styles.actionCard}
               onPress={() => navigation.navigate('Properties', { screen: 'CreateProperty' })}
             >
-              <LinearGradient colors={['#6366F1', '#4F46E5']} style={styles.actionGradient}>
-                <Ionicons name="add-circle" size={24} color="#FFF" />
-              </LinearGradient>
-              <Text style={styles.actionLabel}>Add Property</Text>
+              <View style={[styles.actionIcon, { backgroundColor: '#007AFF15' }]}>
+                <Ionicons name="add-circle" size={24} color="#007AFF" />
+              </View>
+              <Text style={styles.actionLabel}>Property</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionCard}
               onPress={() => navigation.navigate('ManageCleaners')}
             >
-              <LinearGradient colors={['#8B5CF6', '#7C3AED']} style={styles.actionGradient}>
-                <Ionicons name="person-add" size={24} color="#FFF" />
-              </LinearGradient>
-              <Text style={styles.actionLabel}>Add Cleaner</Text>
+              <View style={[styles.actionIcon, { backgroundColor: '#5856D615' }]}>
+                <Ionicons name="person-add" size={24} color="#5856D6" />
+              </View>
+              <Text style={styles.actionLabel}>Team</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => navigation.navigate('Insights', { screen: 'PayCleaner' })}
+              onPress={() => navigation.navigate('SubscriptionManagement')}
             >
-              <LinearGradient colors={['#10B981', '#059669']} style={styles.actionGradient}>
-                <Ionicons name="card" size={24} color="#FFF" />
-              </LinearGradient>
-              <Text style={styles.actionLabel}>Pay Cleaner</Text>
+              <View style={[styles.actionIcon, { backgroundColor: '#FF950015' }]}>
+                <Ionicons name="card" size={24} color="#FF9500" />
+              </View>
+              <Text style={styles.actionLabel}>Plans</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.actionCard}
-              onPress={() => navigation.navigate('Insights', { screen: 'CleanerPerformance' })}
+              onPress={() => navigation.navigate('Insights')}
             >
-              <LinearGradient colors={['#F59E0B', '#D97706']} style={styles.actionGradient}>
-                <Ionicons name="bar-chart" size={24} color="#FFF" />
-              </LinearGradient>
-              <Text style={styles.actionLabel}>Reports</Text>
+              <View style={[styles.actionIcon, { backgroundColor: '#FF3B3015' }]}>
+                <Ionicons name="alert-circle" size={24} color="#FF3B30" />
+              </View>
+              <Text style={styles.actionLabel}>Issues</Text>
             </TouchableOpacity>
           </View>
-        </Animated.View>
+        </View>
 
         {/* Low Rating Alert */}
         {lowRatingProperties.length > 0 && (
-          <Animated.View style={[styles.section, { opacity: fadeAnim }]}>
+          <View style={styles.section}>
             <TouchableOpacity
               style={styles.alertCard}
               onPress={() => navigation.navigate('Insights')}
-              activeOpacity={0.8}
             >
-              <LinearGradient
-                colors={['#FEE2E2', '#FECACA']}
-                style={styles.alertGradient}
-              >
-                <View style={styles.alertIconContainer}>
-                  <Ionicons name="warning" size={24} color={COLORS.error} />
-                </View>
-                <View style={styles.alertContent}>
-                  <Text style={styles.alertTitle}>
-                    {lowRatingProperties.length} Low Rating{lowRatingProperties.length > 1 ? 's' : ''}
-                  </Text>
-                  <Text style={styles.alertSubtitle}>
-                    Properties with ratings ≤ 4.7 need attention
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={COLORS.error} />
-              </LinearGradient>
+              <Ionicons name="exclamationmark.triangle.fill" size={20} color="#FF3B30" />
+              <View style={styles.alertContent}>
+                <Text style={styles.alertTitle}>
+                  {lowRatingProperties.length} Low Rating{lowRatingProperties.length > 1 ? 's' : ''}
+                </Text>
+                <Text style={styles.alertSubtitle}>Ratings ≤ 4.7 need attention</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#C7C7CC" />
             </TouchableOpacity>
-          </Animated.View>
+          </View>
         )}
 
         {/* Usage */}
-        <Animated.View style={[styles.section, { opacity: fadeAnim }]}>
+        <View style={styles.section}>
           <UsageIndicator navigation={navigation} />
-        </Animated.View>
+        </View>
 
         {/* Recent Inspections */}
-        <Animated.View style={[styles.section, { opacity: fadeAnim }]}>
+        <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Inspections</Text>
             <TouchableOpacity onPress={() => navigation.navigate('InspectionReports')}>
@@ -346,112 +241,101 @@ export default function OwnerDashboardScreen({ navigation }) {
 
           {recentInspections.length === 0 ? (
             <View style={styles.emptyState}>
-              <LinearGradient colors={['#EEF2FF', '#E0E7FF']} style={styles.emptyIconBg}>
-                <Ionicons name="clipboard-outline" size={40} color={COLORS.primary} />
-              </LinearGradient>
+              <Ionicons name="document-text-outline" size={44} color="#C7C7CC" />
               <Text style={styles.emptyTitle}>No Inspections Yet</Text>
               <Text style={styles.emptySubtitle}>
-                Inspections will appear here once your cleaners submit them
+                Inspections will appear here once cleaners submit them
               </Text>
             </View>
           ) : (
-            recentInspections.map((inspection, index) => {
+            recentInspections.map((inspection) => {
               const propertyName = inspection.unit?.property?.name || 'Property';
               const unitName = inspection.unit?.name || 'Unit';
               const cleanerName = inspection.creator?.name || 'Cleaner';
               const statusConfig = getStatusConfig(inspection);
               const score = inspection.cleanliness_score;
-              const scoreInfo = score ? getScoreGrade(score) : null;
               const mediaCount = inspection._count?.media || 0;
+              const thumbnails = getMediaThumbnails(inspection);
 
               return (
-                <Animated.View
+                <TouchableOpacity
                   key={inspection.id}
-                  style={[
-                    styles.inspectionCard,
-                    {
-                      opacity: fadeAnim,
-                      transform: [{
-                        translateY: slideAnim.interpolate({
-                          inputRange: [0, 20],
-                          outputRange: [0, 20 + (index * 5)]
-                        })
-                      }]
-                    }
-                  ]}
+                  style={styles.inspectionCard}
+                  onPress={() => navigation.navigate('InspectionDetail', { inspectionId: inspection.id })}
+                  activeOpacity={0.6}
                 >
-                  <TouchableOpacity
-                    style={styles.cardTouchable}
-                    onPress={() => navigation.navigate('InspectionDetail', { inspectionId: inspection.id })}
-                    activeOpacity={0.7}
-                  >
-                    {/* Status Accent */}
-                    <View style={[styles.cardAccent, { backgroundColor: statusConfig.color }]} />
-                    
-                    <View style={styles.cardContent}>
-                      {/* Header */}
-                      <View style={styles.cardHeader}>
-                        <View style={styles.propertyInfo}>
-                          <Text style={styles.propertyName} numberOfLines={1}>{propertyName}</Text>
-                          <Text style={styles.unitName}>{unitName}</Text>
+                  {/* Thumbnails Row */}
+                  {thumbnails.length > 0 && (
+                    <View style={styles.thumbnailRow}>
+                      {thumbnails.map((url, index) => (
+                        <Image
+                          key={index}
+                          source={{ uri: url }}
+                          style={[
+                            styles.thumbnail,
+                            index === 0 && styles.thumbnailFirst,
+                            index === thumbnails.length - 1 && styles.thumbnailLast,
+                          ]}
+                        />
+                      ))}
+                      {mediaCount > 3 && (
+                        <View style={styles.morePhotos}>
+                          <Text style={styles.morePhotosText}>+{mediaCount - 3}</Text>
                         </View>
-                        <TouchableOpacity
-                          style={styles.deleteBtn}
-                          onPress={() => handleDeleteInspection(inspection.id, propertyName)}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                          <Ionicons name="trash-outline" size={18} color={COLORS.lightGray} />
-                        </TouchableOpacity>
-                      </View>
-
-                      {/* Meta Info */}
-                      <View style={styles.metaRow}>
-                        <View style={styles.metaChip}>
-                          <Ionicons name="person-outline" size={12} color={COLORS.gray} />
-                          <Text style={styles.metaText}>{cleanerName}</Text>
-                        </View>
-                        <View style={styles.metaChip}>
-                          <Ionicons name="time-outline" size={12} color={COLORS.gray} />
-                          <Text style={styles.metaText}>{formatTimeAgo(inspection.created_at)}</Text>
-                        </View>
-                        <View style={styles.metaChip}>
-                          <Ionicons name="camera-outline" size={12} color={COLORS.gray} />
-                          <Text style={styles.metaText}>{mediaCount}</Text>
-                        </View>
-                      </View>
-
-                      {/* Status & Score */}
-                      <View style={styles.statusRow}>
-                        <View style={[styles.statusBadge, { backgroundColor: statusConfig.bgColor }]}>
-                          <Ionicons name={statusConfig.icon} size={14} color={statusConfig.color} />
-                          <Text style={[styles.statusText, { color: statusConfig.color }]}>
-                            {statusConfig.label}
-                          </Text>
-                        </View>
-
-                        {scoreInfo && (
-                          <View style={[styles.scoreBadge, { backgroundColor: scoreInfo.color + '15' }]}>
-                            <Text style={[styles.scoreGrade, { color: scoreInfo.color }]}>
-                              {scoreInfo.grade}
-                            </Text>
-                            <Text style={[styles.scoreValue, { color: scoreInfo.color }]}>
-                              {score.toFixed(1)}
-                            </Text>
-                          </View>
-                        )}
-
-                        <View style={styles.viewArrow}>
-                          <Text style={styles.viewText}>View</Text>
-                          <Ionicons name="chevron-forward" size={14} color={COLORS.primary} />
-                        </View>
-                      </View>
+                      )}
                     </View>
-                  </TouchableOpacity>
-                </Animated.View>
+                  )}
+
+                  <View style={styles.cardBody}>
+                    {/* Header */}
+                    <View style={styles.cardHeader}>
+                      <View style={styles.propertyInfo}>
+                        <Text style={styles.propertyName} numberOfLines={1}>{propertyName}</Text>
+                        <Text style={styles.unitName}>{unitName}</Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.deleteBtn}
+                        onPress={() => handleDeleteInspection(inspection.id, propertyName)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#C7C7CC" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Meta */}
+                    <View style={styles.metaRow}>
+                      <Text style={styles.metaText}>{cleanerName}</Text>
+                      <Text style={styles.metaDot}>·</Text>
+                      <Text style={styles.metaText}>{formatDate(inspection.created_at)}</Text>
+                      <Text style={styles.metaDot}>·</Text>
+                      <Ionicons name="camera" size={12} color="#8E8E93" />
+                      <Text style={styles.metaText}>{mediaCount}</Text>
+                    </View>
+
+                    {/* Footer */}
+                    <View style={styles.cardFooter}>
+                      <View style={styles.statusContainer}>
+                        <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
+                        <Text style={[styles.statusText, { color: statusConfig.color }]}>
+                          {statusConfig.label}
+                        </Text>
+                      </View>
+
+                      {score != null && score > 0 && (
+                        <View style={styles.scoreContainer}>
+                          <Text style={styles.scoreValue}>{score.toFixed(1)}</Text>
+                          <Text style={styles.scoreMax}>/10</Text>
+                        </View>
+                      )}
+
+                      <Ionicons name="chevron-forward" size={18} color="#C7C7CC" />
+                    </View>
+                  </View>
+                </TouchableOpacity>
               );
             })
           )}
-        </Animated.View>
+        </View>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
@@ -462,211 +346,161 @@ export default function OwnerDashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F2F2F7',
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingTop: 8,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: COLORS.gray,
-  },
-  // Header
-  headerContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  headerGradient: {
-    borderRadius: 24,
-    padding: 20,
-    paddingBottom: 24,
-  },
-  headerContent: {
-    marginBottom: 20,
-  },
-  headerGreeting: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFF',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: 16,
-    padding: 12,
-    alignItems: 'center',
-  },
-  statIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.dark,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: COLORS.gray,
-    marginTop: 2,
+    backgroundColor: '#F2F2F7',
   },
   // Section
   section: {
     paddingHorizontal: 16,
-    marginTop: 24,
+    marginTop: 20,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: 16,
+    color: '#000',
+    marginBottom: 12,
+    letterSpacing: -0.4,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   viewAllText: {
-    fontSize: 15,
-    color: COLORS.primary,
-    fontWeight: '600',
+    fontSize: 17,
+    color: '#007AFF',
+    fontWeight: '400',
   },
   // Quick Actions
-  actionsRow: {
+  actionsGrid: {
     flexDirection: 'row',
     gap: 12,
   },
   actionCard: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-  },
-  actionGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  actionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.dark,
-    textAlign: 'center',
-  },
-  // Alert
-  alertCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  alertGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  alertIconContainer: {
+  actionIcon: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: 'rgba(239,68,68,0.15)',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#000',
+  },
+  // Alert
+  alertCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    padding: 14,
+    borderRadius: 12,
+    gap: 12,
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF3B30',
   },
   alertContent: {
     flex: 1,
   },
   alertTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.error,
-    marginBottom: 2,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
   },
   alertSubtitle: {
     fontSize: 13,
-    color: '#991B1B',
+    color: '#8E8E93',
+    marginTop: 2,
   },
   // Empty State
   emptyState: {
     alignItems: 'center',
     padding: 40,
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
-  },
-  emptyIconBg: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: 8,
+    color: '#000',
+    marginTop: 16,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: COLORS.gray,
+    fontSize: 15,
+    color: '#8E8E93',
     textAlign: 'center',
-    lineHeight: 20,
+    marginTop: 6,
   },
   // Inspection Card
   inspectionCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
     marginBottom: 12,
-    borderRadius: 16,
-    backgroundColor: COLORS.card,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  cardTouchable: {
+  thumbnailRow: {
     flexDirection: 'row',
+    height: 100,
   },
-  cardAccent: {
-    width: 4,
-  },
-  cardContent: {
+  thumbnail: {
     flex: 1,
-    padding: 16,
+    height: 100,
+    backgroundColor: '#F2F2F7',
+  },
+  thumbnailFirst: {
+    borderTopLeftRadius: 12,
+  },
+  thumbnailLast: {
+    borderTopRightRadius: 12,
+  },
+  morePhotos: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  morePhotosText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  cardBody: {
+    padding: 14,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
   },
   propertyInfo: {
     flex: 1,
@@ -674,79 +508,69 @@ const styles = StyleSheet.create({
   propertyName: {
     fontSize: 17,
     fontWeight: '600',
-    color: COLORS.dark,
-    marginBottom: 2,
+    color: '#000',
+    letterSpacing: -0.4,
   },
   unitName: {
-    fontSize: 14,
-    color: COLORS.gray,
+    fontSize: 15,
+    color: '#8E8E93',
+    marginTop: 2,
   },
   deleteBtn: {
     padding: 4,
   },
-  // Meta Row
+  // Meta
   metaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  metaChip: {
-    flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 10,
     gap: 4,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
   },
   metaText: {
-    fontSize: 12,
-    color: COLORS.gray,
+    fontSize: 13,
+    color: '#8E8E93',
   },
-  // Status Row
-  statusRow: {
+  metaDot: {
+    fontSize: 13,
+    color: '#C7C7CC',
+  },
+  // Footer
+  cardFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E5EA',
   },
-  statusBadge: {
+  statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
+    flex: 1,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  scoreBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-  scoreGrade: {
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '500',
+  },
+  scoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginRight: 12,
   },
   scoreValue: {
-    fontSize: 12,
+    fontSize: 17,
     fontWeight: '600',
+    color: '#000',
   },
-  viewArrow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  viewText: {
+  scoreMax: {
     fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.primary,
+    color: '#8E8E93',
   },
   bottomPadding: {
     height: 40,
