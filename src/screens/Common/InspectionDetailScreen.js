@@ -463,6 +463,17 @@ export default function InspectionDetailScreen({ route, navigation }) {
             )}
             
             <View style={styles.actionButtons}>
+              {/* Share Cleaning Report - for completed inspections */}
+              {status === 'COMPLETE' && (
+                <TouchableOpacity
+                  style={styles.shareReportButton}
+                  onPress={() => navigation.navigate('CleaningReport', { inspectionId })}
+                >
+                  <Ionicons name="document-text" size={18} color="#FFF" />
+                  <Text style={styles.shareReportButtonText}>Share Cleaning Report</Text>
+                </TouchableOpacity>
+              )}
+              
               {/* Edit Inspection Button - for cleaners when inspection failed */}
               {userRole === 'CLEANER' && statusDisplay.canEdit && (
                 <TouchableOpacity
@@ -1249,6 +1260,21 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  shareReportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#10B981',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  shareReportButtonText: {
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
   },

@@ -30,6 +30,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
     inspectionId, 
     propertyName, 
     unitName, 
+    unitId,
     rooms = [],
     isRejected = false,
     failedRoomIds = [],
@@ -64,9 +65,43 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const [selectedPhotoForView, setSelectedPhotoForView] = useState(null);
   const [damageReport, setDamageReport] = useState('');
   const { createInspection } = useInspectionStore();
+  
+  // Valuable Items State
+  const [valuableItems, setValuableItems] = useState([]); // All valuable items from all rooms
+  const [valuableItemPhotos, setValuableItemPhotos] = useState({}); // { itemId: { uri, notes } }
+  const [selectedValuableItem, setSelectedValuableItem] = useState(null); // For photo taking
+  const [valuableItemNotes, setValuableItemNotes] = useState('');
+  const [showValuableItemModal, setShowValuableItemModal] = useState(false);
 
   const hasRooms = rooms.length > 0;
   const failedRoomIdsSet = new Set(failedRoomIds);
+  
+  // Fetch valuable items for all rooms in this unit
+  React.useEffect(() => {
+    const fetchValuableItems = async () => {
+      const theUnitId = assignment?.unit_id || unitId;
+      if (!theUnitId) return;
+      
+      try {
+        console.log('🏷️ Fetching valuable items for unit:', theUnitId);
+        const response = await api.get(`/valuable-items/unit/${theUnitId}`);
+        const allItems = response.data.rooms?.flatMap(room => 
+          room.valuable_items.map(item => ({
+            ...item,
+            roomName: room.name,
+            roomId: room.id
+          }))
+        ) || [];
+        console.log(`📦 Found ${allItems.length} valuable items to verify`);
+        setValuableItems(allItems);
+      } catch (error) {
+        console.log('No valuable items or error fetching:', error.message);
+        setValuableItems([]);
+      }
+    };
+    
+    fetchValuableItems();
+  }, [assignment?.unit_id, unitId]);
 
   // Load existing photos when editing
   React.useEffect(() => {
@@ -278,6 +313,18 @@ export default function CaptureMediaScreen({ route, navigation }) {
       return;
     }
 
+    // Validation: All valuable items must have photos
+    const unverifiedItems = getUnverifiedValuableItems();
+    if (unverifiedItems.length > 0) {
+      const itemNames = unverifiedItems.map(i => `• ${i.name} (${i.roomName})`).join('\n');
+      Alert.alert(
+        'Valuable Items Missing',
+        `Please photograph all valuable items before submitting:\n\n${itemNames}`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     performUpload();
   };
 
@@ -317,6 +364,34 @@ export default function CaptureMediaScreen({ route, navigation }) {
 
       console.log('🎉 All photos uploaded successfully!');
 
+      // Upload valuable item verification photos
+      const valuableItemsToUpload = Object.entries(valuableItemPhotos).filter(([_, data]) => data.uri);
+      if (valuableItemsToUpload.length > 0) {
+        console.log(`📦 Uploading ${valuableItemsToUpload.length} valuable item verification photos...`);
+        for (const [itemId, data] of valuableItemsToUpload) {
+          try {
+            const formData = new FormData();
+            formData.append('photo', {
+              uri: data.uri,
+              type: 'image/jpeg',
+              name: `valuable_item_${itemId}.jpg`,
+            });
+            formData.append('inspection_id', currentInspection.id);
+            if (data.notes) {
+              formData.append('notes', data.notes);
+            }
+
+            await api.post(`/valuable-items/verify/${itemId}`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            console.log(`✅ Verified valuable item: ${itemId}`);
+          } catch (error) {
+            console.error(`Failed to verify item ${itemId}:`, error);
+          }
+        }
+        console.log('📦 Valuable item verifications complete!');
+      }
+
       // Submit inspection with damage report
       console.log('📤 Submitting inspection with damage report...');
       await api.post(`/cleaner/inspections/${currentInspection.id}/submit`, {
@@ -350,6 +425,57 @@ export default function CaptureMediaScreen({ route, navigation }) {
     const index = rooms.findIndex(r => r.id === roomId);
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
     return colors[index % colors.length];
+  };
+
+  // Valuable Item Functions
+  const handleValuableItemPhoto = async (item) => {
+    setSelectedValuableItem(item);
+    setValuableItemNotes(valuableItemPhotos[item.id]?.notes || '');
+    
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+        allowsEditing: false,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const resizedUri = await resizeImage(result.assets[0].uri);
+        setValuableItemPhotos(prev => ({
+          ...prev,
+          [item.id]: {
+            uri: resizedUri,
+            notes: prev[item.id]?.notes || ''
+          }
+        }));
+        console.log(`✅ Photo captured for valuable item: ${item.name}`);
+      }
+    } catch (error) {
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
+  const handleValuableItemNotesSave = () => {
+    if (selectedValuableItem) {
+      setValuableItemPhotos(prev => ({
+        ...prev,
+        [selectedValuableItem.id]: {
+          ...prev[selectedValuableItem.id],
+          notes: valuableItemNotes.trim()
+        }
+      }));
+    }
+    setShowValuableItemModal(false);
+    setSelectedValuableItem(null);
+    setValuableItemNotes('');
+  };
+
+  const getUnverifiedValuableItems = () => {
+    return valuableItems.filter(item => !valuableItemPhotos[item.id]?.uri);
   };
 
   // Group photos by room for display

@@ -500,6 +500,27 @@ export default function PropertyDetailScreen({ route, navigation }) {
                           ) : (
                             <Text style={styles.noTipsText}>No tips added yet</Text>
                           )}
+                          
+                          {/* Valuable Items Link */}
+                          <TouchableOpacity
+                            style={styles.valuableItemsButton}
+                            onPress={() => navigation.navigate('ValuableItems', {
+                              roomId: room.id,
+                              roomName: room.name,
+                              roomType: room.room_type,
+                              propertyName: property?.name,
+                              isPMS: false
+                            })}
+                          >
+                            <View style={styles.valuableItemsLeft}>
+                              <Ionicons name="shield-checkmark" size={16} color="#5856D6" />
+                              <Text style={styles.valuableItemsText}>Valuable Items</Text>
+                            </View>
+                            <View style={styles.valuableItemsRight}>
+                              <Text style={styles.valuableItemsHint}>Track & verify</Text>
+                              <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+                            </View>
+                          </TouchableOpacity>
                         </View>
                       )}
                     </View>
@@ -1308,5 +1329,36 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8E8E93',
     marginTop: 2,
+  },
+  // Valuable Items Button
+  valuableItemsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  valuableItemsLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  valuableItemsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#5856D6',
+  },
+  valuableItemsRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  valuableItemsHint: {
+    fontSize: 12,
+    color: '#8E8E93',
   },
 });
