@@ -27,7 +27,8 @@ import shadows from '../../theme/shadows';
 export default function CaptureMediaScreen({ route, navigation }) {
   const { 
     assignment, 
-    inspectionId, 
+    inspectionId,
+    propertyId: routePropertyId,
     propertyName, 
     unitName, 
     unitId,
@@ -38,6 +39,9 @@ export default function CaptureMediaScreen({ route, navigation }) {
     existingMedia = [],
     isEditing = false
   } = route.params;
+  
+  // Get propertyId from route params or assignment
+  const propertyId = routePropertyId || assignment?.unit?.property?.id;
   
   console.log('🎬 CaptureMediaScreen received params:', {
     inspectionId,
@@ -399,14 +403,38 @@ export default function CaptureMediaScreen({ route, navigation }) {
       });
       console.log('✅ Inspection submitted successfully!');
 
-      Alert.alert(
-        'Success!',
-        'Inspection submitted successfully. AI analysis will begin shortly.',
-        [{
-          text: 'OK',
-          onPress: () => navigation.replace('CleanerHome'),
-        }]
-      );
+      // Prompt to update inventory after successful submission
+      if (propertyId) {
+        Alert.alert(
+          'Inspection Submitted!',
+          'AI analysis will begin shortly.\n\nWould you like to update inventory for this property?',
+          [
+            {
+              text: 'Skip',
+              style: 'cancel',
+              onPress: () => navigation.replace('CleanerHome'),
+            },
+            {
+              text: 'Update Inventory',
+              onPress: () => navigation.replace('InventoryUpdate', {
+                propertyId: propertyId,
+                propertyName: propertyName || assignment?.unit?.property?.name,
+                inspectionId: currentInspection.id,
+              }),
+            },
+          ]
+        );
+      } else {
+        // No property ID available, just go home
+        Alert.alert(
+          'Success!',
+          'Inspection submitted successfully. AI analysis will begin shortly.',
+          [{
+            text: 'OK',
+            onPress: () => navigation.replace('CleanerHome'),
+          }]
+        );
+      }
     } catch (error) {
       console.error('Upload error:', error);
       Alert.alert('Error', error.message || 'Failed to upload photos. Please try again.');
@@ -593,6 +621,93 @@ export default function CaptureMediaScreen({ route, navigation }) {
 
       {/* Photo Groups */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Valuable Items Section */}
+        {valuableItems.length > 0 && (
+          <View style={styles.valuableItemsSection}>
+            <View style={styles.valuableItemsHeader}>
+              <View style={styles.valuableItemsHeaderLeft}>
+                <Ionicons name="shield-checkmark" size={18} color="#5856D6" />
+                <Text style={styles.valuableItemsTitle}>Valuable Items</Text>
+              </View>
+              <View style={styles.valuableItemsCount}>
+                <Text style={styles.valuableItemsCountText}>
+                  {Object.values(valuableItemPhotos).filter(p => p.uri).length}/{valuableItems.length}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.valuableItemsSubtitle}>
+              Photograph each item to verify it's present and undamaged
+            </Text>
+            
+            <View style={styles.valuableItemsList}>
+              {valuableItems.map((item) => {
+                const hasPhoto = !!valuableItemPhotos[item.id]?.uri;
+                return (
+                  <View key={item.id} style={styles.valuableItemCard}>
+                    <TouchableOpacity
+                      style={[
+                        styles.valuableItemPhotoArea,
+                        hasPhoto && styles.valuableItemPhotoAreaComplete
+                      ]}
+                      onPress={() => handleValuableItemPhoto(item)}
+                    >
+                      {hasPhoto ? (
+                        <>
+                          <Image
+                            source={{ uri: valuableItemPhotos[item.id].uri }}
+                            style={styles.valuableItemPhotoThumbnail}
+                          />
+                          <View style={styles.valuableItemCheckmark}>
+                            <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+                          </View>
+                        </>
+                      ) : (
+                        <>
+                          <Ionicons name="camera" size={28} color="#5856D6" />
+                          <Text style={styles.valuableItemPhotoText}>Tap to verify</Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                    
+                    <View style={styles.valuableItemInfo}>
+                      <Text style={styles.valuableItemName}>{item.name}</Text>
+                      <Text style={styles.valuableItemRoom}>{item.roomName}</Text>
+                      {item.description && (
+                        <Text style={styles.valuableItemDescription} numberOfLines={1}>
+                          {item.description}
+                        </Text>
+                      )}
+                      {hasPhoto && (
+                        <TouchableOpacity
+                          style={styles.addNoteButton}
+                          onPress={() => {
+                            setSelectedValuableItem(item);
+                            setValuableItemNotes(valuableItemPhotos[item.id]?.notes || '');
+                            setShowValuableItemModal(true);
+                          }}
+                        >
+                          <Ionicons name="chatbubble-outline" size={12} color="#5856D6" />
+                          <Text style={styles.addNoteText}>
+                            {valuableItemPhotos[item.id]?.notes ? 'Edit note' : 'Add note'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    
+                    {item.reference_photo && (
+                      <TouchableOpacity
+                        style={styles.referencePhotoButton}
+                        onPress={() => setSelectedPhotoForView({ uri: item.reference_photo, roomName: 'Reference Photo' })}
+                      >
+                        <Ionicons name="eye-outline" size={16} color="#8E8E93" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
         {/* Unassigned Photos */}
         {unassignedPhotos.length > 0 && (
           <View style={[styles.roomSection, styles.firstSection]}>
@@ -828,6 +943,65 @@ export default function CaptureMediaScreen({ route, navigation }) {
               </View>
             )}
           </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* Valuable Item Notes Modal */}
+      <Modal
+        visible={showValuableItemModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowValuableItemModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity 
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setShowValuableItemModal(false)}
+          />
+          <View style={styles.valuableItemModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedValuableItem?.name}
+              </Text>
+              <TouchableOpacity 
+                onPress={() => setShowValuableItemModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.valuableItemModalLabel}>Add a note (optional)</Text>
+            <Text style={styles.valuableItemModalHint}>
+              Report any issues: damage, scratches, missing parts, etc.
+            </Text>
+            <TextInput
+              style={styles.valuableItemNoteInput}
+              value={valuableItemNotes}
+              onChangeText={setValuableItemNotes}
+              placeholder="e.g., Small scratch on corner"
+              placeholderTextColor="#94A3B8"
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            
+            <View style={styles.valuableItemModalButtons}>
+              <TouchableOpacity
+                style={styles.valuableItemModalCancel}
+                onPress={() => setShowValuableItemModal(false)}
+              >
+                <Text style={styles.valuableItemModalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.valuableItemModalSave}
+                onPress={handleValuableItemNotesSave}
+              >
+                <Text style={styles.valuableItemModalSaveText}>Save Note</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
@@ -1432,5 +1606,190 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Valuable Items Styles
+  valuableItemsSection: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 0,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 0,
+  },
+  valuableItemsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  valuableItemsHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  valuableItemsTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.4,
+  },
+  valuableItemsCount: {
+    backgroundColor: '#5856D615',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  valuableItemsCountText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5856D6',
+  },
+  valuableItemsSubtitle: {
+    fontSize: 13,
+    color: '#8E8E93',
+    marginBottom: 12,
+  },
+  valuableItemsList: {
+    gap: 10,
+  },
+  valuableItemCard: {
+    flexDirection: 'row',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+    padding: 10,
+    alignItems: 'center',
+  },
+  valuableItemPhotoArea: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    backgroundColor: '#E5E5EA',
+    borderWidth: 2,
+    borderColor: '#5856D6',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  valuableItemPhotoAreaComplete: {
+    borderStyle: 'solid',
+    borderColor: '#34C759',
+  },
+  valuableItemPhotoThumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  valuableItemCheckmark: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+  },
+  valuableItemPhotoText: {
+    fontSize: 10,
+    color: '#5856D6',
+    fontWeight: '600',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  valuableItemInfo: {
+    flex: 1,
+  },
+  valuableItemName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 2,
+  },
+  valuableItemRoom: {
+    fontSize: 12,
+    color: '#5856D6',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  valuableItemDescription: {
+    fontSize: 12,
+    color: '#8E8E93',
+  },
+  addNoteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+  },
+  addNoteText: {
+    fontSize: 12,
+    color: '#5856D6',
+    fontWeight: '500',
+  },
+  referencePhotoButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E5E5EA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  // Valuable Item Modal
+  valuableItemModalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    width: '100%',
+    maxWidth: 400,
+    padding: spacing.md,
+    ...shadows.large,
+  },
+  valuableItemModalLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  valuableItemModalHint: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginBottom: 12,
+  },
+  valuableItemNoteInput: {
+    backgroundColor: '#F2F2F7',
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: '#000',
+    minHeight: 80,
+  },
+  valuableItemModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  valuableItemModalCancel: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+  },
+  valuableItemModalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  valuableItemModalSave: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: '#5856D6',
+    alignItems: 'center',
+  },
+  valuableItemModalSaveText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
   },
 });

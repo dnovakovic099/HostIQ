@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,37 +8,40 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-  Linking,
-  Platform,
-  Modal,
   TextInput,
-  ScrollView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-// import * as DocumentPicker from 'expo-document-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../api/client';
+
+const COLORS = {
+  bg: '#F8FAFC',
+  card: '#FFFFFF',
+  primary: '#4A90E2',
+  pms: '#4A90E2', // HostIQ Blue for PMS badges
+  text: '#1F2937',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  border: '#E5E7EB',
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
+};
 
 export default function PropertiesScreen({ navigation }) {
   const [properties, setProperties] = useState([]);
   const [pmsProperties, setPmsProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [editingPMSProperty, setEditingPMSProperty] = useState(null);
-  const [pmsRoomCount, setPmsRoomCount] = useState('');
-  const [pmsNotes, setPmsNotes] = useState('');
-  const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const lastFetchTime = useRef(0);
 
-  // Only refetch if it's been more than 30 seconds since last fetch
   useFocusEffect(
     useCallback(() => {
       const now = Date.now();
-      const timeSinceLastFetch = now - lastFetchTime.current;
-      
-      if (timeSinceLastFetch > 30000 || lastFetchTime.current === 0) {
+      if (now - lastFetchTime.current > 30000 || lastFetchTime.current === 0) {
         lastFetchTime.current = now;
         fetchProperties();
       }
@@ -48,29 +51,15 @@ export default function PropertiesScreen({ navigation }) {
   const fetchProperties = async () => {
     try {
       const response = await api.get('/owner/properties');
-      
-      // Handle new API format with separated manual and PMS properties
       if (response.data.manualProperties) {
-        console.log('📋 Manual properties fetched:', response.data.manualProperties.length);
-        console.log('🔗 PMS properties fetched:', response.data.pmsProperties?.length || 0);
-        
-        response.data.manualProperties.forEach(prop => {
-          console.log(`   ${prop.name}:`);
-          console.log(`     - rating: ${prop.rating}`);
-          console.log(`     - hasLowRating: ${prop.hasLowRating}`);
-        });
-        
         setProperties(response.data.manualProperties);
         setPmsProperties(response.data.pmsProperties || []);
       } else {
-        // Fallback for old API format
-        console.log('📋 Properties fetched:', response.data.length);
         setProperties(response.data);
         setPmsProperties([]);
       }
     } catch (error) {
       console.error('Error fetching properties:', error);
-      Alert.alert('Error', 'Failed to load properties');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -82,81 +71,11 @@ export default function PropertiesScreen({ navigation }) {
     fetchProperties();
   };
 
-  const getFilteredProperties = () => {
-    if (!searchQuery.trim()) {
-      return properties;
-    }
-    
-    const query = searchQuery.toLowerCase();
-    return properties.filter(property => {
-      const name = (property.name || '').toLowerCase();
-      const address = (property.address || '').toLowerCase();
-      return name.includes(query) || address.includes(query);
-    });
-  };
-
-  const getFilteredPMSProperties = () => {
-    if (!searchQuery.trim()) {
-      return pmsProperties;
-    }
-    
-    const query = searchQuery.toLowerCase();
-    return pmsProperties.filter(property => {
-      const name = (property.nickname || property.name || '').toLowerCase();
-      const address = (property.address || '').toLowerCase();
-      return name.includes(query) || address.includes(query);
-    });
-  };
-
-  const handleDownloadTemplate = async () => {
-    try {
-      const baseUrl = api.defaults.baseURL || 'https://roomify-server-production.up.railway.app';
-      const templateUrl = `${baseUrl}/api/owner/properties/csv-template`;
-      
-      Alert.alert(
-        'Download Template',
-        'Opening template in browser. Save the file and fill it out with your properties.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open', onPress: () => Linking.openURL(templateUrl) }
-        ]
-      );
-    } catch (error) {
-      console.error('Error downloading template:', error);
-      Alert.alert('Error', 'Failed to download template');
-    }
-  };
-
-  const handleEditPMSProperty = (property) => {
-    navigation.navigate('PropertyDetail', { 
-      propertyId: property.id,
-      isPMS: true 
-    });
-  };
-
-  const handleSavePMSProperty = async () => {
-    try {
-      setSaving(true);
-      await api.put(`/pms/properties/${editingPMSProperty.id}`, {
-        room_count: pmsRoomCount ? parseInt(pmsRoomCount) : null,
-        notes: pmsNotes || null
-      });
-
-      Alert.alert('Success', 'Property updated successfully');
-      setEditingPMSProperty(null);
-      fetchProperties();
-    } catch (error) {
-      console.error('Error updating PMS property:', error);
-      Alert.alert('Error', 'Failed to update property');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDeletePMSProperty = (property) => {
+  const handleDelete = (item, isPMS = false) => {
+    const name = isPMS ? item.name : item.name;
     Alert.alert(
       'Delete Property',
-      `Are you sure you want to delete "${property.name}"? This will only remove it from your view, not from ${property.pmsProvider}.`,
+      `Delete "${name}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -164,12 +83,14 @@ export default function PropertiesScreen({ navigation }) {
           style: 'destructive',
           onPress: async () => {
             try {
-              await api.delete(`/pms/properties/${property.id}`);
-              Alert.alert('Success', 'Property deleted successfully');
+              if (isPMS) {
+                await api.delete(`/pms/properties/${item.id}`);
+              } else {
+                await api.delete(`/owner/properties/${item.id}`);
+              }
               fetchProperties();
             } catch (error) {
-              console.error('Error deleting PMS property:', error);
-              Alert.alert('Error', 'Failed to delete property');
+              Alert.alert('Error', 'Failed to delete');
             }
           }
         }
@@ -177,303 +98,185 @@ export default function PropertiesScreen({ navigation }) {
     );
   };
 
-  const handleUploadCSV = async () => {
-    Alert.alert('Coming Soon', 'CSV upload will be available in the next update');
-    // Temporarily disabled due to native module issue
-    // try {
-    //   const result = await DocumentPicker.getDocumentAsync({
-    //     type: 'text/csv',
-    //     copyToCacheDirectory: true
-    //   });
-
-    //   if (result.canceled) {
-    //     return;
-    //   }
-
-    //   const file = result.assets[0];
-      
-    //   setUploading(true);
-
-    //   // Create FormData
-    //   const formData = new FormData();
-    //   formData.append('csv', {
-    //     uri: file.uri,
-    //     name: file.name,
-    //     type: file.mimeType || 'text/csv'
-    //   });
-
-    //   const response = await api.post('/owner/properties/bulk-upload', formData, {
-    //     headers: {
-    //       'Content-Type': 'multipart/form-data',
-    //     },
-    //   });
-
-    //   const { created, failed, created_properties, failed_properties } = response.data;
-
-    //   let message = `Successfully created ${created} ${created === 1 ? 'property' : 'properties'}`;
-    //   if (failed > 0) {
-    //     message += `\n\nFailed: ${failed}\n${failed_properties.map(f => `- ${f.name}: ${f.error}`).join('\n')}`;
-    //   }
-
-    //   Alert.alert(
-    //     'Upload Complete',
-    //     message,
-    //     [{ text: 'OK', onPress: () => fetchProperties() }]
-    //   );
-    // } catch (error) {
-    //   console.error('Error uploading CSV:', error);
-    //   Alert.alert(
-    //     'Upload Failed',
-    //     error.response?.data?.error || error.message || 'Failed to upload CSV file'
-    //   );
-    // } finally {
-    //   setUploading(false);
-    // }
+  const getFiltered = (list, isPMS = false) => {
+    if (!searchQuery.trim()) return list;
+    const q = searchQuery.toLowerCase();
+    return list.filter(p => {
+      const name = (isPMS ? (p.nickname || p.name) : p.name || '').toLowerCase();
+      const address = (p.address || '').toLowerCase();
+      return name.includes(q) || address.includes(q);
+    });
   };
 
-  const renderProperty = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('PropertyDetail', { propertyId: item.id })}
-    >
-      {item.hasLowRating && (
-        <View style={styles.warningBanner}>
-          <Ionicons name="alert-circle" size={14} color="#DC2626" />
-          <Text style={styles.warningText}>
-            Low Rating: {item.rating}
-          </Text>
-        </View>
-      )}
+  // Combine all properties for unified list
+  const getAllProperties = () => {
+    const pms = getFiltered(pmsProperties, true).map(p => ({ ...p, _isPMS: true }));
+    const manual = getFiltered(properties, false).map(p => ({ ...p, _isPMS: false }));
+    return [...pms, ...manual];
+  };
 
-      <View style={styles.cardHeader}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="business" size={32} color="#4A90E2" />
-        </View>
-        <View style={styles.propertyInfo}>
-          <Text style={styles.propertyName}>{item.name}</Text>
-          <Text style={styles.address}>{item.address}</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={24} color="#ccc" />
-      </View>
+  const renderProperty = ({ item }) => {
+    const isPMS = item._isPMS;
+    const name = isPMS ? (item.nickname || item.name) : item.name;
+    const address = item.address || item.city || '';
+    const unitCount = item._count?.units || 0;
+    const hasWarning = item.hasLowRating;
+    const rating = item.rating;
 
-      <View style={styles.cardFooter}>
-        <View style={styles.stat}>
-          <Ionicons name="home-outline" size={16} color="#666" />
-          <Text style={styles.statText}>{item._count.units} units</Text>
-        </View>
-        {item.rating && !item.hasLowRating && (
-          <View style={[styles.stat, { marginLeft: 16 }]}>
-            <Ionicons name="star" size={16} color="#FFB800" />
-            <Text style={styles.statText}>{item.rating}</Text>
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderPMSProperty = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.pmsCard}
-      onPress={() => handleEditPMSProperty(item)}
-    >
-      <View style={styles.pmsBadge}>
-        <Ionicons name="cloud" size={10} color="#6366F1" />
-        <Text style={styles.pmsBadgeText}>{item.pmsProvider}</Text>
-      </View>
-      <View style={styles.pmsCardHeader}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="business-outline" size={24} color="#6366F1" />
-        </View>
-        <View style={styles.propertyInfo}>
-          <Text style={styles.propertyName}>{item.name}</Text>
-          {item.nickname && <Text style={styles.pmsNickname}>{item.nickname}</Text>}
-          <Text style={styles.address}>{item.address || item.city || 'No address'}</Text>
-          
-          {item.room_count !== null && item.room_count !== undefined && (
-            <View style={styles.pmsRoomCount}>
-              <Ionicons name="bed-outline" size={12} color="#6B7280" />
-              <Text style={styles.pmsRoomCountText}>
-                {item.room_count} {item.room_count === 1 ? 'room' : 'rooms'}
-              </Text>
-            </View>
-          )}
-        </View>
-        <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-      </View>
-      {item.notes && (
-        <View style={styles.pmsNotesPreview}>
-          <Ionicons name="document-text-outline" size={12} color="#6B7280" />
-          <Text style={styles.pmsNotesPreviewText} numberOfLines={1}>{item.notes}</Text>
-        </View>
-      )}
-      <TouchableOpacity 
-        style={styles.pmsDeleteButton}
-        onPress={(e) => {
-          e.stopPropagation();
-          handleDeletePMSProperty(item);
-        }}
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate('PropertyDetail', { 
+          propertyId: item.id,
+          isPMS: isPMS 
+        })}
+        activeOpacity={0.7}
       >
-        <Ionicons name="trash-outline" size={14} color="#DC2626" />
+        {/* Header */}
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderLeft}>
+            {isPMS && (
+              <View style={styles.pmsBadge}>
+                <Ionicons name="cloud" size={10} color={COLORS.pms} />
+                <Text style={styles.pmsBadgeText}>{item.pmsProvider}</Text>
+              </View>
+            )}
+            <Text style={styles.propertyName} numberOfLines={2}>{name}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.deleteBtn}
+            onPress={() => handleDelete(item, isPMS)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="trash-outline" size={18} color={COLORS.textMuted} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Address */}
+        <Text style={styles.address} numberOfLines={2}>{address}</Text>
+
+        {/* Footer */}
+        <View style={styles.cardFooter}>
+          {/* Stats */}
+          <View style={styles.stats}>
+            {!isPMS && unitCount > 0 && (
+              <View style={styles.statPill}>
+                <Ionicons name="layers-outline" size={14} color={COLORS.textSecondary} />
+                <Text style={styles.statText}>{unitCount} unit{unitCount !== 1 ? 's' : ''}</Text>
+              </View>
+            )}
+            {rating && !hasWarning && (
+              <View style={styles.statPill}>
+                <Ionicons name="star" size={14} color="#FBBF24" />
+                <Text style={styles.statText}>{rating}</Text>
+              </View>
+            )}
+            {hasWarning && (
+              <View style={[styles.statPill, styles.warningPill]}>
+                <Ionicons name="alert-circle" size={14} color={COLORS.error} />
+                <Text style={[styles.statText, { color: COLORS.error }]}>{rating}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Arrow */}
+          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+        </View>
       </TouchableOpacity>
-    </TouchableOpacity>
+    );
+  };
+
+  const renderEmpty = () => (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="home-outline" size={48} color={COLORS.primary} />
+      </View>
+      <Text style={styles.emptyTitle}>No Properties Yet</Text>
+      <Text style={styles.emptyText}>
+        Add your first property to start managing cleanings
+      </Text>
+      <TouchableOpacity
+        style={styles.emptyButton}
+        onPress={() => navigation.navigate('CreateProperty')}
+      >
+        <Text style={styles.emptyButtonText}>Add Property</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+      <View style={styles.loadingView}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
-  const filteredProperties = getFilteredProperties();
-  const filteredPMSProperties = getFilteredPMSProperties();
+  const allProperties = getAllProperties();
+  const hasProperties = properties.length > 0 || pmsProperties.length > 0;
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
-      {(properties.length > 0 || pmsProperties.length > 0) && (
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search properties..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-            placeholderTextColor="#8E8E93"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#8E8E93" />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {properties.length === 0 && pmsProperties.length === 0 ? (
-        <View style={styles.empty}>
-          <Ionicons name="business-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyText}>No properties yet</Text>
-          <Text style={styles.emptySubtext}>Create your first property or upload multiple</Text>
-          
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => navigation.navigate('CreateProperty')}
-          >
-            <Text style={styles.createButtonText}>Create Property</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-
-          <FlatList
-            data={filteredProperties}
-            renderItem={renderProperty}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-            }
-            ListHeaderComponent={
-              filteredPMSProperties.length > 0 ? (
-                <View style={styles.pmsSectionContainer}>
-                  <Text style={styles.pmsSection}>PMS Listings</Text>
-                  {filteredPMSProperties.map(pmsProp => (
-                    <View key={pmsProp.id}>
-                      {renderPMSProperty({ item: pmsProp })}
-                    </View>
-                  ))}
-                  {filteredProperties.length > 0 && (
-                    <Text style={styles.pmsSectionFooter}>Manual Properties</Text>
-                  )}
-                </View>
-              ) : null
-            }
-          />
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={() => navigation.navigate('CreateProperty')}
-          >
-            <Ionicons name="add" size={28} color="#fff" />
-          </TouchableOpacity>
-        </>
-      )}
-
-      {/* Edit PMS Property Modal */}
-      <Modal
-        visible={editingPMSProperty !== null}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setEditingPMSProperty(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Property</Text>
-              <TouchableOpacity onPress={() => setEditingPMSProperty(null)}>
-                <Ionicons name="close" size={24} color="#666" />
+      {/* Search */}
+      {hasProperties && (
+        <View style={styles.searchWrapper}>
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={COLORS.textMuted} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search properties..."
+              placeholderTextColor={COLORS.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
               </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalBody}>
-              {editingPMSProperty && (
-                <>
-                  <Text style={styles.propertyNameTitle}>{editingPMSProperty.name}</Text>
-                  <Text style={styles.propertyAddress}>{editingPMSProperty.address}</Text>
-
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>Number of Rooms</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={pmsRoomCount}
-                      onChangeText={setPmsRoomCount}
-                      placeholder="e.g., 3"
-                      keyboardType="number-pad"
-                      placeholderTextColor="#999"
-                    />
-                  </View>
-
-                  <View style={styles.formGroup}>
-                    <Text style={styles.label}>Notes (Optional)</Text>
-                    <TextInput
-                      style={[styles.input, styles.textArea]}
-                      value={pmsNotes}
-                      onChangeText={setPmsNotes}
-                      placeholder="Add any notes about this property..."
-                      multiline
-                      numberOfLines={4}
-                      placeholderTextColor="#999"
-                    />
-                  </View>
-                </>
-              )}
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => setEditingPMSProperty(null)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.saveButton}
-                onPress={handleSavePMSProperty}
-                disabled={saving}
-              >
-                {saving ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Save</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            )}
           </View>
         </View>
-      </Modal>
+      )}
+
+      {/* List */}
+      <FlatList
+        data={allProperties}
+        renderItem={renderProperty}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor={COLORS.primary}
+          />
+        }
+        ListEmptyComponent={hasProperties ? (
+          <View style={styles.noResults}>
+            <Ionicons name="search-outline" size={32} color={COLORS.textMuted} />
+            <Text style={styles.noResultsText}>No properties found</Text>
+          </View>
+        ) : renderEmpty}
+      />
+
+      {/* FAB */}
+      {hasProperties && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => navigation.navigate('CreateProperty')}
+          activeOpacity={0.9}
+        >
+          <LinearGradient
+            colors={[COLORS.primary, '#3D7FD9']}
+            style={styles.fabGradient}
+          >
+            <Ionicons name="add" size={28} color="#FFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -481,445 +284,211 @@ export default function PropertiesScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
   },
-  searchContainer: {
+  loadingView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.bg,
+  },
+  // Search
+  searchWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginVertical: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  searchIcon: {
-    marginRight: 8,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   searchInput: {
     flex: 1,
-    fontSize: 17,
-    color: '#000000',
-    letterSpacing: -0.4,
-  },
-  loading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  empty: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#999',
-    marginTop: 20,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  createButton: {
-    backgroundColor: '#4A90E2',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 8,
-  },
-  createButtonText: {
-    color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    color: COLORS.text,
   },
-  list: {
-    padding: 15,
+  // List
+  listContent: {
+    padding: 16,
+    paddingBottom: 100,
   },
+  // Card
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  warningBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEE2E2',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    padding: 16,
     marginBottom: 12,
-    gap: 6,
-  },
-  warningText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#DC2626',
-    fontWeight: '600',
-    letterSpacing: -0.2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 6,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E3F2FD',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  propertyInfo: {
+  cardHeaderLeft: {
     flex: 1,
-  },
-  propertyName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 2,
-  },
-  address: {
-    fontSize: 12,
-    color: '#666',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#4A90E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 8,
-  },
-  csvSection: {
-    marginTop: 30,
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-  csvSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  csvButtons: {
-    flexDirection: 'column',
-    gap: 10,
-  },
-  csvButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#4A90E2',
-    backgroundColor: '#fff',
-    gap: 8,
-  },
-  csvButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4A90E2',
-  },
-  uploadButton: {
-    backgroundColor: '#4A90E2',
-    borderColor: '#4A90E2',
-  },
-  uploadButtonText: {
-    color: '#fff',
-  },
-  header: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  csvButtonsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    justifyContent: 'center',
-  },
-  csvButtonCompact: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#4A90E2',
-    backgroundColor: '#fff',
-    gap: 6,
-  },
-  csvButtonCompactText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#4A90E2',
-  },
-  uploadButtonCompact: {
-    backgroundColor: '#4A90E2',
-    borderColor: '#4A90E2',
-  },
-  uploadButtonCompactText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  pmsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#6366F1',
-    backgroundColor: '#fff',
-    gap: 4,
-    marginLeft: 8,
-  },
-  pmsButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6366F1',
-  },
-  pmsSectionContainer: {
-    paddingHorizontal: 15,
-    paddingTop: 15,
-    backgroundColor: '#f5f5f5',
-  },
-  pmsSection: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6366F1',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  pmsSectionFooter: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginTop: 20,
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  pmsCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E0E7FF',
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 1,
+    marginRight: 12,
   },
   pmsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: '#EEF2FF',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 3,
-    gap: 3,
-    marginBottom: 8,
-  },
-  pmsBadgeText: {
-    fontSize: 9,
-    fontWeight: '600',
-    color: '#6366F1',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  pmsCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    gap: 4,
     marginBottom: 6,
   },
-  pmsNickname: {
-    fontSize: 11,
-    color: '#666',
-    fontStyle: 'italic',
-    marginTop: 1,
-  },
-  pmsNote: {
-    fontSize: 11,
-    color: '#999',
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
-  pmsRoomCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-    gap: 3,
-  },
-  pmsRoomCountText: {
-    fontSize: 11,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  pmsNotesPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    gap: 4,
-  },
-  pmsNotesPreviewText: {
-    flex: 1,
-    fontSize: 11,
-    color: '#6B7280',
-    fontStyle: 'italic',
-  },
-  pmsDeleteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    padding: 6,
-    borderRadius: 4,
-    backgroundColor: '#FEE2E2',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  modalTitle: {
-    fontSize: 20,
+  pmsBadgeText: {
+    fontSize: 10,
     fontWeight: '700',
-    color: '#1A1A1A',
+    color: COLORS.pms,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  modalBody: {
-    padding: 20,
-  },
-  propertyNameTitle: {
-    fontSize: 18,
+  propertyName: {
+    fontSize: 17,
     fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 4,
+    color: COLORS.text,
+    lineHeight: 22,
   },
-  propertyAddress: {
+  deleteBtn: {
+    padding: 4,
+  },
+  address: {
     fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 24,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
   },
-  formGroup: {
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  stats: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    gap: 5,
+  },
+  warningPill: {
+    backgroundColor: '#FEF2F2',
+  },
+  statText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  // Empty
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 80,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 20,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text,
     marginBottom: 8,
   },
-  input: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#1A1A1A',
+  emptyText: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
   },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  modalFooter: {
-    flexDirection: 'row',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
+  emptyButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 28,
     paddingVertical: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
+    borderRadius: 12,
   },
-  cancelButtonText: {
+  emptyButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#FFF',
   },
-  saveButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: '#6366F1',
+  noResults: {
     alignItems: 'center',
+    paddingVertical: 60,
   },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+  noResultsText: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
+    marginTop: 12,
+  },
+  // FAB
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    borderRadius: 18,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  fabGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
-
-

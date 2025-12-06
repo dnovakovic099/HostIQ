@@ -1,17 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
+import api from '../api/client';
 import CleanerStack from './CleanerStack';
 import OwnerStack from './OwnerStack';
 import SettingsScreen from '../screens/Common/SettingsScreen';
 import PropertiesScreen from '../screens/Owner/PropertiesScreen';
 import PropertyDetailScreen from '../screens/Owner/PropertyDetailScreen';
 import CreatePropertyScreen from '../screens/Owner/CreatePropertyScreen';
-import ListingOptimizationScreen from '../screens/Owner/ListingOptimizationScreen';
+import InsightsScreen from '../screens/Owner/InsightsScreen';
+import IssuesScreen from '../screens/Owner/IssuesScreen';
+import InspectionDetailScreen from '../screens/Common/InspectionDetailScreen';
 import PricingScreen from '../screens/Owner/PricingScreen';
-import CleanerPerformanceScreen from '../screens/Owner/CleanerPerformanceScreen';
 import PayCleanerScreen from '../screens/Owner/PayCleanerScreen';
 import PaymentHistoryScreen from '../screens/Common/PaymentHistoryScreen';
 import InventoryScreen from '../screens/Owner/InventoryScreen';
@@ -35,7 +38,7 @@ function PropertiesStack() {
           borderBottomWidth: 0.5,
           borderBottomColor: '#E5E5EA',
         },
-        headerTintColor: '#007AFF',
+        headerTintColor: '#4A90E2',
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 17,
@@ -73,7 +76,7 @@ function PropertiesStack() {
   );
 }
 
-// Insights Stack (Combined: Listing Optimization + Guest Issues + Cleaner Performance)
+// Insights Stack (Cleaners + Property tabs)
 function InsightsStack() {
   return (
     <Stack.Navigator
@@ -88,7 +91,7 @@ function InsightsStack() {
           borderBottomWidth: 0.5,
           borderBottomColor: '#E5E5EA',
         },
-        headerTintColor: '#007AFF',
+        headerTintColor: '#4A90E2',
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 17,
@@ -98,14 +101,9 @@ function InsightsStack() {
       }}
     >
       <Stack.Screen 
-        name="InsightsList" 
-        component={ListingOptimizationScreen}
+        name="InsightsTabs" 
+        component={InsightsScreen}
         options={{ title: 'Insights' }}
-      />
-      <Stack.Screen 
-        name="CleanerPerformance" 
-        component={CleanerPerformanceScreen}
-        options={{ title: 'Cleaner Performance' }}
       />
       <Stack.Screen 
         name="PayCleaner" 
@@ -116,6 +114,16 @@ function InsightsStack() {
         name="PaymentHistory" 
         component={PaymentHistoryScreen}
         options={{ title: 'Payment History' }}
+      />
+      <Stack.Screen 
+        name="Issues" 
+        component={IssuesScreen}
+        options={{ title: 'Guest Issues' }}
+      />
+      <Stack.Screen 
+        name="InspectionDetail" 
+        component={InspectionDetailScreen}
+        options={{ title: 'Inspection Details' }}
       />
     </Stack.Navigator>
   );
@@ -136,7 +144,7 @@ function PricingStack() {
           borderBottomWidth: 0.5,
           borderBottomColor: '#E5E5EA',
         },
-        headerTintColor: '#007AFF',
+        headerTintColor: '#4A90E2',
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 17,
@@ -158,6 +166,30 @@ export default function MainTabs() {
   const { user } = useAuthStore();
   const isCleaner = user?.role === 'CLEANER';
   const isOwner = user?.role === 'OWNER' || user?.role === 'ADMIN';
+  const [hasPMSConnected, setHasPMSConnected] = useState(false);
+
+  // Check if user has PMS properties connected
+  useEffect(() => {
+    const checkPMSStatus = async () => {
+      if (!isOwner) return;
+      
+      try {
+        // Check for PMS integrations
+        const response = await api.get('/pms/integrations');
+        const integrations = response.data || [];
+        // User has PMS if any integration has properties synced
+        const hasProperties = integrations.some(
+          integration => integration.pms_properties && integration.pms_properties.length > 0
+        );
+        setHasPMSConnected(hasProperties);
+      } catch (error) {
+        // If error (no PMS endpoint or not connected), set to false
+        setHasPMSConnected(false);
+      }
+    };
+
+    checkPMSStatus();
+  }, [isOwner]);
 
   return (
     <Tab.Navigator
@@ -207,15 +239,17 @@ export default function MainTabs() {
             options={{ title: 'Properties' }}
           />
           <Tab.Screen 
-            name="Pricing" 
-            component={PricingStack}
-            options={{ title: 'Pricing' }}
-          />
-          <Tab.Screen 
             name="Insights" 
             component={InsightsStack}
             options={{ title: 'Insights' }}
           />
+          {hasPMSConnected && (
+            <Tab.Screen 
+              name="Pricing" 
+              component={PricingStack}
+              options={{ title: 'Pricing' }}
+            />
+          )}
         </>
       )}
 

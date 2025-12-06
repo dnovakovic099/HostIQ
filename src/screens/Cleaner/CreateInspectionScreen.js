@@ -141,6 +141,7 @@ export default function CreateInspectionScreen({ navigation }) {
         inspectionId: inspectionResponse.data.id,
         propertyName: selectedProperty.name,
         unitName: selectedUnit.name,
+        unitId: selectedUnit.id, // For valuable items
         rooms: roomsToPass,
       });
     } catch (error) {

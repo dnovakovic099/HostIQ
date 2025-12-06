@@ -10,9 +10,22 @@ import {
   Share,
   Alert,
   Dimensions,
+  Linking,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
 import api from '../../api/client';
+import { API_URL } from '../../config/api';
+import * as SecureStore from 'expo-secure-store';
+
+// Try to import expo-sharing, but make it optional
+let Sharing = null;
+try {
+  Sharing = require('expo-sharing');
+} catch (e) {
+  console.log('expo-sharing not available, using fallback');
+}
 
 const { width } = Dimensions.get('window');
 const PHOTO_SIZE = (width - 48) / 3;
@@ -36,6 +49,7 @@ export default function CleaningReportScreen({ route, navigation }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
 
   useEffect(() => {
@@ -107,6 +121,79 @@ export default function CleaningReportScreen({ route, navigation }) {
       });
     } catch (error) {
       console.error('Share error:', error);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!report) return;
+    
+    setDownloadingPdf(true);
+    
+    try {
+      const token = await SecureStore.getItemAsync('accessToken');
+      const pdfUrl = `${API_URL}/reports/${report.id}/pdf`;
+      
+      // Create a safe filename
+      const safePropertyName = report.property_name.replace(/[^a-z0-9]/gi, '_');
+      const dateStr = new Date(report.cleaning_date).toISOString().split('T')[0];
+      const fileName = `Cleaning_Report_${safePropertyName}_${dateStr}.pdf`;
+      const fileUri = FileSystem.documentDirectory + fileName;
+      
+      // Download the PDF
+      const downloadResult = await FileSystem.downloadAsync(
+        pdfUrl,
+        fileUri,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (downloadResult.status !== 200) {
+        throw new Error('Failed to download PDF');
+      }
+      
+      // Check if expo-sharing is available
+      if (Sharing && await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(downloadResult.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: 'Save or Share Cleaning Report PDF',
+          UTI: 'com.adobe.pdf',
+        });
+      } else {
+        // Fallback: Use React Native Share with file path info
+        Alert.alert(
+          'PDF Ready',
+          'Your cleaning report PDF has been generated. Would you like to share it?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Share', 
+              onPress: async () => {
+                try {
+                  await Share.share({
+                    title: `Cleaning Report - ${report.property_name}`,
+                    message: `Cleaning Verification Report for ${report.property_name}\n\nDownload the full PDF report from the HostIQ app.`,
+                    url: Platform.OS === 'ios' ? downloadResult.uri : undefined,
+                  });
+                } catch (e) {
+                  console.log('Share cancelled');
+                }
+              }
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('PDF download error:', error);
+      Alert.alert(
+        'Download Failed',
+        'Unable to download PDF report. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -305,12 +392,33 @@ export default function CleaningReportScreen({ route, navigation }) {
         <View style={styles.bottomPadding} />
       </ScrollView>
 
-      {/* Share Button */}
+      {/* Action Buttons */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-          <Ionicons name="share-outline" size={20} color="#FFF" />
-          <Text style={styles.shareButtonText}>Share Report</Text>
-        </TouchableOpacity>
+        <View style={styles.footerButtons}>
+          <TouchableOpacity 
+            style={styles.downloadButton} 
+            onPress={handleDownloadPdf}
+            disabled={downloadingPdf}
+          >
+            {downloadingPdf ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <>
+                <Ionicons name="document-text-outline" size={20} color="#FFF" />
+                <Text style={styles.downloadButtonText}>Download PDF</Text>
+              </>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+            <Ionicons name="share-outline" size={20} color="#007AFF" />
+            <Text style={styles.shareButtonText}>Share Link</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <Text style={styles.footerHint}>
+          Use the PDF for Airbnb disputes • Share link for quick access
+        </Text>
       </View>
     </View>
   );
@@ -604,19 +712,47 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E5EA',
   },
-  shareButton: {
+  footerButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  downloadButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#10B981',
     borderRadius: 12,
     padding: 16,
     gap: 8,
   },
-  shareButtonText: {
-    fontSize: 17,
+  downloadButtonText: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
+  },
+  shareButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  shareButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  footerHint: {
+    fontSize: 12,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginTop: 10,
   },
   bottomPadding: {
     height: 20,

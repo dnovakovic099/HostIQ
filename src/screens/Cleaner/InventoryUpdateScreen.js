@@ -90,14 +90,25 @@ export default function InventoryUpdateScreen({ route, navigation }) {
 
   const handleDone = () => {
     const updateCount = Object.keys(updatedItems).length;
+    
+    // If we came from inspection flow (inspectionId present), go to CleanerHome
+    // Otherwise, just go back to where we came from
+    const navigateAway = () => {
+      if (inspectionId) {
+        navigation.replace('CleanerHome');
+      } else {
+        navigation.goBack();
+      }
+    };
+    
     if (updateCount > 0) {
       Alert.alert(
         'Updates Saved',
         `${updateCount} item${updateCount > 1 ? 's' : ''} updated successfully`,
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
+        [{ text: 'OK', onPress: navigateAway }]
       );
     } else {
-      navigation.goBack();
+      navigateAway();
     }
   };
 

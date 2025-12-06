@@ -9,7 +9,6 @@ import {
   RefreshControl,
   Alert,
   Modal,
-  Platform,
   Animated,
   Dimensions,
 } from 'react-native';
@@ -19,27 +18,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../api/client';
 
 const { width } = Dimensions.get('window');
-
-// Premium color palette
-const COLORS = {
-  primary: '#6366F1',      // Indigo
-  primaryDark: '#4F46E5',
-  primaryLight: '#A5B4FC',
-  success: '#10B981',
-  successLight: '#D1FAE5',
-  warning: '#F59E0B',
-  warningLight: '#FEF3C7',
-  error: '#EF4444',
-  errorLight: '#FEE2E2',
-  processing: '#3B82F6',
-  processingLight: '#DBEAFE',
-  dark: '#1F2937',
-  gray: '#6B7280',
-  lightGray: '#9CA3AF',
-  border: '#E5E7EB',
-  background: '#F8FAFC',
-  card: '#FFFFFF',
-};
 
 export default function CleanerHistoryScreen({ navigation }) {
   const [inspections, setInspections] = useState([]);
@@ -51,9 +29,7 @@ export default function CleanerHistoryScreen({ navigation }) {
   const [properties, setProperties] = useState([]);
   const [stats, setStats] = useState({ total: 0, passed: 0, failed: 0, pending: 0 });
   
-  // Animation refs
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
 
   useFocusEffect(
     useCallback(() => {
@@ -63,18 +39,11 @@ export default function CleanerHistoryScreen({ navigation }) {
 
   useEffect(() => {
     if (!loading) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }
   }, [loading]);
 
@@ -133,13 +102,11 @@ export default function CleanerHistoryScreen({ navigation }) {
 
       setInspections(combined);
       
-      // Calculate stats
       const passed = combined.filter(i => i.status === 'COMPLETE' && i.airbnb_grade_analysis?.guest_ready).length;
       const failed = combined.filter(i => i.status === 'COMPLETE' && i.airbnb_grade_analysis?.guest_ready === false).length;
       const pending = combined.filter(i => i.status === 'PENDING' || i.status === 'PROCESSING').length;
       setStats({ total: combined.length, passed, failed, pending });
 
-      // Extract unique properties
       const uniqueProperties = [...new Set(combined.map(i => i.unit?.property?.name).filter(Boolean))];
       setProperties(uniqueProperties);
     } catch (error) {
@@ -161,14 +128,13 @@ export default function CleanerHistoryScreen({ navigation }) {
   const handleRefresh = () => {
     setRefreshing(true);
     fadeAnim.setValue(0);
-    slideAnim.setValue(30);
     fetchInspections();
   };
 
   const handleDeleteInspection = (inspectionId, propertyName) => {
     Alert.alert(
       'Delete Inspection',
-      `Are you sure you want to delete this inspection at ${propertyName}?`,
+      `Delete this inspection at ${propertyName}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -179,7 +145,7 @@ export default function CleanerHistoryScreen({ navigation }) {
               await api.delete(`/cleaner/inspections/${inspectionId}`);
               setInspections(prev => prev.filter(i => i.id !== inspectionId));
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete inspection');
+              Alert.alert('Error', 'Failed to delete');
             }
           }
         }
@@ -191,182 +157,125 @@ export default function CleanerHistoryScreen({ navigation }) {
     const status = item.status;
     const isGuestReady = item.airbnb_grade_analysis?.guest_ready;
     const errorMsg = item.summary_json?.error || '';
-    const isAppFailed = errorMsg.includes('blurred') || errorMsg.includes('technical') || errorMsg.includes('WRONG ROOM TYPE');
+    const isAppFailed = errorMsg.includes('blurred') || errorMsg.includes('technical');
 
     if (status === 'FAILED' || isAppFailed) {
-      return { label: 'Failed', colors: ['#FEE2E2', '#FECACA'], textColor: '#DC2626', icon: 'alert-circle', iconBg: '#FEE2E2' };
+      return { label: 'Failed', bg: '#FEF2F2', color: '#DC2626', icon: 'close-circle' };
     }
     if (status === 'REJECTED') {
-      return { label: 'Rejected', colors: ['#FED7AA', '#FDBA74'], textColor: '#C2410C', icon: 'close-circle', iconBg: '#FFEDD5' };
+      return { label: 'Rejected', bg: '#FFF7ED', color: '#EA580C', icon: 'close-circle' };
     }
     if (status === 'COMPLETE' && isGuestReady === false) {
-      return { label: 'Needs Work', colors: ['#FEE2E2', '#FECACA'], textColor: '#DC2626', icon: 'warning', iconBg: '#FEE2E2' };
+      return { label: 'Needs Review', bg: '#FFFBEB', color: '#D97706', icon: 'alert-circle' };
     }
     if (status === 'COMPLETE') {
-      return { label: 'Passed', colors: ['#D1FAE5', '#A7F3D0'], textColor: '#059669', icon: 'checkmark-circle', iconBg: '#D1FAE5' };
+      return { label: 'Passed', bg: '#F0FDF4', color: '#16A34A', icon: 'checkmark-circle' };
     }
     if (status === 'PENDING') {
-      return { label: 'Pending', colors: ['#FEF3C7', '#FDE68A'], textColor: '#D97706', icon: 'time', iconBg: '#FEF3C7' };
+      return { label: 'Ready', bg: '#EFF6FF', color: '#2563EB', icon: 'play-circle' };
     }
     if (status === 'IN_PROGRESS' || status === 'PROCESSING') {
-      return { label: 'Processing', colors: ['#DBEAFE', '#BFDBFE'], textColor: '#2563EB', icon: 'sync', iconBg: '#DBEAFE' };
+      return { label: 'Processing', bg: '#E3F2FD', color: '#4A90E2', icon: 'sync' };
     }
-    return { label: status, colors: ['#F3F4F6', '#E5E7EB'], textColor: '#6B7280', icon: 'ellipse', iconBg: '#F3F4F6' };
+    return { label: status, bg: '#F3F4F6', color: '#6B7280', icon: 'ellipse' };
   };
 
-  const getScoreGrade = (score) => {
-    if (score >= 9) return { grade: 'A+', color: '#059669' };
-    if (score >= 8) return { grade: 'A', color: '#10B981' };
-    if (score >= 7) return { grade: 'B', color: '#F59E0B' };
-    if (score >= 6) return { grade: 'C', color: '#F97316' };
-    return { grade: 'D', color: '#EF4444' };
+  const getScoreDisplay = (score) => {
+    if (!score || score <= 0) return null;
+    if (score >= 9) return { grade: 'A+', color: '#16A34A', bg: '#F0FDF4' };
+    if (score >= 8) return { grade: 'A', color: '#22C55E', bg: '#F0FDF4' };
+    if (score >= 7) return { grade: 'B', color: '#EAB308', bg: '#FEFCE8' };
+    if (score >= 6) return { grade: 'C', color: '#F97316', bg: '#FFF7ED' };
+    return { grade: 'D', color: '#EF4444', bg: '#FEF2F2' };
   };
 
-  const formatTimeAgo = (date) => {
+  const formatDate = (date) => {
+    const d = new Date(date);
     const now = new Date();
-    const past = new Date(date);
-    const diffMs = now - past;
+    const diffMs = now - d;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return past.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const renderStatsHeader = () => (
-    <Animated.View style={[styles.statsContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-      <LinearGradient
-        colors={['#6366F1', '#8B5CF6']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.statsGradient}
-      >
-        <View style={styles.statsContent}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{stats.total}</Text>
-            <Text style={styles.statLabel}>Total</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: '#86EFAC' }]}>{stats.passed}</Text>
-            <Text style={styles.statLabel}>Passed</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: '#FCA5A5' }]}>{stats.failed}</Text>
-            <Text style={styles.statLabel}>Failed</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: '#FDE68A' }]}>{stats.pending}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </View>
+  const renderHeader = () => (
+    <View style={styles.header}>
+      {/* Stats Row */}
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Text style={styles.statValue}>{stats.total}</Text>
+          <Text style={styles.statLabel}>Total</Text>
         </View>
-      </LinearGradient>
-    </Animated.View>
-  );
-
-  const handleInventoryPress = () => {
-    // Get unique properties from inspections
-    const uniqueProperties = [];
-    const seen = new Set();
-    
-    inspections.forEach(insp => {
-      if (insp.unit?.property?.id && !seen.has(insp.unit.property.id)) {
-        seen.add(insp.unit.property.id);
-        uniqueProperties.push({
-          id: insp.unit.property.id,
-          name: insp.unit.property.name
-        });
-      }
-    });
-
-    if (uniqueProperties.length === 0) {
-      Alert.alert('No Properties', 'Complete an inspection to access inventory.');
-      return;
-    }
-
-    if (uniqueProperties.length === 1) {
-      // Navigate directly
-      navigation.navigate('InventoryUpdate', {
-        propertyId: uniqueProperties[0].id,
-        propertyName: uniqueProperties[0].name
-      });
-    } else {
-      // Show property picker
-      Alert.alert(
-        'Select Property',
-        'Choose a property to update inventory',
-        uniqueProperties.map(p => ({
-          text: p.name,
-          onPress: () => navigation.navigate('InventoryUpdate', {
-            propertyId: p.id,
-            propertyName: p.name
-          })
-        })).concat([{ text: 'Cancel', style: 'cancel' }])
-      );
-    }
-  };
-
-  const renderQuickActions = () => (
-    <View style={styles.quickActions}>
-      <TouchableOpacity
-        style={styles.quickActionBtn}
-        onPress={() => navigation.navigate('CleanerReports')}
-      >
-        <LinearGradient colors={['#3B82F6', '#1D4ED8']} style={styles.quickActionGradient}>
-          <Ionicons name="bar-chart" size={20} color="#FFF" />
-        </LinearGradient>
-        <Text style={styles.quickActionText}>Reports</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity
-        style={styles.quickActionBtn}
-        onPress={handleInventoryPress}
-      >
-        <LinearGradient colors={['#8B5CF6', '#6D28D9']} style={styles.quickActionGradient}>
-          <Ionicons name="cube" size={20} color="#FFF" />
-        </LinearGradient>
-        <Text style={styles.quickActionText}>Inventory</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity
-        style={styles.quickActionBtn}
-        onPress={() => navigation.navigate('PaymentSettings')}
-      >
-        <LinearGradient colors={['#10B981', '#059669']} style={styles.quickActionGradient}>
-          <Ionicons name="card" size={20} color="#FFF" />
-        </LinearGradient>
-        <Text style={styles.quickActionText}>Payments</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.quickActionBtn}
-        onPress={() => setShowPropertyDropdown(true)}
-      >
-        <View style={[styles.quickActionGradient, { backgroundColor: '#F3F4F6' }]}>
-          <Ionicons name="filter" size={20} color={COLORS.dark} />
+        <View style={[styles.statCard, { backgroundColor: '#F0FDF4' }]}>
+          <Text style={[styles.statValue, { color: '#16A34A' }]}>{stats.passed}</Text>
+          <Text style={styles.statLabel}>Passed</Text>
         </View>
-        <Text style={styles.quickActionText}>Filter</Text>
-      </TouchableOpacity>
+        <View style={[styles.statCard, { backgroundColor: '#FFFBEB' }]}>
+          <Text style={[styles.statValue, { color: '#D97706' }]}>{stats.failed}</Text>
+          <Text style={styles.statLabel}>Review</Text>
+        </View>
+        <View style={[styles.statCard, { backgroundColor: '#EFF6FF' }]}>
+          <Text style={[styles.statValue, { color: '#2563EB' }]}>{stats.pending}</Text>
+          <Text style={styles.statLabel}>Pending</Text>
+        </View>
+      </View>
+
+      {/* Quick Actions */}
+      <View style={styles.actionsRow}>
+        <TouchableOpacity 
+          style={styles.actionBtn}
+          onPress={() => navigation.navigate('CleanerReports')}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#EFF6FF' }]}>
+            <Ionicons name="stats-chart" size={20} color="#2563EB" />
+          </View>
+          <Text style={styles.actionText}>Reports</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionBtn}
+          onPress={() => navigation.navigate('PaymentSettings')}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#F0FDF4' }]}>
+            <Ionicons name="wallet" size={20} color="#16A34A" />
+          </View>
+          <Text style={styles.actionText}>Payments</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.actionBtn}
+          onPress={() => setShowPropertyDropdown(true)}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: '#E3F2FD' }]}>
+            <Ionicons name="funnel" size={20} color="#4A90E2" />
+          </View>
+          <Text style={styles.actionText}>
+            {selectedProperty === 'all' ? 'Filter' : 'Filtered'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {filteredInspections.length > 0 && (
+        <Text style={styles.sectionTitle}>Recent Inspections</Text>
+      )}
     </View>
   );
 
-  const renderInspectionCard = ({ item, index }) => {
-    if (!item || !item.id) return null;
+  const renderCard = ({ item }) => {
+    if (!item?.id) return null;
 
     const propertyName = item.unit?.property?.name || 'Property';
     const unitName = item.unit?.name || 'Unit';
     const isAssignment = item.type === 'ASSIGNMENT';
-    const statusConfig = getStatusConfig(item);
+    const status = getStatusConfig(item);
+    const score = getScoreDisplay(item.cleanliness_score);
     const mediaCount = item._count?.media || 0;
     const roomCount = item.unit?.rooms?.length || 0;
-    const score = item.cleanliness_score;
-    const scoreInfo = score > 0 ? getScoreGrade(score) : null;
 
     const handlePress = () => {
       if (isAssignment) {
@@ -374,6 +283,7 @@ export default function CleanerHistoryScreen({ navigation }) {
           assignment: { id: item.id, unit_id: item.unit?.id },
           propertyName,
           unitName,
+          unitId: item.unit?.id,
           rooms: item.unit?.rooms || []
         });
       } else {
@@ -382,241 +292,164 @@ export default function CleanerHistoryScreen({ navigation }) {
     };
 
     return (
-      <Animated.View
-        style={[
-          styles.cardContainer,
-          {
-            opacity: fadeAnim,
-            transform: [{
-              translateY: slideAnim.interpolate({
-                inputRange: [0, 30],
-                outputRange: [0, 30 + (index * 10)]
-              })
-            }]
-          }
-        ]}
-      >
-      <TouchableOpacity
-          style={styles.card}
-        onPress={handlePress}
-        activeOpacity={0.7}
-      >
-          {/* Status Accent Bar */}
-          <LinearGradient
-            colors={statusConfig.colors}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.statusBar}
-          />
-
-          <View style={styles.cardContent}>
-            {/* Header Row */}
-        <View style={styles.cardHeader}>
-              <View style={styles.propertySection}>
-                <View style={[styles.propertyIcon, { backgroundColor: statusConfig.iconBg }]}>
-                  <Ionicons name="business" size={18} color={statusConfig.textColor} />
-                </View>
+      <TouchableOpacity style={styles.card} onPress={handlePress} activeOpacity={0.7}>
+        {/* Top Row: Property & Delete */}
+        <View style={styles.cardTop}>
           <View style={styles.propertyInfo}>
-                  <Text style={styles.propertyName} numberOfLines={1}>{propertyName}</Text>
+            <Text style={styles.propertyName} numberOfLines={1}>{propertyName}</Text>
             <Text style={styles.unitName}>{unitName}</Text>
           </View>
-            </View>
+          {!isAssignment && (
+            <TouchableOpacity
+              style={styles.deleteBtn}
+              onPress={() => handleDeleteInspection(item.id, propertyName)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            >
+              <Ionicons name="trash-outline" size={18} color="#9CA3AF" />
+            </TouchableOpacity>
+          )}
+        </View>
 
-              <View style={styles.headerActions}>
-            {!isAssignment && (
-              <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={() => handleDeleteInspection(item.id, propertyName)}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                    <Ionicons name="trash-outline" size={18} color={COLORS.lightGray} />
-              </TouchableOpacity>
-            )}
+        {/* Meta Row */}
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <Ionicons name="time-outline" size={14} color="#9CA3AF" />
+            <Text style={styles.metaText}>{formatDate(item.created_at)}</Text>
+          </View>
+          {roomCount > 0 && (
+            <View style={styles.metaItem}>
+              <Ionicons name="bed-outline" size={14} color="#9CA3AF" />
+              <Text style={styles.metaText}>{roomCount}</Text>
+            </View>
+          )}
+          <View style={styles.metaItem}>
+            <Ionicons name="camera-outline" size={14} color="#9CA3AF" />
+            <Text style={styles.metaText}>{mediaCount}</Text>
           </View>
         </View>
 
-            {/* Stats Row */}
-            <View style={styles.statsRow}>
-              <View style={styles.statChip}>
-                <Ionicons name="time-outline" size={14} color={COLORS.gray} />
-                <Text style={styles.statChipText}>{formatTimeAgo(item.created_at)}</Text>
-            </View>
-            
-            {roomCount > 0 && (
-                <View style={styles.statChip}>
-                  <Ionicons name="bed-outline" size={14} color={COLORS.gray} />
-                  <Text style={styles.statChipText}>{roomCount} rooms</Text>
-                </View>
-              )}
-              
-              <View style={styles.statChip}>
-                <Ionicons name="images-outline" size={14} color={COLORS.gray} />
-                <Text style={styles.statChipText}>{mediaCount}</Text>
-              </View>
-            </View>
-
-            {/* Status & Score Row */}
-            <View style={styles.statusRow}>
-              <View style={[styles.statusBadge, { backgroundColor: statusConfig.colors[0] }]}>
-                <Ionicons name={statusConfig.icon} size={14} color={statusConfig.textColor} />
-                <Text style={[styles.statusText, { color: statusConfig.textColor }]}>
-                  {statusConfig.label}
-                  </Text>
-                </View>
-
-              {scoreInfo && (
-                <View style={[styles.scoreBadge, { backgroundColor: scoreInfo.color + '15' }]}>
-                  <Text style={[styles.scoreGrade, { color: scoreInfo.color }]}>{scoreInfo.grade}</Text>
-                  <Text style={[styles.scoreValue, { color: scoreInfo.color }]}>{score.toFixed(1)}</Text>
-                </View>
-              )}
-
-              <View style={styles.arrowContainer}>
-                <Text style={styles.actionText}>
-                  {isAssignment ? 'Start' : 'View'}
-                </Text>
-                <Ionicons name="chevron-forward" size={16} color={COLORS.primary} />
-              </View>
+        {/* Bottom Row: Status, Score, Action */}
+        <View style={styles.cardBottom}>
+          <View style={[styles.statusPill, { backgroundColor: status.bg }]}>
+            <Ionicons name={status.icon} size={14} color={status.color} />
+            <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
           </View>
 
-            {/* Processing Indicator */}
-          {(item.status === 'PROCESSING' || item.status === 'IN_PROGRESS') && (
-              <View style={styles.processingBar}>
-                <View style={styles.processingPulse}>
-                  <ActivityIndicator size="small" color={COLORS.processing} />
-                </View>
-              <Text style={styles.processingText}>AI analysis in progress...</Text>
+          {score && (
+            <View style={[styles.scorePill, { backgroundColor: score.bg }]}>
+              <Text style={[styles.scoreGrade, { color: score.color }]}>{score.grade}</Text>
+              <Text style={[styles.scoreNum, { color: score.color }]}>
+                {item.cleanliness_score.toFixed(1)}
+              </Text>
             </View>
           )}
 
-            {/* Error Message */}
-            {item.summary_json?.error && item.status === 'FAILED' && (
-              <View style={styles.errorBar}>
-                <Ionicons name="alert-circle" size={16} color={COLORS.error} />
-                <Text style={styles.errorText} numberOfLines={2}>{item.summary_json.error}</Text>
-            </View>
-          )}
+          <View style={styles.actionArrow}>
+            <Text style={styles.actionLabel}>{isAssignment ? 'Start' : 'View'}</Text>
+            <Ionicons name="chevron-forward" size={16} color="#4A90E2" />
+          </View>
         </View>
-        </TouchableOpacity>
-      </Animated.View>
+
+        {/* Processing Indicator */}
+        {(item.status === 'PROCESSING' || item.status === 'IN_PROGRESS') && (
+          <View style={styles.processingRow}>
+            <ActivityIndicator size="small" color="#4A90E2" />
+            <Text style={styles.processingText}>AI analyzing photos...</Text>
+          </View>
+        )}
+      </TouchableOpacity>
     );
   };
 
-  const renderEmptyState = () => (
+  const renderEmpty = () => (
     <View style={styles.emptyState}>
-      <LinearGradient
-        colors={['#EEF2FF', '#E0E7FF']}
-        style={styles.emptyIconContainer}
-      >
-        <Ionicons name="clipboard-outline" size={48} color={COLORS.primary} />
-      </LinearGradient>
+      <View style={styles.emptyIcon}>
+        <Ionicons name="camera-outline" size={48} color="#4A90E2" />
+      </View>
       <Text style={styles.emptyTitle}>No Inspections Yet</Text>
-      <Text style={styles.emptySubtitle}>
-        Start your first inspection by tapping the button below
-          </Text>
-      <TouchableOpacity
-        style={styles.emptyButton}
-        onPress={() => navigation.navigate('CreateInspection')}
-      >
-        <LinearGradient
-          colors={[COLORS.primary, COLORS.primaryDark]}
-          style={styles.emptyButtonGradient}
-        >
-          <Ionicons name="add" size={20} color="#FFF" />
-          <Text style={styles.emptyButtonText}>New Inspection</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+      <Text style={styles.emptyText}>
+        Tap the + button to start your first cleaning inspection
+      </Text>
     </View>
-    );
+  );
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading inspections...</Text>
+      <View style={styles.loadingView}>
+        <ActivityIndicator size="large" color="#4A90E2" />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={filteredInspections}
-        renderItem={renderInspectionCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={
-          <>
-            {renderStatsHeader()}
-            {renderQuickActions()}
-            {filteredInspections.length > 0 && (
-              <Text style={styles.sectionTitle}>Recent Inspections</Text>
-            )}
-          </>
-        }
-        ListEmptyComponent={renderEmptyState}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={COLORS.primary}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+        <FlatList
+          data={filteredInspections}
+          renderItem={renderCard}
+          keyExtractor={item => item.id}
+          ListHeaderComponent={renderHeader}
+          ListEmptyComponent={renderEmpty}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#4A90E2" />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      </Animated.View>
 
-      {/* Floating Action Button */}
+      {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('CreateInspection')}
         activeOpacity={0.9}
       >
-        <LinearGradient
-          colors={[COLORS.primary, COLORS.primaryDark]}
-          style={styles.fabGradient}
-        >
+        <LinearGradient colors={['#4A90E2', '#3D7FD9']} style={styles.fabGradient}>
           <Ionicons name="add" size={28} color="#FFF" />
         </LinearGradient>
       </TouchableOpacity>
 
-      {/* Property Filter Modal */}
-          <Modal
-            visible={showPropertyDropdown}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setShowPropertyDropdown(false)}
-          >
-            <TouchableOpacity 
-              style={styles.modalOverlay}
-              activeOpacity={1}
-              onPress={() => setShowPropertyDropdown(false)}
-            >
-          <View style={styles.modalContent}>
+      {/* Filter Modal */}
+      <Modal
+        visible={showPropertyDropdown}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPropertyDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowPropertyDropdown(false)}
+        >
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Filter by Property</Text>
-                <TouchableOpacity
+            
+            <TouchableOpacity
               style={[styles.modalOption, selectedProperty === 'all' && styles.modalOptionActive]}
               onPress={() => { setSelectedProperty('all'); setShowPropertyDropdown(false); }}
             >
               <Text style={[styles.modalOptionText, selectedProperty === 'all' && styles.modalOptionTextActive]}>
                 All Properties
               </Text>
-              {selectedProperty === 'all' && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
-                </TouchableOpacity>
-                {properties.map(property => (
-                  <TouchableOpacity
-                    key={property}
-                style={[styles.modalOption, selectedProperty === property && styles.modalOptionActive]}
-                onPress={() => { setSelectedProperty(property); setShowPropertyDropdown(false); }}
-              >
-                <Text style={[styles.modalOptionText, selectedProperty === property && styles.modalOptionTextActive]}>
-                  {property}
-                </Text>
-                {selectedProperty === property && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
-                  </TouchableOpacity>
-                ))}
-              </View>
+              {selectedProperty === 'all' && <Ionicons name="checkmark" size={20} color="#4A90E2" />}
             </TouchableOpacity>
-          </Modal>
+
+            {properties.map(prop => (
+              <TouchableOpacity
+                key={prop}
+                style={[styles.modalOption, selectedProperty === prop && styles.modalOptionActive]}
+                onPress={() => { setSelectedProperty(prop); setShowPropertyDropdown(false); }}
+              >
+                <Text style={[styles.modalOptionText, selectedProperty === prop && styles.modalOptionTextActive]}>
+                  {prop}
+                </Text>
+                {selectedProperty === prop && <Ionicons name="checkmark" size={20} color="#4A90E2" />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -624,333 +457,250 @@ export default function CleanerHistoryScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F8FAFC',
   },
-  loadingContainer: {
+  loadingView: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: COLORS.gray,
+    backgroundColor: '#F8FAFC',
   },
   listContent: {
     paddingBottom: 100,
   },
-  // Stats Header
-  statsContainer: {
-    margin: 16,
-    marginBottom: 8,
+  // Header
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
-  statsGradient: {
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  statsContent: {
+  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    gap: 8,
+    marginBottom: 16,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 12,
     alignItems: 'center',
   },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 28,
+  statValue: {
+    fontSize: 20,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#1F2937',
   },
   statLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
     fontWeight: '500',
   },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  // Quick Actions
-  quickActions: {
+  actionsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+    justifyContent: 'space-around',
+    marginBottom: 20,
   },
-  quickActionBtn: {
+  actionBtn: {
     alignItems: 'center',
     gap: 6,
   },
-  quickActionGradient: {
+  actionIcon: {
     width: 48,
     height: 48,
-    borderRadius: 16,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  quickActionText: {
+  actionText: {
     fontSize: 12,
-    color: COLORS.gray,
+    color: '#6B7280',
     fontWeight: '500',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: COLORS.dark,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  // Card
-  cardContainer: {
-    paddingHorizontal: 16,
+    color: '#1F2937',
     marginBottom: 12,
   },
+  // Card
   card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    overflow: 'hidden',
+    backgroundColor: '#FFF',
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderRadius: 14,
+    padding: 14,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  statusBar: {
-    height: 4,
-  },
-  cardContent: {
-    padding: 16,
-  },
-  cardHeader: {
+  cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  propertySection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  propertyIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    marginBottom: 10,
   },
   propertyInfo: {
     flex: 1,
   },
   propertyName: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
-    color: COLORS.dark,
+    color: '#1F2937',
     marginBottom: 2,
   },
   unitName: {
-    fontSize: 14,
-    color: COLORS.gray,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    fontSize: 13,
+    color: '#6B7280',
   },
   deleteBtn: {
-    padding: 8,
-    marginLeft: 8,
+    padding: 4,
   },
-  // Stats Row
-  statsRow: {
+  metaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 16,
     marginBottom: 12,
   },
-  statChip: {
+  metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: COLORS.background,
+  },
+  metaText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  cardBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  statChipText: {
-    fontSize: 13,
-    color: COLORS.gray,
-  },
-  // Status Row
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: 5,
+    borderRadius: 16,
   },
   statusText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  scoreBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  scoreGrade: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  scoreValue: {
     fontSize: 12,
     fontWeight: '600',
   },
-  arrowContainer: {
+  scorePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-  },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  // Processing Bar
-  processingBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    gap: 10,
-  },
-  processingPulse: {
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  processingText: {
-    fontSize: 13,
-    color: COLORS.processing,
-    fontWeight: '500',
-  },
-  // Error Bar
-  errorBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: COLORS.errorLight,
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
     borderRadius: 10,
-    gap: 10,
   },
-  errorText: {
-    flex: 1,
-    fontSize: 13,
-    color: COLORS.error,
+  scoreGrade: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  scoreNum: {
+    fontSize: 11,
     fontWeight: '500',
   },
-  // Empty State
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
+  actionArrow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 40,
-    marginTop: 60,
+    gap: 2,
+    marginLeft: 'auto',
   },
-  emptyIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
+  actionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4A90E2',
   },
-  emptyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.dark,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 15,
-    color: COLORS.gray,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  emptyButton: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
-  emptyButtonGradient: {
+  processingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
-  emptyButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFF',
+  processingText: {
+    fontSize: 12,
+    color: '#4A90E2',
+    fontWeight: '500',
+  },
+  // Empty
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   // FAB
   fab: {
     position: 'absolute',
     right: 20,
     bottom: 24,
-    borderRadius: 20,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    borderRadius: 18,
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   fabGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   // Modal
-  modalOverlay: {
+  modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: COLORS.card,
-    borderRadius: 20,
+  modalSheet: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 20,
+    paddingBottom: 40,
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: COLORS.dark,
+    color: '#1F2937',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -964,14 +714,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   modalOptionActive: {
-    backgroundColor: COLORS.primaryLight + '20',
+    backgroundColor: '#E3F2FD',
   },
   modalOptionText: {
-    fontSize: 16,
-    color: COLORS.dark,
+    fontSize: 15,
+    color: '#374151',
   },
   modalOptionTextActive: {
     fontWeight: '600',
-    color: COLORS.primary,
+    color: '#4A90E2',
   },
 });

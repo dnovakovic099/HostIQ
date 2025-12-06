@@ -9,29 +9,43 @@ import {
   Alert,
   TextInput,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/client';
-import { ROOM_SUGGESTIONS, getRoomSuggestionByType } from '../../config/roomSuggestions';
+import { getRoomSuggestionByType, ROOM_SUGGESTIONS } from '../../config/roomSuggestions';
+
+const COLORS = {
+  bg: '#F2F2F7',
+  card: '#FFFFFF',
+  primary: '#4A90E2',
+  green: '#34C759',
+  orange: '#FF9500',
+  red: '#FF3B30',
+  pms: '#4A90E2', // HostIQ Blue for PMS badges
+  text: '#000000',
+  textSecondary: '#3C3C43',
+  textTertiary: '#8E8E93',
+  separator: '#C6C6C8',
+  fill: '#E5E5EA',
+};
 
 export default function PropertyDetailScreen({ route, navigation }) {
   const { propertyId, isPMS = false } = route.params;
   const [property, setProperty] = useState(null);
   const [units, setUnits] = useState([]);
-  const [rooms, setRooms] = useState([]); // For PMS properties
+  const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
   const [expandedRooms, setExpandedRooms] = useState({});
-  const [editingPropertyName, setEditingPropertyName] = useState(false);
-  const [newPropertyName, setNewPropertyName] = useState('');
-  const [editingAddress, setEditingAddress] = useState(false);
-  const [newAddress, setNewAddress] = useState('');
-  const [editingRoomTips, setEditingRoomTips] = useState(null);
-  const [newRoomTips, setNewRoomTips] = useState('');
-  const [savingChanges, setSavingChanges] = useState(false);
-  const [togglingFiveStarMode, setTogglingFiveStarMode] = useState(false);
-  const [editingNotes, setEditingNotes] = useState(false);
-  const [newNotes, setNewNotes] = useState('');
+  const [editModal, setEditModal] = useState({ visible: false, type: null, data: null });
+  const [editValue, setEditValue] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [togglingFiveStar, setTogglingFiveStar] = useState(false);
+  
+  const [addRoomModal, setAddRoomModal] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+  const [newRoomType, setNewRoomType] = useState('bedroom');
+  const [addingRoom, setAddingRoom] = useState(false);
 
   useEffect(() => {
     if (isPMS) {
@@ -68,129 +82,114 @@ export default function PropertyDetailScreen({ route, navigation }) {
       setProperty(response.data.property);
       setRooms(response.data.property.rooms || []);
     } catch (error) {
-      console.error('Error fetching PMS property:', error);
       Alert.alert('Error', 'Failed to load property');
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleRoomExpansion = (roomId) => {
-    setExpandedRooms(prev => ({
-      ...prev,
-      [roomId]: !prev[roomId]
-    }));
+  const getAllRooms = () => {
+    if (isPMS) return rooms;
+    return units.flatMap(u => u.rooms || []);
   };
 
-  const getRoomIcon = (roomType) => {
-    const suggestion = getRoomSuggestionByType(roomType);
-    return suggestion?.icon || 'home-outline';
-  };
-
-  const getRoomLabel = (roomType) => {
-    const suggestion = getRoomSuggestionByType(roomType);
-    return suggestion?.label || 'Room';
+  const getTotalRooms = () => getAllRooms().length;
+  const getTotalInspections = () => units.reduce((t, u) => t + (u._count?.inspections || 0), 0);
+  const getLatestScore = () => {
+    const latest = units.find(u => u.inspections?.[0])?.inspections?.[0];
+    return latest?.cleanliness_score;
   };
 
   const getScoreColor = (score) => {
-    if (!score) return '#999';
-    if (score >= 4.5) return '#4CAF50';
-    if (score >= 3.5) return '#FF9800';
-    return '#F44336';
+    if (!score) return COLORS.textTertiary;
+    if (score >= 8) return COLORS.green;
+    if (score >= 6) return COLORS.orange;
+    return COLORS.red;
   };
 
-  const getTotalRooms = () => {
-    return units.reduce((total, unit) => total + (unit.rooms?.length || 0), 0);
+  const getRoomIcon = (type) => getRoomSuggestionByType(type)?.icon || 'home-outline';
+  const getRoomLabel = (type) => getRoomSuggestionByType(type)?.label || 'Room';
+
+  const openEditModal = (type, data = null) => {
+    if (type === 'name') setEditValue(property?.name || '');
+    else if (type === 'address') setEditValue(property?.address || '');
+    else if (type === 'tips') setEditValue(data?.tips || '');
+    setEditModal({ visible: true, type, data });
   };
 
-  const handleEditPropertyName = () => {
-    setNewPropertyName(property?.name || '');
-    setEditingPropertyName(true);
-  };
-
-  const handleSavePropertyName = async () => {
-    if (!newPropertyName.trim()) {
-      Alert.alert('Error', 'Property name cannot be empty');
+  const handleSave = async () => {
+    if (!editValue.trim() && editModal.type !== 'tips') {
+      Alert.alert('Error', 'Field cannot be empty');
       return;
     }
-
-    setSavingChanges(true);
-    try {
-      await api.put(`/owner/properties/${propertyId}`, {
-        name: newPropertyName.trim()
-      });
-      
-      setProperty({ ...property, name: newPropertyName.trim() });
-      setEditingPropertyName(false);
-      Alert.alert('Success', 'Property name updated');
-    } catch (error) {
-      console.error('Error updating property name:', error);
-      Alert.alert('Error', 'Failed to update property name');
-    } finally {
-      setSavingChanges(false);
-    }
-  };
-
-  const handleEditAddress = () => {
-    setNewAddress(property?.address || '');
-    setEditingAddress(true);
-  };
-
-  const handleSaveAddress = async () => {
-    if (!newAddress.trim()) {
-      Alert.alert('Error', 'Address cannot be empty');
-      return;
-    }
-
-    setSavingChanges(true);
-    try {
-      await api.put(`/owner/properties/${propertyId}`, {
-        address: newAddress.trim()
-      });
-      
-      setProperty({ ...property, address: newAddress.trim() });
-      setEditingAddress(false);
-      Alert.alert('Success', 'Address updated');
-    } catch (error) {
-      console.error('Error updating address:', error);
-      Alert.alert('Error', 'Failed to update address');
-    } finally {
-      setSavingChanges(false);
-    }
-  };
-
-  const handleToggleFiveStarMode = async () => {
-    const newValue = !property?.five_star_mode;
     
+    setSaving(true);
+    try {
+      if (editModal.type === 'name') {
+        await api.put(`/owner/properties/${propertyId}`, { name: editValue.trim() });
+        setProperty({ ...property, name: editValue.trim() });
+      } else if (editModal.type === 'address') {
+        await api.put(`/owner/properties/${propertyId}`, { address: editValue.trim() });
+        setProperty({ ...property, address: editValue.trim() });
+      } else if (editModal.type === 'tips') {
+        const roomId = editModal.data.id;
+        if (isPMS) {
+          await api.put(`/pms/properties/${propertyId}/rooms/${roomId}`, { tips: editValue.trim() });
+          setRooms(rooms.map(r => r.id === roomId ? { ...r, tips: editValue.trim() } : r));
+        } else {
+          await api.put(`/owner/rooms/${roomId}`, { tips: editValue.trim() });
+          setUnits(units.map(u => ({
+            ...u,
+            rooms: u.rooms?.map(r => r.id === roomId ? { ...r, tips: editValue.trim() } : r)
+          })));
+        }
+      }
+      setEditModal({ visible: false, type: null, data: null });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save changes');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddRoom = async () => {
+    if (!newRoomName.trim()) {
+      Alert.alert('Error', 'Please enter a room name');
+      return;
+    }
+    
+    setAddingRoom(true);
+    try {
+      const response = await api.post(`/pms/properties/${propertyId}/rooms`, {
+        name: newRoomName.trim(),
+        room_type: newRoomType,
+      });
+      setRooms([...rooms, response.data]);
+      setAddRoomModal(false);
+      setNewRoomName('');
+      setNewRoomType('bedroom');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add room');
+    } finally {
+      setAddingRoom(false);
+    }
+  };
+
+  const handleDeleteRoom = (room) => {
     Alert.alert(
-      newValue ? '🌟 Enable 5-Star Mode?' : 'Disable 5-Star Mode?',
-      newValue 
-        ? 'This will enable ultra-strict, white-glove inspection standards with 150+ professional checklist items. AI grading will be extremely harsh (2-5/10 typical).\n\nBest for luxury properties.'
-        : 'This will return to standard inspection grading.',
+      'Delete Room',
+      `Are you sure you want to delete "${room.name}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: newValue ? 'Enable' : 'Disable',
-          style: newValue ? 'default' : 'destructive',
+          text: 'Delete',
+          style: 'destructive',
           onPress: async () => {
-            setTogglingFiveStarMode(true);
             try {
-              await api.patch(`/owner/properties/${propertyId}/five-star-mode`, {
-                five_star_mode: newValue
-              });
-              
-              setProperty({ ...property, five_star_mode: newValue });
-              Alert.alert(
-                'Success', 
-                newValue 
-                  ? '🌟 5-Star Mode enabled! Future inspections will use ultra-strict standards.' 
-                  : '5-Star Mode disabled. Back to standard grading.'
-              );
+              await api.delete(`/pms/properties/${propertyId}/rooms/${room.id}`);
+              setRooms(rooms.filter(r => r.id !== room.id));
             } catch (error) {
-              console.error('Error toggling 5-star mode:', error);
-              Alert.alert('Error', 'Failed to update 5-star mode');
-            } finally {
-              setTogglingFiveStarMode(false);
+              Alert.alert('Error', 'Failed to delete room');
             }
           }
         }
@@ -198,528 +197,416 @@ export default function PropertyDetailScreen({ route, navigation }) {
     );
   };
 
-  const handleEditRoomTips = (room) => {
-    setNewRoomTips(room.tips || '');
-    setEditingRoomTips(room);
-  };
-
-  const handleSaveRoomTips = async () => {
-    if (!editingRoomTips) return;
-
-    setSavingChanges(true);
-    try {
-      if (isPMS) {
-        await api.put(`/pms/properties/${propertyId}/rooms/${editingRoomTips.id}`, {
-          tips: newRoomTips.trim()
-        });
-        
-        // Update local state for PMS
-        setRooms(rooms.map(room => 
-          room.id === editingRoomTips.id 
-            ? { ...room, tips: newRoomTips.trim() }
-            : room
-        ));
-      } else {
-        await api.put(`/owner/rooms/${editingRoomTips.id}`, {
-          tips: newRoomTips.trim()
-        });
-        
-        // Update local state for manual properties
-        setUnits(units.map(unit => ({
-          ...unit,
-          rooms: unit.rooms?.map(room => 
-            room.id === editingRoomTips.id 
-              ? { ...room, tips: newRoomTips.trim() }
-              : room
-          )
-        })));
-      }
-      
-      setEditingRoomTips(null);
-      Alert.alert('Success', 'Room tips updated');
-    } catch (error) {
-      console.error('Error updating room tips:', error);
-      Alert.alert('Error', 'Failed to update room tips');
-    } finally {
-      setSavingChanges(false);
-    }
-  };
-
-  const handleEditNotes = () => {
-    setNewNotes(property?.notes || '');
-    setEditingNotes(true);
-  };
-
-  const handleSaveNotes = async () => {
-    if (!isPMS) return; // Only PMS properties have notes
-
-    setSavingChanges(true);
-    try {
-      await api.put(`/pms/properties/${propertyId}`, {
-        notes: newNotes.trim()
-      });
-      
-      setProperty({ ...property, notes: newNotes.trim() });
-      setEditingNotes(false);
-      Alert.alert('Success', 'Notes updated');
-    } catch (error) {
-      console.error('Error updating notes:', error);
-      Alert.alert('Error', 'Failed to update notes');
-    } finally {
-      setSavingChanges(false);
-    }
+  const handleToggleFiveStar = () => {
+    const newValue = !property?.five_star_mode;
+    Alert.alert(
+      newValue ? 'Enable 5-Star Mode?' : 'Disable 5-Star Mode?',
+      newValue 
+        ? 'Ultra-strict luxury inspection standards with 150+ checklist items.'
+        : 'Return to standard inspection grading.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: newValue ? 'Enable' : 'Disable',
+          onPress: async () => {
+            setTogglingFiveStar(true);
+            try {
+              await api.patch(`/owner/properties/${propertyId}/five-star-mode`, { five_star_mode: newValue });
+              setProperty({ ...property, five_star_mode: newValue });
+            } catch (error) {
+              Alert.alert('Error', 'Failed to update');
+            } finally {
+              setTogglingFiveStar(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   if (loading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+      <View style={styles.loadingView}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
+  const score = getLatestScore();
+  const allRooms = getAllRooms();
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Modern Gradient Header */}
-        <View style={styles.modernHeader}>
-          <View style={styles.headerContent}>
-            {/* Property Title */}
-            <View style={styles.propertyTitleRow}>
-              <View style={styles.propertyTitleLeft}>
-                <Text style={styles.modernTitle}>{property?.name}</Text>
-                <TouchableOpacity 
-                  style={styles.modernEditButton}
-                  onPress={handleEditPropertyName}
-                >
-                  <Ionicons name="pencil-outline" size={14} color="#4A90E2" />
-                </TouchableOpacity>
+        
+        {/* Property Info */}
+        <View style={styles.section}>
+          <View style={styles.card}>
+            {isPMS && (
+              <View style={styles.pmsBadge}>
+                <Text style={styles.pmsBadgeText}>HOSTIFY</Text>
               </View>
-            </View>
+            )}
             
-            {/* Address */}
-            <View style={styles.modernAddressRow}>
-              <Ionicons name="location-outline" size={14} color="#94A3B8" />
-              <Text style={styles.modernAddress}>{property?.address}</Text>
+            <TouchableOpacity 
+              style={styles.infoRow}
+              onPress={() => !isPMS && openEditModal('name')}
+              disabled={isPMS}
+            >
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Name</Text>
+                <Text style={styles.infoValue} numberOfLines={2}>{property?.name}</Text>
+              </View>
+              {!isPMS && <Ionicons name="chevron-forward" size={20} color={COLORS.separator} />}
+            </TouchableOpacity>
+            
+            <View style={styles.divider} />
+            
+            <TouchableOpacity 
+              style={styles.infoRow}
+              onPress={() => !isPMS && openEditModal('address')}
+              disabled={isPMS}
+            >
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Address</Text>
+                <Text style={styles.infoValue} numberOfLines={2}>{property?.address}</Text>
+              </View>
+              {!isPMS && <Ionicons name="chevron-forward" size={20} color={COLORS.separator} />}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Stats */}
+        <View style={styles.section}>
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>{getTotalRooms()}</Text>
+              <Text style={styles.statLabel}>Rooms</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statNumber}>{isPMS ? '—' : getTotalInspections()}</Text>
+              <Text style={styles.statLabel}>Inspections</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={[styles.statNumber, { color: getScoreColor(score) }]}>
+                {score?.toFixed(1) || '—'}
+              </Text>
+              <Text style={styles.statLabel}>Score</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Settings */}
+        {!isPMS && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>SETTINGS</Text>
+            <View style={styles.card}>
               <TouchableOpacity 
-                style={styles.modernEditAddressButton}
-                onPress={handleEditAddress}
+                style={styles.settingRow}
+                onPress={handleToggleFiveStar}
+                disabled={togglingFiveStar}
               >
-                <Ionicons name="pencil-outline" size={12} color="#94A3B8" />
+                <View style={[styles.settingIcon, { backgroundColor: '#FFF3CD' }]}>
+                  <Ionicons name="star" size={16} color="#F59E0B" />
+                </View>
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingTitle}>5-Star Mode</Text>
+                  <Text style={styles.settingDesc}>Luxury inspection standards</Text>
+                </View>
+                {togglingFiveStar ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <View style={[styles.toggle, property?.five_star_mode && styles.toggleOn]}>
+                    <View style={[styles.toggleThumb, property?.five_star_mode && styles.toggleThumbOn]} />
+                  </View>
+                )}
               </TouchableOpacity>
             </View>
           </View>
-          
-          {/* Compact Stats Grid */}
-          <View style={styles.modernStatsGrid}>
-            <View style={styles.modernStatCard}>
-              <View style={styles.modernStatIcon}>
-                <Ionicons name="bed-outline" size={16} color="#4A90E2" />
-              </View>
-              <Text style={styles.modernStatNumber}>{getTotalRooms()}</Text>
-              <Text style={styles.modernStatLabel}>Rooms</Text>
-            </View>
-            
-            <View style={styles.modernStatCard}>
-              <View style={styles.modernStatIcon}>
-                <Ionicons name="document-text-outline" size={16} color="#10B981" />
-              </View>
-              <Text style={styles.modernStatNumber}>
-                {units.reduce((total, unit) => total + unit._count.inspections, 0)}
-              </Text>
-              <Text style={styles.modernStatLabel}>Inspections</Text>
-            </View>
-            
-            <View style={styles.modernStatCard}>
-              <View style={styles.modernStatIcon}>
-                <Ionicons 
-                  name={units[0]?.inspections[0] ? "checkmark-circle" : "help-circle-outline"} 
-                  size={16} 
-                  color={units[0]?.inspections[0] ? getScoreColor(units[0].inspections[0].cleanliness_score) : "#94A3B8"} 
-                />
-              </View>
-              <Text style={[
-                styles.modernStatNumber,
-                { color: units[0]?.inspections[0] ? getScoreColor(units[0].inspections[0].cleanliness_score) : '#64748B' }
-              ]}>
-                {units[0]?.inspections[0]?.cleanliness_score?.toFixed(1) || 'N/A'}
-              </Text>
-              <Text style={styles.modernStatLabel}>Score</Text>
-            </View>
-          </View>
-        </View>
+        )}
 
-        {/* 5-Star Mode Toggle */}
-        <View style={styles.fiveStarSection}>
-          <TouchableOpacity 
-            style={styles.fiveStarCard}
-            onPress={handleToggleFiveStarMode}
-            disabled={togglingFiveStarMode}
-            activeOpacity={0.7}
-          >
-            <View style={styles.fiveStarContent}>
-              <View style={styles.fiveStarLeft}>
-                <View style={styles.fiveStarIconContainer}>
-                  <Ionicons 
-                    name={property?.five_star_mode ? "star" : "star-outline"} 
-                    size={24} 
-                    color={property?.five_star_mode ? "#FFD700" : "#999"} 
-                  />
-                </View>
-                <View style={styles.fiveStarTextContainer}>
-                  <Text style={styles.fiveStarTitle}>
-                    5-Star Mode {property?.five_star_mode && '🌟'}
-                  </Text>
-                  <Text style={styles.fiveStarDescription}>
-                    {property?.five_star_mode 
-                      ? 'Ultra-strict white-glove standards active' 
-                      : 'Tap to enable luxury inspection standards'}
-                  </Text>
-                </View>
-              </View>
-              <View style={[
-                styles.fiveStarToggle,
-                property?.five_star_mode && styles.fiveStarToggleActive
-              ]}>
-                <View style={[
-                  styles.fiveStarToggleThumb,
-                  property?.five_star_mode && styles.fiveStarToggleThumbActive
-                ]}>
-                  {togglingFiveStarMode ? (
-                    <ActivityIndicator size="small" color="#FFF" />
-                  ) : (
-                    <Ionicons 
-                      name={property?.five_star_mode ? "checkmark" : "close"} 
-                      size={16} 
-                      color="#FFF" 
-                    />
-                  )}
-                </View>
-              </View>
-            </View>
-          </TouchableOpacity>
-          
-          {property?.five_star_mode && (
-            <View style={styles.fiveStarInfo}>
-              <Ionicons name="information-circle" size={16} color="#FFD700" />
-              <Text style={styles.fiveStarInfoText}>
-                150+ checklist items • Ultra-harsh AI grading (2-5/10 typical) • Photo/video evidence required
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Inventory Section */}
-        <TouchableOpacity 
-          style={styles.inventoryCard}
-          onPress={() => navigation.navigate('Inventory', { 
-            propertyId: propertyId, 
-            propertyName: property?.name 
-          })}
-          activeOpacity={0.7}
-        >
-          <View style={styles.inventoryLeft}>
-            <View style={styles.inventoryIconContainer}>
-              <Ionicons name="cube-outline" size={24} color="#5856D6" />
-            </View>
-            <View style={styles.inventoryTextContainer}>
-              <Text style={styles.inventoryTitle}>Inventory Tracking</Text>
-              <Text style={styles.inventoryDescription}>
-                Manage supplies and stock levels
-              </Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
-        </TouchableOpacity>
-
+        {/* Quick Actions */}
         <View style={styles.section}>
-          <View style={styles.modernSectionHeader}>
-            <Text style={styles.modernSectionTitle}>Rooms</Text>
-            <Text style={styles.modernSectionSubtitle}>
-              Tips shown to AI and cleaners
-            </Text>
+          <Text style={styles.sectionHeader}>QUICK ACTIONS</Text>
+          <View style={styles.card}>
+            <TouchableOpacity 
+              style={styles.actionRow}
+              onPress={() => navigation.navigate('Inventory', { 
+                propertyId, 
+                propertyName: property?.name,
+                isPMS 
+              })}
+            >
+              <View style={[styles.settingIcon, { backgroundColor: '#E8F5E9' }]}>
+                <Ionicons name="cube-outline" size={18} color={COLORS.green} />
+              </View>
+              <Text style={styles.actionTitle}>Inventory</Text>
+              <Ionicons name="chevron-forward" size={18} color={COLORS.separator} />
+            </TouchableOpacity>
+            
+            <View style={styles.divider} />
+            
+            <TouchableOpacity 
+              style={styles.actionRow}
+              onPress={() => navigation.navigate('PropertyValuables', { 
+                propertyId, 
+                propertyName: property?.name,
+                isPMS 
+              })}
+            >
+              <View style={[styles.settingIcon, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.primary} />
+              </View>
+              <Text style={styles.actionTitle}>Valuable Items</Text>
+              <Ionicons name="chevron-forward" size={18} color={COLORS.separator} />
+            </TouchableOpacity>
           </View>
+        </View>
 
-          {units.length === 0 || getTotalRooms() === 0 ? (
-            <View style={styles.empty}>
-              <Ionicons name="home-outline" size={48} color="#ccc" />
-              <Text style={styles.emptyText}>No rooms configured yet</Text>
-              <Text style={styles.emptyHint}>
-                Edit this property to add rooms
+        {/* Rooms */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionHeader}>ROOMS</Text>
+            {isPMS && (
+              <TouchableOpacity onPress={() => setAddRoomModal(true)}>
+                <Text style={styles.addButton}>Add</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          {allRooms.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Ionicons name="bed-outline" size={40} color={COLORS.textTertiary} />
+              <Text style={styles.emptyTitle}>No Rooms</Text>
+              <Text style={styles.emptyText}>
+                {isPMS ? 'Add rooms to enable inspections' : 'Add rooms when editing the property'}
               </Text>
+              {isPMS && (
+                <TouchableOpacity style={styles.emptyButton} onPress={() => setAddRoomModal(true)}>
+                  <Text style={styles.emptyButtonText}>Add Room</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
-            units.map((unit) => (
-              unit.rooms && unit.rooms.length > 0 && (
-                <View key={unit.id}>
-                  {unit.rooms.map((room) => (
-                    <View key={room.id} style={styles.roomCard}>
-                      <TouchableOpacity
-                        style={styles.roomHeader}
-                        onPress={() => toggleRoomExpansion(room.id)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.roomTitleRow}>
-                          <View style={styles.roomIconContainer}>
-                            <Ionicons 
-                              name={getRoomIcon(room.room_type)} 
-                              size={24} 
-                              color="#4A90E2" 
-                            />
-                          </View>
-                          <View style={styles.roomInfo}>
-                            <Text style={styles.roomName}>{room.name}</Text>
-                            <Text style={styles.roomType}>
-                              {getRoomLabel(room.room_type)}
-                            </Text>
-                          </View>
-                        </View>
-                        <Ionicons 
-                          name={expandedRooms[room.id] ? "chevron-up" : "chevron-down"} 
-                          size={24} 
-                          color="#999" 
-                        />
-                      </TouchableOpacity>
-
-                      {expandedRooms[room.id] && (
-                        <View style={styles.tipsContainer}>
-                          <View style={styles.tipsHeader}>
-                            <View style={styles.tipsHeaderLeft}>
-                              <Ionicons name="information-circle" size={16} color="#4A90E2" />
-                              <Text style={styles.tipsTitle}>Inspection Tips</Text>
-                            </View>
-                            <TouchableOpacity 
-                              style={styles.editTipsButton}
-                              onPress={() => handleEditRoomTips(room)}
-                            >
-                              <Ionicons name="pencil" size={14} color="#4A90E2" />
-                            </TouchableOpacity>
-                          </View>
-                          {room.tips ? (
-                            <Text style={styles.tipsText}>{room.tips}</Text>
-                          ) : (
-                            <Text style={styles.noTipsText}>No tips added yet</Text>
-                          )}
-                          
-                          {/* Valuable Items Link */}
-                          <TouchableOpacity
-                            style={styles.valuableItemsButton}
-                            onPress={() => navigation.navigate('ValuableItems', {
-                              roomId: room.id,
-                              roomName: room.name,
-                              roomType: room.room_type,
-                              propertyName: property?.name,
-                              isPMS: false
-                            })}
-                          >
-                            <View style={styles.valuableItemsLeft}>
-                              <Ionicons name="shield-checkmark" size={16} color="#5856D6" />
-                              <Text style={styles.valuableItemsText}>Valuable Items</Text>
-                            </View>
-                            <View style={styles.valuableItemsRight}>
-                              <Text style={styles.valuableItemsHint}>Track & verify</Text>
-                              <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
-                            </View>
+            <View style={styles.card}>
+              {allRooms.map((room, index) => (
+                <View key={room.id}>
+                  {index > 0 && <View style={styles.divider} />}
+                  
+                  <TouchableOpacity 
+                    style={styles.roomRow}
+                    onPress={() => setExpandedRooms(p => ({ ...p, [room.id]: !p[room.id] }))}
+                  >
+                    <View style={styles.roomIcon}>
+                      <Ionicons name={getRoomIcon(room.room_type)} size={22} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.roomContent}>
+                      <Text style={styles.roomName}>{room.name}</Text>
+                      <Text style={styles.roomType}>{getRoomLabel(room.room_type)}</Text>
+                    </View>
+                    {room.tips && (
+                      <View style={styles.tipIndicator}>
+                        <Ionicons name="chatbubble" size={12} color={COLORS.green} />
+                      </View>
+                    )}
+                    <Ionicons 
+                      name={expandedRooms[room.id] ? "chevron-down" : "chevron-forward"} 
+                      size={20} 
+                      color={COLORS.separator} 
+                    />
+                  </TouchableOpacity>
+                  
+                  {expandedRooms[room.id] && (
+                    <View style={styles.roomExpanded}>
+                      <View style={styles.tipsBox}>
+                        <View style={styles.tipsHeader}>
+                          <Text style={styles.tipsLabel}>Cleaning Tips</Text>
+                          <TouchableOpacity onPress={() => openEditModal('tips', room)}>
+                            <Text style={styles.editLink}>Edit</Text>
                           </TouchableOpacity>
                         </View>
-                      )}
+                        <Text style={[styles.tipsText, !room.tips && styles.tipsEmpty]}>
+                          {room.tips || 'No tips added'}
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.roomActions}>
+                        <TouchableOpacity 
+                          style={styles.roomActionBtn}
+                          onPress={() => navigation.navigate('ValuableItems', {
+                            roomId: room.id,
+                            roomName: room.name,
+                            propertyName: property?.name,
+                            isPMS,
+                          })}
+                        >
+                          <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.primary} />
+                          <Text style={styles.roomActionText}>Valuables</Text>
+                        </TouchableOpacity>
+                        
+                        {isPMS && (
+                          <TouchableOpacity 
+                            style={styles.roomActionBtn}
+                            onPress={() => handleDeleteRoom(room)}
+                          >
+                            <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+                            <Text style={[styles.roomActionText, { color: COLORS.red }]}>Delete</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
-                  ))}
+                  )}
                 </View>
-              )
-            ))
-          )}
-        </View>
-
-        {/* Inspection History Section */}
-        <View style={styles.section}>
-          <View style={styles.modernSectionHeader}>
-            <Text style={styles.modernSectionTitle}>Recent Inspections</Text>
-          </View>
-          
-          {units.some(unit => unit.inspections[0]) ? (
-            units.map((unit) => (
-              unit.inspections[0] && (
-                <View key={unit.id} style={styles.inspectionCard}>
-                  <View style={styles.inspectionHeader}>
-                    <View>
-                      <Text style={styles.inspectionUnit}>{unit.name}</Text>
-                      <Text style={styles.inspectionDate}>
-                        {new Date(unit.inspections[0].created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })}
-                      </Text>
-                    </View>
-                    <View style={styles.inspectionScore}>
-                      <Text
-                        style={[
-                          styles.scoreText,
-                          { color: getScoreColor(unit.inspections[0].cleanliness_score) },
-                        ]}
-                      >
-                        {unit.inspections[0].cleanliness_score?.toFixed(1) || 'N/A'}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              )
-            ))
-          ) : (
-            <View style={styles.emptyInspections}>
-              <Ionicons name="clipboard-outline" size={48} color="#ccc" />
-              <Text style={styles.emptyInspectionsText}>No inspections yet</Text>
-              <Text style={styles.emptyInspectionsHint}>
-                Assign a cleaner to start inspecting this property
-              </Text>
+              ))}
             </View>
           )}
         </View>
+
+        {/* Recent Inspections */}
+        {!isPMS && (
+          <View style={styles.section}>
+            <Text style={styles.sectionHeader}>RECENT INSPECTIONS</Text>
+            
+            {!units.some(u => u.inspections?.[0]) ? (
+              <View style={styles.emptyCard}>
+                <Ionicons name="clipboard-outline" size={40} color={COLORS.textTertiary} />
+                <Text style={styles.emptyTitle}>No Inspections</Text>
+                <Text style={styles.emptyText}>Assign cleaners to start inspecting</Text>
+              </View>
+            ) : (
+              <View style={styles.card}>
+                {units.filter(u => u.inspections?.[0]).map((unit, index) => (
+                  <View key={unit.id}>
+                    {index > 0 && <View style={styles.divider} />}
+                    <TouchableOpacity 
+                      style={styles.inspectionRow}
+                      onPress={() => navigation.navigate('InspectionDetail', { inspectionId: unit.inspections[0].id })}
+                    >
+                      <View style={styles.inspectionContent}>
+                        <Text style={styles.inspectionUnit}>{unit.name}</Text>
+                        <Text style={styles.inspectionDate}>
+                          {new Date(unit.inspections[0].created_at).toLocaleDateString('en-US', {
+                            month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                          })}
+                        </Text>
+                      </View>
+                      <View style={[
+                        styles.scoreBadge, 
+                        { backgroundColor: getScoreColor(unit.inspections[0].cleanliness_score) + '20' }
+                      ]}>
+                        <Text style={[
+                          styles.scoreBadgeText, 
+                          { color: getScoreColor(unit.inspections[0].cleanliness_score) }
+                        ]}>
+                          {unit.inspections[0].cleanliness_score?.toFixed(1) || '—'}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Edit Property Name Modal */}
-      <Modal
-        visible={editingPropertyName}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setEditingPropertyName(false)}
-      >
+      {/* Edit Modal */}
+      <Modal visible={editModal.visible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Property Name</Text>
-              <TouchableOpacity onPress={() => setEditingPropertyName(false)}>
-                <Ionicons name="close" size={24} color="#666" />
+              <TouchableOpacity onPress={() => setEditModal({ visible: false, type: null, data: null })}>
+                <Text style={styles.modalCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>
+                {editModal.type === 'name' ? 'Name' : 
+                 editModal.type === 'address' ? 'Address' : 'Tips'}
+              </Text>
+              <TouchableOpacity onPress={handleSave} disabled={saving}>
+                {saving ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <Text style={styles.modalSave}>Save</Text>
+                )}
               </TouchableOpacity>
             </View>
             
             <TextInput
-              style={styles.modalInput}
-              value={newPropertyName}
-              onChangeText={setNewPropertyName}
-              placeholder="Property name"
+              style={[styles.modalInput, editModal.type === 'tips' && styles.modalInputTall]}
+              value={editValue}
+              onChangeText={setEditValue}
+              placeholder={editModal.type === 'tips' ? 'Add tips for cleaners...' : 'Enter value'}
+              placeholderTextColor={COLORS.textTertiary}
+              multiline={editModal.type === 'tips'}
               autoFocus
             />
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setEditingPropertyName(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleSavePropertyName}
-                disabled={savingChanges}
-              >
-                {savingChanges ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Save</Text>
-                )}
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </Modal>
 
-      {/* Edit Address Modal */}
-      <Modal
-        visible={editingAddress}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setEditingAddress(false)}
-      >
+      {/* Add Room Modal */}
+      <Modal visible={addRoomModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Address</Text>
-              <TouchableOpacity onPress={() => setEditingAddress(false)}>
-                <Ionicons name="close" size={24} color="#666" />
+              <TouchableOpacity onPress={() => {
+                setAddRoomModal(false);
+                setNewRoomName('');
+                setNewRoomType('bedroom');
+              }}>
+                <Text style={styles.modalCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Add Room</Text>
+              <TouchableOpacity onPress={handleAddRoom} disabled={addingRoom}>
+                {addingRoom ? (
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                ) : (
+                  <Text style={styles.modalSave}>Add</Text>
+                )}
               </TouchableOpacity>
             </View>
             
+            <Text style={styles.inputLabel}>Room Name</Text>
             <TextInput
               style={styles.modalInput}
-              value={newAddress}
-              onChangeText={setNewAddress}
-              placeholder="Property address"
+              value={newRoomName}
+              onChangeText={setNewRoomName}
+              placeholder="e.g., Master Bedroom"
+              placeholderTextColor={COLORS.textTertiary}
               autoFocus
             />
             
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setEditingAddress(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleSaveAddress}
-                disabled={savingChanges}
-              >
-                {savingChanges ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Save</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Edit Room Tips Modal */}
-      <Modal
-        visible={editingRoomTips !== null}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setEditingRoomTips(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Tips for {editingRoomTips?.name}</Text>
-              <TouchableOpacity onPress={() => setEditingRoomTips(null)}>
-                <Ionicons name="close" size={24} color="#666" />
-              </TouchableOpacity>
-            </View>
-            
-            <TextInput
-              style={[styles.modalInput, styles.tipsInput]}
-              value={newRoomTips}
-              onChangeText={setNewRoomTips}
-              placeholder="Add tips for cleaners and AI..."
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
-              autoFocus
-            />
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setEditingRoomTips(null)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleSaveRoomTips}
-                disabled={savingChanges}
-              >
-                {savingChanges ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Save</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.inputLabel}>Room Type</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.typeScroll}
+            >
+              {ROOM_SUGGESTIONS.map(type => (
+                <TouchableOpacity
+                  key={type.type}
+                  style={[
+                    styles.typeChip,
+                    newRoomType === type.type && styles.typeChipActive
+                  ]}
+                  onPress={() => setNewRoomType(type.type)}
+                >
+                  <Ionicons 
+                    name={type.icon} 
+                    size={16} 
+                    color={newRoomType === type.type ? '#FFF' : COLORS.textSecondary} 
+                  />
+                  <Text style={[
+                    styles.typeChipText,
+                    newRoomType === type.type && styles.typeChipTextActive
+                  ]}>
+                    {type.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -730,635 +617,412 @@ export default function PropertyDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
   },
-  loading: {
+  loadingView: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
   },
-  // Modern Header Styles
-  modernHeader: {
-    backgroundColor: '#FFFFFF',
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0.5 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
-  },
-  headerContent: {
+  
+  // Section
+  section: {
+    marginTop: 16,
     paddingHorizontal: 16,
-    marginBottom: 16,
   },
-  propertyTitleRow: {
+  sectionHeader: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textTertiary,
     marginBottom: 6,
+    marginLeft: 16,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  propertyTitleLeft: {
+  sectionHeaderRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 8,
+    paddingRight: 16,
   },
-  modernTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.6,
+  addButton: {
+    fontSize: 17,
+    color: COLORS.primary,
+    fontWeight: '400',
   },
-  modernEditButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modernAddressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  modernAddress: {
-    fontSize: 15,
-    color: '#8E8E93',
-    flex: 1,
-    letterSpacing: -0.2,
-  },
-  modernEditAddressButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modernStatsGrid: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 10,
-  },
-  modernStatCard: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
+  
+  // Card
+  card: {
+    backgroundColor: COLORS.card,
     borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    borderWidth: 0,
+    overflow: 'hidden',
   },
-  modernStatIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 6,
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: COLORS.separator,
+    marginLeft: 16,
   },
-  modernStatNumber: {
-    fontSize: 22,
+  
+  // PMS Badge
+  pmsBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.pms,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
+    margin: 12,
+    marginBottom: 0,
+  },
+  pmsBadgeText: {
+    fontSize: 9,
     fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.5,
-    marginBottom: 2,
+    color: '#FFF',
+    letterSpacing: 0.5,
   },
-  modernStatLabel: {
+  
+  // Info Row
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    minHeight: 44,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: COLORS.textTertiary,
+    marginBottom: 1,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
-    fontWeight: '600',
   },
-  // Modern Section Headers
-  modernSectionHeader: {
-    marginBottom: 12,
-  },
-  modernSectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.4,
-    marginBottom: 4,
-  },
-  modernSectionSubtitle: {
-    fontSize: 13,
-    color: '#8E8E93',
-    letterSpacing: -0.1,
-  },
-  header: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    flex: 1,
-    letterSpacing: -0.5,
-  },
-  editButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F0F7FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  address: {
+  infoValue: {
     fontSize: 14,
-    color: '#666',
-    flex: 1,
-    letterSpacing: -0.2,
+    color: COLORS.text,
+    lineHeight: 18,
   },
-  editAddressButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#f8f9fa',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
+  
+  // Stats
   statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingTop: 12,
-    paddingBottom: 4,
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    padding: 12,
   },
-  statCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  statBox: {
     flex: 1,
-    justifyContent: 'center',
-    gap: 8,
-  },
-  statTextContainer: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   statNumber: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    letterSpacing: -0.3,
-  },
-  scoreNumber: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+    fontSize: 22,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 1,
   },
   statLabel: {
     fontSize: 11,
-    color: '#999',
-    marginTop: 1,
-    letterSpacing: -0.2,
+    color: COLORS.textTertiary,
   },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: '#e9ecef',
-  },
-  section: {
-    padding: 16,
-  },
-  sectionHeader: {
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#666',
-  },
-  empty: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 24,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-  },
-  emptyText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-    marginTop: 12,
-    letterSpacing: -0.4,
-  },
-  emptyHint: {
-    fontSize: 15,
-    color: '#8E8E93',
-    marginTop: 6,
-    letterSpacing: -0.2,
-  },
-  roomCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-    overflow: 'hidden',
-  },
-  roomHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-  },
-  roomTitleRow: {
+  
+  // Settings
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 10,
+    paddingRight: 14,
+  },
+  settingIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  settingContent: {
     flex: 1,
   },
-  roomIconContainer: {
+  settingTitle: {
+    fontSize: 15,
+    color: COLORS.text,
+  },
+  settingDesc: {
+    fontSize: 11,
+    color: COLORS.textTertiary,
+    marginTop: 1,
+  },
+  toggle: {
     width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: COLORS.fill,
+    padding: 2,
+  },
+  toggleOn: {
+    backgroundColor: COLORS.green,
+  },
+  toggleThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFF',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2 },
+      android: { elevation: 2 },
+    }),
+  },
+  toggleThumbOn: {
+    marginLeft: 18,
+  },
+  
+  // Action Row
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    paddingRight: 14,
+  },
+  actionTitle: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.text,
+  },
+  
+  // Room Row
+  roomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    paddingRight: 16,
+  },
+  roomIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#E3F2FD',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
-  roomInfo: {
+  roomContent: {
     flex: 1,
   },
   roomName: {
     fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 2,
-    letterSpacing: -0.4,
+    color: COLORS.text,
   },
   roomType: {
-    fontSize: 15,
-    color: '#8E8E93',
-    fontWeight: '400',
-    letterSpacing: -0.2,
+    fontSize: 13,
+    color: COLORS.textTertiary,
+    marginTop: 1,
   },
-  tipsContainer: {
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-    paddingTop: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(60, 60, 67, 0.12)',
+  tipIndicator: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  roomExpanded: {
+    backgroundColor: COLORS.bg,
+    padding: 12,
+    paddingTop: 0,
+  },
+  tipsBox: {
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 8,
   },
   tipsHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
-  tipsHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  tipsTitle: {
+  tipsLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#007AFF',
-    marginLeft: 6,
-    letterSpacing: -0.1,
+    color: COLORS.textTertiary,
   },
-  editTipsButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#F0F7FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+  editLink: {
+    fontSize: 15,
+    color: COLORS.primary,
   },
   tipsText: {
-    fontSize: 13,
-    color: '#333',
-    lineHeight: 20,
-    letterSpacing: -0.2,
-  },
-  noTipsText: {
-    fontSize: 13,
-    color: '#999',
-    fontStyle: 'italic',
-    letterSpacing: -0.2,
-  },
-  inspectionCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  inspectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  inspectionUnit: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#0F172A',
-    marginBottom: 3,
-    letterSpacing: -0.3,
+    color: COLORS.text,
+    lineHeight: 20,
   },
-  inspectionDate: {
-    fontSize: 12,
-    color: '#94A3B8',
-    letterSpacing: -0.1,
+  tipsEmpty: {
+    color: COLORS.textTertiary,
+    fontStyle: 'italic',
   },
-  inspectionScore: {
-    alignItems: 'center',
-  },
-  scoreText: {
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  emptyInspections: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 32,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-  },
-  emptyInspectionsText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#666',
-    marginTop: 16,
-  },
-  emptyInspectionsHint: {
-    fontSize: 14,
-    color: '#999',
+  roomActions: {
+    flexDirection: 'row',
+    gap: 8,
     marginTop: 8,
+  },
+  roomActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.card,
+    padding: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  roomActionText: {
+    fontSize: 15,
+    color: COLORS.primary,
+  },
+  
+  // Empty State
+  emptyCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: COLORS.textTertiary,
     textAlign: 'center',
   },
+  emptyButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+  },
+  emptyButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  
+  // Inspection Row
+  inspectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    paddingRight: 16,
+  },
+  inspectionContent: {
+    flex: 1,
+  },
+  inspectionUnit: {
+    fontSize: 17,
+    color: COLORS.text,
+  },
+  inspectionDate: {
+    fontSize: 13,
+    color: COLORS.textTertiary,
+    marginTop: 1,
+  },
+  scoreBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  scoreBadgeText: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  
+  // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
   },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    maxWidth: 500,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+  modalCard: {
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    paddingBottom: 40,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    padding: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.separator,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    flex: 1,
-    letterSpacing: -0.3,
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  modalCancel: {
+    fontSize: 17,
+    color: COLORS.primary,
+  },
+  modalSave: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textTertiary,
+    marginTop: 16,
+    marginBottom: 8,
+    marginHorizontal: 16,
   },
   modalInput: {
-    borderWidth: 1,
-    borderColor: '#e9ecef',
-    borderRadius: 8,
+    backgroundColor: COLORS.bg,
+    marginHorizontal: 16,
+    borderRadius: 10,
     padding: 12,
-    fontSize: 15,
-    color: '#1a1a1a',
-    marginBottom: 16,
-    backgroundColor: '#f8f9fa',
+    fontSize: 17,
+    color: COLORS.text,
   },
-  tipsInput: {
+  modalInputTall: {
     height: 120,
-    paddingTop: 12,
+    textAlignVertical: 'top',
   },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f8f9fa',
-  },
-  cancelButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#666',
-  },
-  saveButton: {
-    backgroundColor: '#4A90E2',
-  },
-  saveButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  // 5-Star Mode Styles
-  fiveStarSection: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-  },
-  fiveStarCard: {
-    backgroundColor: '#FFFBEB',
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#FEF3C7',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  fiveStarContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  fiveStarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  fiveStarIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FEF3C7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  fiveStarTextContainer: {
-    flex: 1,
-  },
-  fiveStarTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#78350F',
-    marginBottom: 2,
-    letterSpacing: -0.3,
-  },
-  fiveStarDescription: {
-    fontSize: 12,
-    color: '#92400E',
-    lineHeight: 16,
-    letterSpacing: -0.2,
-  },
-  fiveStarToggle: {
-    width: 52,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E5E7EB',
-    padding: 2,
-    justifyContent: 'center',
-  },
-  fiveStarToggleActive: {
-    backgroundColor: '#FFD700',
-  },
-  fiveStarToggleThumb: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#9CA3AF',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fiveStarToggleThumbActive: {
-    backgroundColor: '#B45309',
-    marginLeft: 24,
-  },
-  fiveStarInfo: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#FEF3C7',
-    gap: 8,
-  },
-  fiveStarInfoText: {
-    flex: 1,
-    fontSize: 11,
-    color: '#92400E',
-    lineHeight: 16,
-    letterSpacing: -0.2,
-  },
-  // Inventory Card
-  inventoryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFF',
+  
+  // Type Chips
+  typeScroll: {
     marginHorizontal: 16,
     marginBottom: 16,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
   },
-  inventoryLeft: {
+  typeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-  },
-  inventoryIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#5856D615',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  inventoryTextContainer: {
-    flex: 1,
-  },
-  inventoryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  inventoryDescription: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
-  },
-  // Valuable Items Button
-  valuableItemsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: COLORS.bg,
     borderRadius: 8,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
+    marginRight: 8,
+    gap: 6,
   },
-  valuableItemsLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  typeChipActive: {
+    backgroundColor: COLORS.primary,
   },
-  valuableItemsText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#5856D6',
+  typeChipText: {
+    fontSize: 15,
+    color: COLORS.textSecondary,
   },
-  valuableItemsRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  valuableItemsHint: {
-    fontSize: 12,
-    color: '#8E8E93',
+  typeChipTextActive: {
+    color: '#FFF',
   },
 });
+

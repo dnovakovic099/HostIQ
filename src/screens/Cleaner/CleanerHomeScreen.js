@@ -86,7 +86,11 @@ export default function CleanerHomeScreen({ navigation }) {
     if (job.type === 'assignment') {
       try {
         await api.post(`/cleaner/assignments/${job.id}/start`);
-        navigation.navigate('CaptureMedia', { assignment: job });
+        navigation.navigate('CaptureMedia', { 
+          assignment: job,
+          propertyId: job.unit?.property?.id,
+          propertyName: job.unit?.property?.name,
+        });
       } catch (error) {
         Alert.alert('Error', 'Failed to start assignment');
       }
@@ -97,8 +101,10 @@ export default function CleanerHomeScreen({ navigation }) {
       
       navigation.navigate('CaptureMedia', {
         inspectionId: job.id,
+        propertyId: job.unit?.property?.id,
         propertyName: job.unit.property.name,
         unitName: job.unit.name,
+        unitId: job.unit?.id, // For valuable items
         rooms: job.unit?.rooms || [], // Pass rooms for room-by-room flow
       });
     }

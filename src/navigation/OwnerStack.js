@@ -33,7 +33,7 @@ export default function OwnerStack() {
           borderBottomWidth: 0.5,
           borderBottomColor: '#E5E5EA',
         },
-        headerTintColor: '#007AFF',
+        headerTintColor: '#4A90E2',
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 17,
