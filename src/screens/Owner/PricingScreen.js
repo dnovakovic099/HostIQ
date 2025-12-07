@@ -270,10 +270,9 @@ export default function PricingScreen() {
                           response.data?.plan === 'premium';
         setHasSubscription(hasPricing);
       } catch (error) {
-        // If endpoint doesn't exist yet, default to showing the feature (for development)
-        // In production, you might want to default to false
-        console.log('Subscription check not available, defaulting to enabled');
-        setHasSubscription(true);
+        // Default to showing upsell screen (no subscription)
+        console.log('Subscription check not available, showing upsell');
+        setHasSubscription(false);
       } finally {
         setCheckingSubscription(false);
       }
