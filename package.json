@@ -35,7 +35,10 @@
     "react-native-safe-area-context": "4.6.3",
     "react-native-screens": "~3.22.0",
     "react-native-webview": "13.2.2",
-    "zustand": "^4.4.7"
+    "zustand": "^4.4.7",
+    "expo-print": "~12.4.2",
+    "expo-sharing": "~11.5.0",
+    "expo-mail-composer": "~12.3.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

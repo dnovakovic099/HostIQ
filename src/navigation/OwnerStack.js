@@ -16,6 +16,7 @@ import PMSSettingsScreen from '../screens/Owner/PMSSettingsScreen';
 import IssuesScreen from '../screens/Owner/IssuesScreen';
 import RoomTemplatesScreen from '../screens/Owner/RoomTemplatesScreen';
 import CleaningReportScreen from '../screens/Common/CleaningReportScreen';
+import AirbnbDisputeReportScreen from '../screens/Owner/AirbnbDisputeReportScreen';
 
 const Stack = createStackNavigator();
 
@@ -121,6 +122,11 @@ export default function OwnerStack() {
         name="CleaningReport" 
         component={CleaningReportScreen}
         options={{ title: 'Cleaning Report' }}
+      />
+      <Stack.Screen 
+        name="AirbnbDisputeReport" 
+        component={AirbnbDisputeReportScreen}
+        options={{ title: 'Dispute Report' }}
       />
     </Stack.Navigator>
   );

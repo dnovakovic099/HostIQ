@@ -1,44 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import api from '../api/client';
 
-// Match dashboard colors
+// iOS system colors
 const COLORS = {
-  background: '#FAFAFA',
-  card: '#FFFFFF',
-  cardBorder: 'rgba(0,0,0,0.04)',
+  primary: '#007AFF',
+  primaryLight: '#E3F2FF',
   text: {
-    primary: '#1A1D21',
-    secondary: '#6B7280',
-    tertiary: '#9CA3AF',
+    primary: '#000000',
+    secondary: '#3C3C43',
+    tertiary: '#8E8E93',
   },
-  accent: '#2563EB',
-  success: '#059669',
-  warning: '#D97706',
-  error: '#DC2626',
-  divider: '#F1F3F5',
+  success: '#34C759',
+  warning: '#FF9500',
+  warningLight: '#FFF4E5',
+  error: '#FF3B30',
+  errorLight: '#FFEBE9',
+  progressBg: '#E5E5EA',
 };
 
 export default function UsageIndicator({ navigation, compact = false }) {
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Only load usage data once on mount, not on every focus
   useEffect(() => {
     loadUsage();
   }, []);
 
   const loadUsage = async () => {
     try {
-      console.log('📊 Loading usage data...');
       const response = await api.get('/subscriptions/usage');
-      console.log('📊 Usage data received:', response.data);
       setUsage(response.data);
     } catch (error) {
       console.error('Load usage error:', error);
-      console.error('Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
@@ -47,7 +42,7 @@ export default function UsageIndicator({ navigation, compact = false }) {
   if (loading) {
     return (
       <View style={[styles.container, compact && styles.containerCompact]}>
-        <ActivityIndicator size="small" color={COLORS.accent} />
+        <ActivityIndicator size="small" color={COLORS.primary} />
       </View>
     );
   }
@@ -61,7 +56,13 @@ export default function UsageIndicator({ navigation, compact = false }) {
   const getProgressColor = () => {
     if (isAtLimit) return COLORS.error;
     if (isNearLimit) return COLORS.warning;
-    return COLORS.accent;
+    return COLORS.primary;
+  };
+
+  const getIconBg = () => {
+    if (isAtLimit) return COLORS.errorLight;
+    if (isNearLimit) return COLORS.warningLight;
+    return COLORS.primaryLight;
   };
 
   const handlePress = () => {
@@ -73,17 +74,14 @@ export default function UsageIndicator({ navigation, compact = false }) {
   if (compact) {
     return (
       <TouchableOpacity
-        style={[
-          styles.compactContainer,
-          isAtLimit && styles.compactContainerAlert,
-        ]}
+        style={[styles.compactContainer, isAtLimit && styles.compactContainerAlert]}
         onPress={handlePress}
-        activeOpacity={0.7}
+        activeOpacity={0.6}
       >
         <Ionicons
           name={isAtLimit ? 'alert-circle' : 'images-outline'}
           size={18}
-          color={isAtLimit ? COLORS.error : COLORS.accent}
+          color={isAtLimit ? COLORS.error : COLORS.primary}
         />
         <Text style={[styles.compactText, isAtLimit && styles.compactTextAlert]}>
           {usage.remaining_free_images} free images
@@ -94,104 +92,65 @@ export default function UsageIndicator({ navigation, compact = false }) {
 
   return (
     <TouchableOpacity
-      style={[
-        styles.container,
-        isAtLimit && styles.containerAlert,
-        isNearLimit && !isAtLimit && styles.containerWarning,
-      ]}
+      style={styles.container}
       onPress={handlePress}
-      activeOpacity={0.7}
+      activeOpacity={0.6}
     >
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <View style={[styles.iconContainer, { backgroundColor: `${getProgressColor()}12` }]}>
-            <Ionicons
-              name={isAtLimit ? 'alert-circle-outline' : 'images-outline'}
-              size={20}
-              color={getProgressColor()}
-            />
-          </View>
-          <View style={styles.textContainer}>
-            <Text style={styles.title}>Free Image Usage</Text>
-            <Text style={styles.subtitle}>
-              {usage.images_processed} / {usage.free_image_limit} used
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.text.tertiary} />
-        </View>
-
-        <View style={styles.progressBarContainer}>
-          <View
-            style={[
-              styles.progressBar,
-              {
-                width: `${percentage}%`,
-                backgroundColor: getProgressColor(),
-              },
-            ]}
+      <View style={styles.header}>
+        <View style={[styles.iconContainer, { backgroundColor: getIconBg() }]}>
+          <Ionicons
+            name={isAtLimit ? 'alert-circle-outline' : 'images-outline'}
+            size={22}
+            color={getProgressColor()}
           />
         </View>
-
-        {isAtLimit ? (
-          <View style={styles.message}>
-            <Text style={styles.messageTextAlert}>
-              Limit reached. Subscribe to properties to continue.
-            </Text>
-          </View>
-        ) : isNearLimit ? (
-          <View style={styles.message}>
-            <Text style={styles.messageTextWarning}>
-              {usage.remaining_free_images} free images remaining
-            </Text>
-          </View>
-        ) : null}
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>Free Image Usage</Text>
+          <Text style={styles.subtitle}>
+            {usage.images_processed} / {usage.free_image_limit} used
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color="#C6C6C8" />
       </View>
+
+      <View style={styles.progressBarBg}>
+        <View
+          style={[
+            styles.progressBar,
+            {
+              width: `${percentage}%`,
+              backgroundColor: getProgressColor(),
+            },
+          ]}
+        />
+      </View>
+
+      {(isAtLimit || isNearLimit) && (
+        <Text style={[styles.messageText, { color: getProgressColor() }]}>
+          {isAtLimit 
+            ? 'Limit reached. Upgrade to continue.' 
+            : `${usage.remaining_free_images} free images remaining`}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
     padding: 16,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  containerAlert: {
-    borderWidth: 1,
-    borderColor: `${COLORS.error}30`,
-    backgroundColor: `${COLORS.error}06`,
-  },
-  containerWarning: {
-    borderWidth: 1,
-    borderColor: `${COLORS.warning}30`,
-    backgroundColor: `${COLORS.warning}06`,
+    gap: 12,
   },
   containerCompact: {
     padding: 8,
-  },
-  content: {
-    gap: 14,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconContainer: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -201,18 +160,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: COLORS.text.primary,
-    marginBottom: 2,
+    letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.text.secondary,
+    marginTop: 1,
   },
-  progressBarContainer: {
-    height: 5,
-    backgroundColor: COLORS.divider,
+  progressBarBg: {
+    height: 6,
+    backgroundColor: COLORS.progressBg,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -220,38 +180,28 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
-  message: {
-    marginTop: 2,
-  },
-  messageTextAlert: {
+  messageText: {
     fontSize: 13,
-    color: COLORS.error,
-    fontWeight: '500',
-  },
-  messageTextWarning: {
-    fontSize: 13,
-    color: COLORS.warning,
     fontWeight: '500',
   },
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: `${COLORS.accent}10`,
+    backgroundColor: COLORS.primaryLight,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
   },
   compactContainerAlert: {
-    backgroundColor: `${COLORS.error}10`,
+    backgroundColor: COLORS.errorLight,
   },
   compactText: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.accent,
+    color: COLORS.primary,
   },
   compactTextAlert: {
     color: COLORS.error,
   },
 });
-

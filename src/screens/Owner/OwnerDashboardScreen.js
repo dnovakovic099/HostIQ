@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,34 +8,31 @@ import {
   RefreshControl,
   ActivityIndicator,
   Alert,
-  Image,
-  Dimensions,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 import UsageIndicator from '../../components/UsageIndicator';
 
-const { width } = Dimensions.get('window');
-
-// Modern muted color palette
+// iOS system colors
 const COLORS = {
-  background: '#FAFAFA',
+  background: '#F2F2F7',
   card: '#FFFFFF',
-  cardBorder: 'rgba(0,0,0,0.04)',
+  primary: '#007AFF',
   text: {
-    primary: '#1A1D21',
-    secondary: '#6B7280',
-    tertiary: '#9CA3AF',
+    primary: '#000000',
+    secondary: '#3C3C43',
+    tertiary: '#8E8E93',
   },
-  accent: '#2563EB', // Clean blue
-  accentLight: 'rgba(37, 99, 235, 0.08)',
-  success: '#059669',
-  warning: '#D97706',
-  error: '#DC2626',
-  divider: '#F1F3F5',
+  success: '#34C759',
+  successBg: '#EAFAF0',
+  warning: '#FF9500',
+  warningBg: '#FFF8F0',
+  error: '#FF3B30',
+  errorBg: '#FFF0F0',
+  separator: '#E5E5EA',
+  sectionBg: '#F9F9FB',
 };
 
 export default function OwnerDashboardScreen({ navigation }) {
@@ -107,69 +104,54 @@ export default function OwnerDashboardScreen({ navigation }) {
     const isAppFailed = errorMsg.includes('blurred') || errorMsg.includes('technical');
 
     if (status === 'FAILED' || isAppFailed) {
-      return { label: 'Failed', color: '#FF3B30' };
+      return { label: 'Failed', color: COLORS.error };
     }
     if (status === 'COMPLETE' && isReady === false) {
-      return { label: 'Cleaning Failed', color: '#FF3B30' };
+      return { label: 'Attention', color: COLORS.error };
     }
     if (status === 'COMPLETE') {
-      return { label: 'Complete', color: '#34C759' };
+      return { label: 'Complete', color: COLORS.success };
     }
     if (status === 'PROCESSING') {
-      return { label: 'Processing', color: '#FF9500' };
+      return { label: 'Processing', color: COLORS.warning };
     }
-    return { label: status, color: '#8E8E93' };
+    return { label: status, color: COLORS.text.tertiary };
   };
 
   const formatDate = (date) => {
     const d = new Date(date);
     const now = new Date();
     const diffMs = now - d;
-    const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const handleDeleteInspection = (inspectionId, propertyName) => {
-    Alert.alert(
-      'Delete Inspection',
-      `Delete this inspection for ${propertyName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api.delete(`/inspections/${inspectionId}`);
-              setRecentInspections(prev => prev.filter(i => i.id !== inspectionId));
-            } catch (error) {
-              Alert.alert('Error', 'Failed to delete inspection');
-            }
-          },
-        },
-      ]
-    );
+  const getAverageScore = () => {
+    const scored = recentInspections.filter(i => i.cleanliness_score && i.cleanliness_score > 0);
+    if (scored.length === 0) return null;
+    const avg = scored.reduce((sum, i) => sum + i.cleanliness_score, 0) / scored.length;
+    return avg.toFixed(1);
   };
 
-  // Get first 3 media URLs from inspection
-  const getMediaThumbnails = (inspection) => {
-    if (!inspection.media || inspection.media.length === 0) return [];
-    return inspection.media.slice(0, 3).map(m => m.url);
-  };
+  const getCompletedCount = () => recentInspections.filter(i => i.status === 'COMPLETE').length;
+  const getProcessingCount = () => recentInspections.filter(i => i.status === 'PROCESSING').length;
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
+
+  const displayedInspections = recentInspections.slice(0, 3);
+  const avgScore = getAverageScore();
+  const completedCount = getCompletedCount();
+  const processingCount = getProcessingCount();
 
   return (
     <View style={styles.container}>
@@ -177,196 +159,174 @@ export default function OwnerDashboardScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.accent} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
         }
       >
-        {/* Usage Indicator */}
-        <View style={styles.usageSection}>
+        {/* Dashboard Card */}
+        <View style={styles.dashboardCard}>
+          
+          {/* Usage Section */}
           <UsageIndicator navigation={navigation} />
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActionsContainer}>
+          
+          <View style={styles.divider} />
+          
+          {/* Quick Actions */}
           <View style={styles.quickActions}>
             <TouchableOpacity
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('Properties', { screen: 'CreateProperty' })}
-              activeOpacity={0.8}
+              activeOpacity={0.6}
             >
-              <LinearGradient colors={['#3B82F6', '#2563EB']} style={styles.quickActionGradient}>
-                <Ionicons name="add" size={24} color="#FFF" />
-              </LinearGradient>
+              <View style={[styles.quickActionIcon, { backgroundColor: '#EBF4FF' }]}>
+                <Ionicons name="add" size={22} color={COLORS.primary} />
+              </View>
               <Text style={styles.quickActionText}>Property</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('ManageCleaners')}
-              activeOpacity={0.8}
+              activeOpacity={0.6}
             >
-              <LinearGradient colors={['#4A90E2', '#3D7FD9']} style={styles.quickActionGradient}>
-                <Ionicons name="people" size={22} color="#FFF" />
-              </LinearGradient>
+              <View style={[styles.quickActionIcon, { backgroundColor: '#EBF4FF' }]}>
+                <Ionicons name="people" size={20} color={COLORS.primary} />
+              </View>
               <Text style={styles.quickActionText}>Team</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('SubscriptionManagement')}
-              activeOpacity={0.8}
+              activeOpacity={0.6}
             >
-              <LinearGradient colors={['#10B981', '#059669']} style={styles.quickActionGradient}>
-                <Ionicons name="card" size={22} color="#FFF" />
-              </LinearGradient>
+              <View style={[styles.quickActionIcon, { backgroundColor: '#EAFAF0' }]}>
+                <Ionicons name="card" size={20} color={COLORS.success} />
+              </View>
               <Text style={styles.quickActionText}>Plans</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('Insights')}
-              activeOpacity={0.8}
+              activeOpacity={0.6}
             >
-              <LinearGradient colors={['#F59E0B', '#EA580C']} style={styles.quickActionGradient}>
-                <Ionicons name="analytics" size={22} color="#FFF" />
-              </LinearGradient>
-              <Text style={styles.quickActionText}>Issues</Text>
+              <View style={[styles.quickActionIcon, { backgroundColor: '#FFF5EB' }]}>
+                <Ionicons name="analytics" size={20} color={COLORS.warning} />
+              </View>
+              <Text style={styles.quickActionText}>Insights</Text>
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* Low Rating Alert */}
-        {lowRatingProperties.length > 0 && (
-          <View style={styles.section}>
-            <TouchableOpacity
-              style={styles.alertCard}
-              onPress={() => navigation.navigate('Insights')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.alertIconWrapper}>
-                <Ionicons name="warning-outline" size={18} color={COLORS.error} />
-              </View>
-              <View style={styles.alertContent}>
-                <Text style={styles.alertTitle}>
-                  {lowRatingProperties.length} Low Rating{lowRatingProperties.length > 1 ? 's' : ''}
-                </Text>
-                <Text style={styles.alertSubtitle}>Ratings ≤ 4.7 need attention</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.text.tertiary} />
-            </TouchableOpacity>
-          </View>
-        )}
+          {/* Section Break */}
+          <View style={styles.sectionBreak} />
 
-        {/* Recent Inspections */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Inspections</Text>
-            <TouchableOpacity 
-              onPress={() => navigation.navigate('InspectionReports')}
-              style={styles.viewAllBtn}
-            >
+          {/* Inspections Header */}
+          <TouchableOpacity 
+            style={styles.inspectionsHeader}
+            onPress={() => navigation.navigate('InspectionReports')}
+            activeOpacity={0.6}
+          >
+            <Text style={styles.inspectionsTitle}>Recent Inspections</Text>
+            <View style={styles.viewAllRow}>
               <Text style={styles.viewAllText}>View All</Text>
-              <Ionicons name="arrow-forward" size={14} color={COLORS.accent} />
-            </TouchableOpacity>
+              <Ionicons name="chevron-forward" size={14} color={COLORS.primary} />
+            </View>
+          </TouchableOpacity>
+
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{recentInspections.length}</Text>
+              <Text style={styles.statLabel}>Total</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: COLORS.primary }]}>{avgScore || '–'}</Text>
+              <Text style={styles.statLabel}>Avg Score</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: COLORS.success }]}>{completedCount}</Text>
+              <Text style={styles.statLabel}>Complete</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={[styles.statValue, { color: COLORS.warning }]}>{processingCount}</Text>
+              <Text style={styles.statLabel}>Processing</Text>
+            </View>
           </View>
 
-          {recentInspections.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconWrapper}>
-                <Ionicons name="clipboard-outline" size={32} color={COLORS.text.tertiary} />
-              </View>
-              <Text style={styles.emptyTitle}>No Inspections Yet</Text>
-              <Text style={styles.emptySubtitle}>
-                Inspections will appear here once cleaners submit them
+          {/* Alert Banner */}
+          {lowRatingProperties.length > 0 && (
+            <TouchableOpacity
+              style={styles.alertBanner}
+              onPress={() => navigation.navigate('Insights')}
+              activeOpacity={0.6}
+            >
+              <Ionicons name="warning" size={14} color={COLORS.error} />
+              <Text style={styles.alertText}>
+                {lowRatingProperties.length} low rating{lowRatingProperties.length > 1 ? 's' : ''} need attention
               </Text>
-            </View>
-          ) : (
-            recentInspections.map((inspection) => {
+              <Ionicons name="chevron-forward" size={14} color={COLORS.error} />
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.divider} />
+
+          {/* Inspection List */}
+          {displayedInspections.length > 0 ? (
+            displayedInspections.map((inspection, index) => {
               const propertyName = inspection.unit?.property?.name || 'Property';
               const unitName = inspection.unit?.name || 'Unit';
               const cleanerName = inspection.creator?.name || 'Cleaner';
               const statusConfig = getStatusConfig(inspection);
               const score = inspection.cleanliness_score;
               const mediaCount = inspection._count?.media || 0;
-              const thumbnails = getMediaThumbnails(inspection);
+              const isLast = index === displayedInspections.length - 1;
 
               return (
-                <TouchableOpacity
-                  key={inspection.id}
-                  style={styles.inspectionCard}
-                  onPress={() => navigation.navigate('InspectionDetail', { inspectionId: inspection.id })}
-                  activeOpacity={0.7}
-                >
-                  {/* Thumbnails Row */}
-                  {thumbnails.length > 0 && (
-                    <View style={styles.thumbnailRow}>
-                      {thumbnails.map((url, index) => (
-                        <Image
-                          key={index}
-                          source={{ uri: url }}
-                          style={[
-                            styles.thumbnail,
-                            index === 0 && styles.thumbnailFirst,
-                            index === thumbnails.length - 1 && styles.thumbnailLast,
-                          ]}
-                        />
-                      ))}
-                      {mediaCount > 3 && (
-                        <View style={styles.morePhotos}>
-                          <Text style={styles.morePhotosText}>+{mediaCount - 3}</Text>
-                        </View>
-                      )}
-                    </View>
-                  )}
-
-                  <View style={styles.cardBody}>
-                    {/* Header */}
-                    <View style={styles.cardHeader}>
-                      <View style={styles.propertyInfo}>
+                <React.Fragment key={inspection.id}>
+                  <View style={styles.inspectionItem}>
+                    <TouchableOpacity
+                      style={styles.inspectionRow}
+                      onPress={() => navigation.navigate('InspectionDetail', { inspectionId: inspection.id })}
+                      activeOpacity={0.5}
+                    >
+                      <View style={styles.inspectionLeft}>
                         <Text style={styles.propertyName} numberOfLines={1}>{propertyName}</Text>
-                        <Text style={styles.unitName}>{unitName}</Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.deleteBtn}
-                        onPress={() => handleDeleteInspection(inspection.id, propertyName)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Ionicons name="trash-outline" size={16} color={COLORS.text.tertiary} />
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* Meta */}
-                    <View style={styles.metaRow}>
-                      <Text style={styles.metaText}>{cleanerName}</Text>
-                      <View style={styles.metaDot} />
-                      <Text style={styles.metaText}>{formatDate(inspection.created_at)}</Text>
-                      <View style={styles.metaDot} />
-                      <Ionicons name="camera-outline" size={12} color={COLORS.text.tertiary} />
-                      <Text style={styles.metaText}> {mediaCount}</Text>
-                    </View>
-
-                    {/* Footer */}
-                    <View style={styles.cardFooter}>
-                      <View style={[styles.statusBadge, { backgroundColor: `${statusConfig.color}12` }]}>
-                        <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
-                        <Text style={[styles.statusText, { color: statusConfig.color }]}>
-                          {statusConfig.label}
+                        <Text style={styles.inspectionMeta}>
+                          {unitName} · {cleanerName} · {formatDate(inspection.created_at)} · {mediaCount} photos
                         </Text>
+                        <View style={styles.statusRow}>
+                          <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
+                          <Text style={[styles.statusText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
+                        </View>
                       </View>
-
-                      <View style={styles.footerRight}>
+                      <View style={styles.inspectionRight}>
                         {score != null && score > 0 && (
-                          <View style={styles.scoreContainer}>
-                            <Text style={styles.scoreValue}>{score.toFixed(1)}</Text>
-                            <Text style={styles.scoreMax}>/10</Text>
-                          </View>
+                          <Text style={styles.scoreText}>{score.toFixed(1)}</Text>
                         )}
-                        <Ionicons name="chevron-forward" size={16} color={COLORS.text.tertiary} />
+                        <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
                       </View>
-                    </View>
+                    </TouchableOpacity>
+                    
+                    {/* Airbnb Dispute Report Button */}
+                    {inspection.status === 'COMPLETE' && (
+                      <TouchableOpacity
+                        style={styles.disputeButton}
+                        onPress={() => navigation.navigate('AirbnbDisputeReport', { inspectionId: inspection.id })}
+                        activeOpacity={0.6}
+                      >
+                        <Ionicons name="document-text-outline" size={14} color={COLORS.primary} />
+                        <Text style={styles.disputeButtonText}>Airbnb Dispute Report</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                </TouchableOpacity>
+                  {!isLast && <View style={styles.rowDivider} />}
+                </React.Fragment>
               );
             })
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No inspections yet</Text>
+            </View>
           )}
         </View>
 
@@ -382,7 +342,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingTop: 12,
+    paddingBottom: 24,
+    paddingHorizontal: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -390,251 +352,159 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.background,
   },
-  // Usage Section
-  usageSection: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  // Section
-  section: {
-    paddingHorizontal: 16,
-    marginTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-    letterSpacing: -0.3,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  viewAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  viewAllText: {
-    fontSize: 14,
-    color: COLORS.accent,
-    fontWeight: '500',
-  },
-  // Quick Actions
-  quickActionsContainer: {
-    paddingVertical: 20,
-    paddingHorizontal: 16,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 24,
-  },
-  quickActionBtn: {
-    alignItems: 'center',
-    width: 70,
-  },
-  quickActionGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  quickActionText: {
-    fontSize: 12,
-    color: COLORS.text.secondary,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  // Alert
-  alertCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  
+  dashboardCard: {
     backgroundColor: COLORS.card,
-    padding: 14,
-    borderRadius: 14,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: `${COLORS.error}20`,
-    backgroundColor: `${COLORS.error}06`,
-  },
-  alertIconWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: `${COLORS.error}12`,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  alertContent: {
-    flex: 1,
-  },
-  alertTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-  },
-  alertSubtitle: {
-    fontSize: 12,
-    color: COLORS.text.secondary,
-    marginTop: 2,
-  },
-  // Empty State
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 32,
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  emptyIconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: COLORS.divider,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: COLORS.text.secondary,
-    textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 20,
-  },
-  // Inspection Card
-  inspectionCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    marginBottom: 12,
+    borderRadius: 12,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
       },
       android: {
         elevation: 2,
       },
     }),
   },
-  thumbnailRow: {
+  
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: COLORS.separator,
+    marginHorizontal: 16,
+  },
+  
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: COLORS.separator,
+    marginLeft: 16,
+  },
+  
+  sectionBreak: {
+    height: 8,
+    backgroundColor: '#F5F5F7',
+  },
+  
+  // Quick Actions
+  quickActions: {
     flexDirection: 'row',
-    height: 110,
+    justifyContent: 'space-around',
+    paddingVertical: 14,
+    paddingHorizontal: 8,
   },
-  thumbnail: {
-    flex: 1,
-    height: 110,
-    backgroundColor: COLORS.divider,
+  quickActionBtn: {
+    alignItems: 'center',
   },
-  thumbnailFirst: {
-    borderTopLeftRadius: 15,
+  quickActionIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
   },
-  thumbnailLast: {
-    borderTopRightRadius: 15,
+  quickActionText: {
+    fontSize: 11,
+    color: COLORS.text.secondary,
+    fontWeight: '500',
   },
-  morePhotos: {
-    position: 'absolute',
-    right: 10,
-    bottom: 10,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  morePhotosText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cardBody: {
-    padding: 16,
-  },
-  cardHeader: {
+  
+  // Inspections Header
+  inspectionsHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 10,
   },
-  propertyInfo: {
+  inspectionsTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+  },
+  viewAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  viewAllText: {
+    fontSize: 13,
+    color: COLORS.primary,
+  },
+  
+  // Stats Row
+  statsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+  },
+  statLabel: {
+    fontSize: 10,
+    color: COLORS.text.tertiary,
+    marginTop: 1,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  
+  // Alert Banner
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.errorBg,
+    marginHorizontal: 16,
+    marginBottom: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  alertText: {
+    flex: 1,
+    fontSize: 12,
+    color: COLORS.error,
+    fontWeight: '500',
+  },
+  
+  // Inspection Item
+  inspectionItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  inspectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inspectionLeft: {
     flex: 1,
   },
   propertyName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS.text.primary,
-    letterSpacing: -0.2,
+    marginBottom: 2,
   },
-  unitName: {
-    fontSize: 14,
-    color: COLORS.text.secondary,
-    marginTop: 3,
+  inspectionMeta: {
+    fontSize: 12,
+    color: COLORS.text.tertiary,
+    marginBottom: 4,
   },
-  deleteBtn: {
-    padding: 6,
-    marginTop: -4,
-    marginRight: -4,
-  },
-  // Meta
-  metaRow: {
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
-  },
-  metaText: {
-    fontSize: 13,
-    color: COLORS.text.secondary,
-  },
-  metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: COLORS.text.tertiary,
-    marginHorizontal: 8,
-  },
-  // Footer
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 14,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.divider,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    gap: 6,
+    gap: 5,
   },
   statusDot: {
     width: 6,
@@ -642,28 +512,48 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   statusText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  footerRight: {
+  inspectionRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  scoreContainer: {
+  scoreText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  
+  // Dispute Button
+  disputeButton: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EBF4FF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginTop: 10,
+    gap: 6,
   },
-  scoreValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text.primary,
+  disputeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
   },
-  scoreMax: {
-    fontSize: 13,
+  
+  // Empty State
+  emptyState: {
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
     color: COLORS.text.tertiary,
-    fontWeight: '400',
   },
+  
   bottomPadding: {
     height: 32,
   },
