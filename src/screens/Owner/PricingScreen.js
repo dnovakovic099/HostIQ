@@ -21,6 +21,106 @@ import client from '../../api/client';
 
 const { width } = Dimensions.get('window');
 
+// Subscription Upsell Screen Component
+const SubscriptionUpsellScreen = ({ onSubscribe }) => {
+  return (
+    <ScrollView style={styles.upsellContainer} contentContainerStyle={styles.upsellContent}>
+      <LinearGradient
+        colors={['#0A1628', '#1A2F4E', '#0A1628']}
+        style={styles.upsellHeader}
+      >
+        <View style={styles.upsellIconContainer}>
+          <Ionicons name="analytics" size={48} color="#4A90E2" />
+        </View>
+        <Text style={styles.upsellTitle}>AI-Powered Pricing</Text>
+        <Text style={styles.upsellSubtitle}>
+          Maximize your rental income with intelligent market analysis
+        </Text>
+      </LinearGradient>
+
+      <View style={styles.upsellFeaturesCard}>
+        <Text style={styles.featuresTitle}>What You Get</Text>
+        
+        <View style={styles.featureRow}>
+          <View style={styles.featureIcon}>
+            <Ionicons name="trending-up" size={20} color="#4A90E2" />
+          </View>
+          <View style={styles.featureText}>
+            <Text style={styles.featureTitle}>Real-Time Market Analysis</Text>
+            <Text style={styles.featureDesc}>See exactly what competitors are charging for similar properties</Text>
+          </View>
+        </View>
+
+        <View style={styles.featureRow}>
+          <View style={styles.featureIcon}>
+            <Ionicons name="flash" size={20} color="#F59E0B" />
+          </View>
+          <View style={styles.featureText}>
+            <Text style={styles.featureTitle}>AI Price Recommendations</Text>
+            <Text style={styles.featureDesc}>Get optimal pricing suggestions for every available date</Text>
+          </View>
+        </View>
+
+        <View style={styles.featureRow}>
+          <View style={styles.featureIcon}>
+            <Ionicons name="calendar" size={20} color="#10B981" />
+          </View>
+          <View style={styles.featureText}>
+            <Text style={styles.featureTitle}>Availability-Based Pricing</Text>
+            <Text style={styles.featureDesc}>Dynamic recommendations based on your open dates</Text>
+          </View>
+        </View>
+
+        <View style={styles.featureRow}>
+          <View style={styles.featureIcon}>
+            <Ionicons name="eye" size={20} color="#8B5CF6" />
+          </View>
+          <View style={styles.featureText}>
+            <Text style={styles.featureTitle}>Visibility Insights</Text>
+            <Text style={styles.featureDesc}>Know if your listing appears on the first page of search</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.pricingCard}>
+        <View style={styles.pricingHeader}>
+          <Text style={styles.pricingLabel}>PRICING PRO</Text>
+          <View style={styles.pricingBadge}>
+            <Text style={styles.pricingBadgeText}>MOST POPULAR</Text>
+          </View>
+        </View>
+        <View style={styles.priceRow}>
+          <Text style={styles.priceAmount}>$29</Text>
+          <Text style={styles.pricePeriod}>/month</Text>
+        </View>
+        <Text style={styles.priceSavings}>Save 40% with annual billing</Text>
+        
+        <TouchableOpacity style={styles.subscribeButton} onPress={onSubscribe}>
+          <Text style={styles.subscribeButtonText}>Start 7-Day Free Trial</Text>
+          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+        
+        <Text style={styles.trialNote}>No credit card required • Cancel anytime</Text>
+      </View>
+
+      <View style={styles.testimonialsSection}>
+        <Text style={styles.testimonialsTitle}>Trusted by Property Owners</Text>
+        <View style={styles.testimonialCard}>
+          <View style={styles.testimonialStars}>
+            {[1,2,3,4,5].map(i => (
+              <Ionicons key={i} name="star" size={14} color="#F59E0B" />
+            ))}
+          </View>
+          <Text style={styles.testimonialText}>
+            "The AI pricing suggestions helped me increase my nightly rate by 23% while maintaining high occupancy."
+          </Text>
+          <Text style={styles.testimonialAuthor}>— Sarah M., Chicago</Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+};
+
 // AI Loading Screen Component - Clean minimal design with logo
 const AILoadingScreen = () => {
   const pulseAnim = useRef(new Animated.Value(0)).current;
@@ -134,6 +234,10 @@ const AILoadingScreen = () => {
 };
 
 export default function PricingScreen() {
+  // Subscription state
+  const [hasSubscription, setHasSubscription] = useState(null); // null = loading, true/false = checked
+  const [checkingSubscription, setCheckingSubscription] = useState(true);
+  
   // Property selection
   const [properties, setProperties] = useState([]);
   const [selectedProperty, setSelectedProperty] = useState(null);
@@ -153,6 +257,52 @@ export default function PricingScreen() {
   const [aiSuggestions, setAiSuggestions] = useState({}); // Track AI suggestions per chunk
   const [loadingAI, setLoadingAI] = useState({}); // Track loading state per chunk
   const [expandedReasoning, setExpandedReasoning] = useState({}); // Track expanded reasoning per chunk
+
+  // Check subscription status
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        // TODO: Replace with actual subscription check API
+        // For now, check if user has pricing_subscription feature enabled
+        const response = await client.get('/user/subscription');
+        const hasPricing = response.data?.features?.includes('pricing') || 
+                          response.data?.plan === 'pro' ||
+                          response.data?.plan === 'premium';
+        setHasSubscription(hasPricing);
+      } catch (error) {
+        // If endpoint doesn't exist yet, default to showing the feature (for development)
+        // In production, you might want to default to false
+        console.log('Subscription check not available, defaulting to enabled');
+        setHasSubscription(true);
+      } finally {
+        setCheckingSubscription(false);
+      }
+    };
+
+    checkSubscription();
+  }, []);
+
+  const handleSubscribe = () => {
+    // TODO: Implement subscription flow
+    // For now, just show an alert or open a subscription URL
+    Alert.alert(
+      'Start Free Trial',
+      'This will open the subscription page. Would you like to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Continue', 
+          onPress: () => {
+            // Option 1: Open web subscription page
+            // Linking.openURL('https://your-app.com/subscribe');
+            
+            // Option 2: For testing, just enable the feature
+            setHasSubscription(true);
+          }
+        }
+      ]
+    );
+  };
   
   // Refetch properties when screen comes into focus
   useFocusEffect(
@@ -755,6 +905,21 @@ export default function PricingScreen() {
   );
 };
 
+  // Show loading while checking subscription
+  if (checkingSubscription) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={colors.primary.main} />
+        <Text style={styles.loadingScreenText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Show upsell screen if no subscription
+  if (!hasSubscription) {
+    return <SubscriptionUpsellScreen onSubscribe={handleSubscribe} />;
+  }
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -1002,6 +1167,217 @@ export default function PricingScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Loading screen
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: '#F8F9FB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingScreenText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: colors.text.secondary,
+  },
+  // Upsell screen styles
+  upsellContainer: {
+    flex: 1,
+    backgroundColor: '#F8F9FB',
+  },
+  upsellContent: {
+    paddingBottom: 40,
+  },
+  upsellHeader: {
+    paddingTop: 40,
+    paddingBottom: 50,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  upsellIconContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(74, 144, 226, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  upsellTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  upsellSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  upsellFeaturesCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginTop: -30,
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  featuresTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 20,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    marginBottom: 20,
+  },
+  featureIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F5F6F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  featureText: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  featureDesc: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    lineHeight: 18,
+  },
+  pricingCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+    borderWidth: 2,
+    borderColor: colors.primary.main,
+  },
+  pricingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  pricingLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary.main,
+    letterSpacing: 1,
+  },
+  pricingBadge: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 12,
+  },
+  pricingBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 4,
+  },
+  priceAmount: {
+    fontSize: 48,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  pricePeriod: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    marginLeft: 4,
+  },
+  priceSavings: {
+    fontSize: 13,
+    color: '#10B981',
+    marginBottom: 24,
+  },
+  subscribeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.main,
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    width: '100%',
+    marginBottom: 12,
+  },
+  subscribeButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginRight: 8,
+  },
+  trialNote: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+  },
+  testimonialsSection: {
+    paddingHorizontal: 20,
+    paddingTop: 30,
+  },
+  testimonialsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  testimonialCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  testimonialStars: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  testimonialText: {
+    fontSize: 14,
+    color: colors.text.primary,
+    lineHeight: 22,
+    fontStyle: 'italic',
+    marginBottom: 12,
+  },
+  testimonialAuthor: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
+  // Main screen styles
   container: {
     flex: 1,
     backgroundColor: '#F8F9FB',

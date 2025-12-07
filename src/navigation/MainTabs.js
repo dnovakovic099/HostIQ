@@ -243,13 +243,11 @@ export default function MainTabs() {
             component={InsightsStack}
             options={{ title: 'Insights' }}
           />
-          {hasPMSConnected && (
-            <Tab.Screen 
-              name="Pricing" 
-              component={PricingStack}
-              options={{ title: 'Pricing' }}
-            />
-          )}
+          <Tab.Screen 
+            name="Pricing" 
+            component={PricingStack}
+            options={{ title: 'Pricing' }}
+          />
         </>
       )}
 
