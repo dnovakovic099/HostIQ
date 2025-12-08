@@ -17,11 +17,11 @@ import { ROOM_SUGGESTIONS, getRoomSuggestionByType } from '../../config/roomSugg
 export default function CreatePropertyScreen({ navigation }) {
   // Wizard state
   const [step, setStep] = useState(1); // 1: Property Info, 2: Add Rooms, 3: Review
-  
+
   // Property details
   const [propertyName, setPropertyName] = useState('');
   const [address, setAddress] = useState('');
-  
+
   // Rooms
   const [rooms, setRooms] = useState([]);
   const [editingRoom, setEditingRoom] = useState(null);
@@ -30,21 +30,21 @@ export default function CreatePropertyScreen({ navigation }) {
   const [selectedRoomType, setSelectedRoomType] = useState(null);
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
-  
+
   // Loading
   const [loading, setLoading] = useState(false);
 
   const addRoomFromType = async (roomType) => {
     setSelectedRoomType(roomType);
     setShowRoomPicker(false);
-    
+
     // Fetch templates for this room type
     setLoadingTemplates(true);
     try {
       const response = await api.get('/room-templates');
       const allTemplates = response.data.templates || [];
       const typeTemplates = allTemplates.filter(t => t.room_type === roomType);
-      
+
       if (typeTemplates.length > 0) {
         setTemplates(typeTemplates);
         setShowTemplatePicker(true);
@@ -64,7 +64,7 @@ export default function CreatePropertyScreen({ navigation }) {
   const createRoomFromScratch = (roomType) => {
     const suggestion = getRoomSuggestionByType(roomType);
     const count = rooms.filter(r => r.room_type === roomType).length;
-    
+
     const newRoom = {
       id: Date.now().toString(),
       name: count > 0 ? `${suggestion.defaultName} ${count + 1}` : suggestion.defaultName,
@@ -72,13 +72,13 @@ export default function CreatePropertyScreen({ navigation }) {
       tips: '',
       exampleTips: suggestion.exampleTips,
     };
-    
+
     setEditingRoom(newRoom);
   };
 
   const createRoomFromTemplate = (template) => {
     const count = rooms.filter(r => r.room_type === template.room_type).length;
-    
+
     const newRoom = {
       id: Date.now().toString(),
       name: count > 0 ? `${template.name} ${count + 1}` : template.name,
@@ -86,7 +86,7 @@ export default function CreatePropertyScreen({ navigation }) {
       tips: template.tips || '',
       exampleTips: getRoomSuggestionByType(template.room_type).exampleTips,
     };
-    
+
     setEditingRoom(newRoom);
     setShowTemplatePicker(false);
   };
@@ -107,7 +107,7 @@ export default function CreatePropertyScreen({ navigation }) {
       // Add new room
       setRooms([...rooms, editingRoom]);
     }
-    
+
     setEditingRoom(null);
   };
 
@@ -117,8 +117,8 @@ export default function CreatePropertyScreen({ navigation }) {
       'Are you sure you want to remove this room?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           style: 'destructive',
           onPress: () => setRooms(rooms.filter(r => r.id !== id))
         }
@@ -128,7 +128,7 @@ export default function CreatePropertyScreen({ navigation }) {
 
   const insertExampleTip = (tip) => {
     const currentTips = editingRoom.tips.trim();
-    const newTips = currentTips 
+    const newTips = currentTips
       ? `${currentTips}\n• ${tip}`
       : `• ${tip}`;
     setEditingRoom({ ...editingRoom, tips: newTips });
@@ -172,13 +172,13 @@ export default function CreatePropertyScreen({ navigation }) {
         })),
       }],
     };
-    
+
     console.log('📤 Sending property data:', JSON.stringify(payload, null, 2));
     console.log('🏠 Property name:', propertyName);
     console.log('📍 Address:', address);
     console.log('🚪 Rooms count:', rooms.length);
     console.log('📋 Rooms:', rooms.map(r => `${r.name} (${r.room_type})`));
-    
+
     setLoading(true);
     try {
       const response = await api.post('/owner/properties', payload);
@@ -208,46 +208,79 @@ export default function CreatePropertyScreen({ navigation }) {
     return suggestion?.label || 'Room';
   };
 
-  // Render progress indicator
+  // Render progress indicator - Modern Enhanced Version
   const renderProgress = () => (
     <View style={styles.progressContainer}>
-      <View style={styles.progressStep}>
-        <View style={[styles.progressDot, step >= 1 && styles.progressDotActive]}>
-          {step > 1 ? (
-            <Ionicons name="checkmark" size={16} color="#fff" />
-          ) : (
-            <Text style={styles.progressNumber}>1</Text>
-          )}
+      <View style={styles.progressTrack}>
+        {/* Progress Line with gradient */}
+        <View style={styles.progressLineBackground}>
+          <View
+            style={[
+              styles.progressLineFill,
+              { width: `${((step - 1) / 2) * 100}%` }
+            ]}
+          />
         </View>
-        <Text style={[styles.progressLabel, step === 1 && styles.progressLabelActive]}>
-          Details
-        </Text>
-      </View>
-      
-      <View style={[styles.progressLine, step >= 2 && styles.progressLineActive]} />
-      
-      <View style={styles.progressStep}>
-        <View style={[styles.progressDot, step >= 2 && styles.progressDotActive]}>
-          {step > 2 ? (
-            <Ionicons name="checkmark" size={16} color="#fff" />
-          ) : (
-            <Text style={styles.progressNumber}>2</Text>
-          )}
+
+        {/* Step 1 */}
+        <View style={styles.progressStepWrapper}>
+          <View style={[
+            styles.progressDot,
+            step >= 1 && styles.progressDotActive,
+            step === 1 && styles.progressDotCurrent
+          ]}>
+            {step > 1 ? (
+              <View style={styles.checkmarkContainer}>
+                <Ionicons name="checkmark-circle" size={32} color="#10B981" />
+              </View>
+            ) : (
+              <View style={styles.stepNumberContainer}>
+                <Text style={styles.progressNumber}>1</Text>
+              </View>
+            )}
+          </View>
+          <Text style={[styles.progressLabel, step === 1 && styles.progressLabelActive]}>
+            Details
+          </Text>
         </View>
-        <Text style={[styles.progressLabel, step === 2 && styles.progressLabelActive]}>
-          Rooms
-        </Text>
-      </View>
-      
-      <View style={[styles.progressLine, step >= 3 && styles.progressLineActive]} />
-      
-      <View style={styles.progressStep}>
-        <View style={[styles.progressDot, step >= 3 && styles.progressDotActive]}>
-          <Text style={styles.progressNumber}>3</Text>
+
+        {/* Step 2 */}
+        <View style={styles.progressStepWrapper}>
+          <View style={[
+            styles.progressDot,
+            step >= 2 && styles.progressDotActive,
+            step === 2 && styles.progressDotCurrent
+          ]}>
+            {step > 2 ? (
+              <View style={styles.checkmarkContainer}>
+                <Ionicons name="checkmark-circle" size={32} color="#10B981" />
+              </View>
+            ) : (
+              <View style={styles.stepNumberContainer}>
+                <Text style={[styles.progressNumber, step < 2 && styles.progressNumberInactive]}>2</Text>
+              </View>
+            )}
+          </View>
+          <Text style={[styles.progressLabel, step === 2 && styles.progressLabelActive]}>
+            Rooms
+          </Text>
         </View>
-        <Text style={[styles.progressLabel, step === 3 && styles.progressLabelActive]}>
-          Review
-        </Text>
+
+        {/* Step 3 */}
+        <View style={styles.progressStepWrapper}>
+          <View style={[
+            styles.progressDot,
+            step >= 3 && styles.progressDotActive,
+            step === 3 && styles.progressDotCurrent
+          ]}>
+            <View style={styles.stepNumberContainer}>
+              <Text style={[styles.progressNumber, step < 3 && styles.progressNumberInactive]}>3</Text>
+            </View>
+          </View>
+          <Text style={[styles.progressLabel, step === 3 && styles.progressLabelActive]}>
+            Review
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -313,10 +346,10 @@ export default function CreatePropertyScreen({ navigation }) {
               <View style={styles.roomSummaryHeader}>
                 <View style={styles.roomSummaryLeft}>
                   <View style={styles.roomSummaryIconContainer}>
-                    <Ionicons 
-                      name={getRoomIcon(room.room_type)} 
-                      size={24} 
-                      color="#4A90E2" 
+                    <Ionicons
+                      name={getRoomIcon(room.room_type)}
+                      size={24}
+                      color="#4A90E2"
                     />
                   </View>
                   <View style={styles.roomSummaryInfo}>
@@ -327,13 +360,13 @@ export default function CreatePropertyScreen({ navigation }) {
                   </View>
                 </View>
                 <View style={styles.roomSummaryActions}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => setEditingRoom(room)}
                     style={styles.iconButton}
                   >
                     <Ionicons name="create-outline" size={22} color="#4A90E2" />
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => deleteRoom(room.id)}
                     style={styles.iconButton}
                   >
@@ -351,8 +384,8 @@ export default function CreatePropertyScreen({ navigation }) {
         </View>
       )}
 
-      <TouchableOpacity 
-        style={styles.addRoomButton} 
+      <TouchableOpacity
+        style={styles.addRoomButton}
         onPress={() => setShowRoomPicker(true)}
       >
         <Ionicons name="add-circle" size={24} color="#fff" />
@@ -392,14 +425,14 @@ export default function CreatePropertyScreen({ navigation }) {
             <Text style={styles.badgeText}>{rooms.length}</Text>
           </View>
         </View>
-        
+
         {rooms.map((room) => (
           <View key={room.id} style={styles.reviewRoomCard}>
             <View style={styles.reviewRoomHeader}>
-              <Ionicons 
-                name={getRoomIcon(room.room_type)} 
-                size={20} 
-                color="#4A90E2" 
+              <Ionicons
+                name={getRoomIcon(room.room_type)}
+                size={20}
+                color="#4A90E2"
                 style={styles.reviewRoomIcon}
               />
               <Text style={styles.reviewRoomName}>{room.name}</Text>
@@ -636,8 +669,8 @@ export default function CreatePropertyScreen({ navigation }) {
                     {editingRoom.exampleTips && editingRoom.exampleTips.length > 0 && (
                       <View style={styles.quickAddSection}>
                         <Text style={styles.quickAddTitle}>Quick Add:</Text>
-                        <ScrollView 
-                          horizontal 
+                        <ScrollView
+                          horizontal
                           showsHorizontalScrollIndicator={false}
                           style={styles.quickAddScroll}
                         >
@@ -689,54 +722,91 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
+  // Modern Enhanced Progress Bar
   progressContainer: {
+    paddingVertical: 24,
+    paddingHorizontal: 24,
+
+  },
+  progressTrack: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    justifyContent: 'space-between',
+    position: 'relative',
+    paddingHorizontal: 6,
   },
-  progressStep: {
+  progressLineBackground: {
+    position: 'absolute',
+    left: '12%',
+    right: '12%',
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: 2,
+    top: 22,
+    zIndex: 0,
+  },
+  progressLineFill: {
+    height: '100%',
+    backgroundColor: '#10B981',
+    borderRadius: 2,
+    minWidth: 0,
+  },
+  progressStepWrapper: {
     alignItems: 'center',
+    zIndex: 1,
   },
   progressDot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#e0e0e0',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
+    borderWidth: 3,
+    borderColor: '#E2E8F0',
   },
   progressDotActive: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#FFFFFF',
+    borderColor: '#10B981',
+  },
+  progressDotCurrent: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  stepNumberContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmarkContainer: {
+    marginTop: -3,
+    marginLeft: -3,
   },
   progressNumber: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  progressNumberInactive: {
+    color: '#94A3B8',
   },
   progressLabel: {
-    fontSize: 12,
-    color: '#999',
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   progressLabelActive: {
-    color: '#4A90E2',
-    fontWeight: '600',
-  },
-  progressLine: {
-    width: 40,
-    height: 2,
-    backgroundColor: '#e0e0e0',
-    marginHorizontal: 8,
-    marginBottom: 28,
-  },
-  progressLineActive: {
-    backgroundColor: '#4A90E2',
+    color: '#3B82F6',
+    fontWeight: '700',
   },
   content: {
     flex: 1,
