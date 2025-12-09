@@ -422,77 +422,82 @@ export default function InspectionDetailScreen({ route, navigation }) {
         </View>
       ) : (status === 'COMPLETE' || status === 'FAILED' || status === 'REJECTED') && cleanlinessScore !== null && cleanlinessScore !== undefined ? (
         <>
-          {/* COMPACT HEADER WITH ICONS */}
+          {/* ELEVATED HEADER DESIGN */}
           <View style={styles.compactHeader}>
-            {/* Top Row: Address + Score + Status */}
-            <View style={styles.headerTopRow}>
-              <View style={styles.headerAddressContainer}>
-                <Ionicons name="location" size={16} color="#64748B" />
-                <Text style={styles.headerAddress} numberOfLines={1}>{fullAddress}</Text>
+            {/* Info Card with Address, Date, and Badges */}
+            <View style={styles.headerInfoCard}>
+              <View style={styles.headerTopRow}>
+                <View style={styles.headerAddressContainer}>
+                  <Ionicons name="location-sharp" size={18} color="#64748B" />
+                  <Text style={styles.headerAddress} numberOfLines={2}>{fullAddress}</Text>
+                </View>
+
+                <View style={styles.headerDateRow}>
+                  <Ionicons name="calendar-outline" size={16} color="#64748B" />
+                  <Text style={styles.headerDate}>{formattedDate}</Text>
+                </View>
+
+                <View style={styles.headerBadges}>
+                  <View style={[styles.statBadge, { backgroundColor: '#EFF6FF', borderColor: '#3B82F6' }]}>
+                    <Ionicons name="star" size={18} color="#3B82F6" />
+                    <Text style={[styles.statValue, { color: '#3B82F6' }]}>{roomScore.toFixed(1)}</Text>
+                  </View>
+                  <View style={[styles.statBadge, { 
+                    backgroundColor: statusDisplay.backgroundColor,
+                    borderColor: statusDisplay.textColor,
+                    borderWidth: statusDisplay.label === 'Cleaning Failed' ? 0 : 1,
+                  }]}>
+                    <Text style={[styles.statValue, { color: statusDisplay.textColor }]}>
+                      {statusDisplay.label}
+                    </Text>
+                  </View>
+                </View>
               </View>
 
-              <View style={styles.headerBadges}>
-                <View style={[styles.statBadge, { backgroundColor: '#EFF6FF' }]}>
-                  <Ionicons name="star" size={16} color="#3B82F6" />
-                  <Text style={[styles.statValue, { color: '#3B82F6' }]}>{roomScore.toFixed(1)}</Text>
+              {/* Action Buttons Inside Card */}
+              {(status === 'COMPLETE' || statusDisplay.canEdit || (userRole === 'OWNER' && status !== 'REJECTED')) && (
+                <View style={styles.headerActionsInCard}>
+                  {status === 'COMPLETE' && (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { borderColor: '#10B981' }]}
+                      onPress={() => navigation.navigate('CleaningReport', { inspectionId })}
+                    >
+                      <Ionicons name="document-text" size={18} color="#10B981" />
+                      <Text style={[styles.actionBtnText, { color: '#10B981' }]}>Share Cleaning Report</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {userRole === 'CLEANER' && statusDisplay.canEdit && (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { borderColor: '#3B82F6' }]}
+                      onPress={handleEditInspection}
+                    >
+                      <Ionicons name="create" size={18} color="#3B82F6" />
+                      <Text style={[styles.actionBtnText, { color: '#3B82F6' }]}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {userRole === 'OWNER' && status !== 'REJECTED' && (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { borderColor: '#DC2626' }]}
+                      onPress={handleOpenRejectModal}
+                    >
+                      <Ionicons name="close-circle" size={18} color="#DC2626" />
+                      <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Reject</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <View style={[styles.statBadge, { backgroundColor: statusDisplay.backgroundColor }]}>
-                  <Text style={[styles.statValue, { color: statusDisplay.textColor }]}>
-                    {statusDisplay.label}
-                  </Text>
-                </View>
-              </View>
+              )}
             </View>
 
-            {/* Bottom Row: Date */}
-            <View style={styles.headerDateRow}>
-              <Ionicons name="calendar-outline" size={14} color="#94A3B8" />
-              <Text style={styles.headerDate}>{formattedDate}</Text>
-            </View>
-
-            {/* Action Buttons Row */}
-            {(status === 'COMPLETE' || statusDisplay.canEdit || (userRole === 'OWNER' && status !== 'REJECTED')) && (
-              <View style={styles.headerActions}>
-                {status === 'COMPLETE' && (
-                  <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={() => navigation.navigate('CleaningReport', { inspectionId })}
-                  >
-                    <Ionicons name="document-text-outline" size={18} color="#10B981" />
-                    <Text style={[styles.actionBtnText, { color: '#10B981' }]}>Share Cleaning Report</Text>
-                  </TouchableOpacity>
-                )}
-
-                {userRole === 'CLEANER' && statusDisplay.canEdit && (
-                  <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={handleEditInspection}
-                  >
-                    <Ionicons name="create-outline" size={18} color="#3B82F6" />
-                    <Text style={[styles.actionBtnText, { color: '#3B82F6' }]}>Edit</Text>
-                  </TouchableOpacity>
-                )}
-
-                {userRole === 'OWNER' && status !== 'REJECTED' && (
-                  <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={handleOpenRejectModal}
-                  >
-                    <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
-                    <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Reject</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-
-            {/* Room Selector */}
+            {/* Room Selector Card */}
             {roomIds.length > 0 && (
-              <View style={styles.roomSelectorContainer}>
+              <View style={styles.roomSelectorCard}>
                 <View style={styles.roomSelectorHeader}>
-                  <Ionicons name="bed" size={16} color="#6B7280" />
-                  <Text style={styles.roomSelectorLabel}>Select Room:</Text>
+                  <Ionicons name="bed" size={18} color="#64748B" />
+                  <Text style={styles.roomSelectorLabel}>Rooms</Text>
                 </View>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.roomSelectorScroll}>
+                <View style={styles.roomGrid}>
                   {roomIds.map(roomId => {
                     const room = roomResults[roomId];
                     const isSelected = roomId === selectedRoomId;
@@ -505,18 +510,20 @@ export default function InspectionDetailScreen({ route, navigation }) {
                         onPress={() => setSelectedRoomId(roomId)}
                       >
                         <Ionicons
-                          name={isSelected ? "checkmark-circle" : "radio-button-off"}
-                          size={16}
+                          name={isSelected ? "checkmark-circle" : "ellipse-outline"}
+                          size={18}
                           color={isSelected ? "#FFFFFF" : "#94A3B8"}
                         />
-                        <Text style={[styles.roomTabText, isSelected && styles.roomTabTextSelected]}>
+                        <Text 
+                          style={[styles.roomTabText, isSelected && styles.roomTabTextSelected]}
+                          numberOfLines={1}
+                        >
                           {room.room_name}
                         </Text>
-
                       </TouchableOpacity>
                     );
                   })}
-                </ScrollView>
+                </View>
               </View>
             )}
           </View>
@@ -966,63 +973,77 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 
-  // COMPACT HEADER WITH ICONS
+  // ELEVATED HEADER DESIGN
   compactHeader: {
+    backgroundColor: '#F8FAFC',
+    paddingBottom: 16,
+  },
+  headerInfoCard: {
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   headerAddressContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    flex: 1,
-    marginRight: 8,
+    gap: 8,
+    marginBottom: 12,
   },
   headerAddress: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F172A',
     flex: 1,
   },
   headerDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 12,
+    gap: 6,
+    marginBottom: 16,
   },
   headerDate: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#64748B',
+    fontWeight: '500',
   },
   headerBadges: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
+    marginBottom: 4,
   },
   statBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   statValue: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
-  headerActions: {
+  headerActionsInCard: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    gap: 10,
+    marginTop: 4,
   },
   actionBtn: {
     flex: 1,
@@ -1030,15 +1051,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#10B981',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   actionBtnText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
   },
 
@@ -1237,60 +1262,68 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  roomSelectorContainer: {
-    marginBottom: 4,
+  roomSelectorCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   roomSelectorHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-    marginLeft: 4,
+    gap: 8,
+    marginBottom: 12,
   },
   roomSelectorLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6B7280',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
   },
-  roomSelectorScroll: {
+  roomGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
   },
   roomTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginRight: 8,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
+    width: '48%',
   },
   roomTabSelected: {
     backgroundColor: '#3B82F6',
     borderColor: '#3B82F6',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   roomTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#475569',
   },
   roomTabTextSelected: {
     color: '#FFFFFF',
-  },
-  roomTabCount: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#9CA3AF',
-    backgroundColor: '#E5E7EB',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  roomTabCountSelected: {
-    color: '#FFFFFF',
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
   editButton: {
     backgroundColor: colors.primary.main,

@@ -9,24 +9,36 @@ import {
   Alert,
   Modal,
   Platform,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../../api/client';
 
 const COLORS = {
-  background: '#F1F5F9',
+  background: '#F8FAFC',
+  backgroundGradientStart: '#F1F5F9',
+  backgroundGradientEnd: '#E0E7FF',
   card: '#FFFFFF',
-  cardBorder: 'rgba(15, 23, 42, 0.06)',
+  cardBorder: 'rgba(15, 23, 42, 0.08)',
   textPrimary: '#0F172A',
-  textSecondary: '#64748B',
+  textSecondary: '#475569',
   textMuted: '#94A3B8',
   accent: '#3B82F6',
+  accentDark: '#2563EB',
+  accentLight: '#60A5FA',
   accentSoft: '#EFF6FF',
+  accentGradientStart: '#60A5FA',
+  accentGradientEnd: '#3B82F6',
+  success: '#10B981',
+  successSoft: '#D1FAE5',
   danger: '#EF4444',
-  warning: '#F97316',
-  warningSoft: '#FFF7ED',
+  warning: '#F59E0B',
+  warningSoft: '#FEF3C7',
   divider: '#E2E8F0',
+  shadow: 'rgba(59, 130, 246, 0.15)',
+  shadowDark: 'rgba(15, 23, 42, 0.1)',
 };
 
 export default function AssignCleanerScreen({ route, navigation }) {
@@ -111,46 +123,80 @@ export default function AssignCleanerScreen({ route, navigation }) {
     
     return (
       <View style={styles.propertyCard}>
-        <Text style={styles.propertyName}>{item.name}</Text>
-        {item.address && <Text style={styles.propertyAddress}>{item.address}</Text>}
-
-        {units.length === 0 ? (
-          <View style={styles.noUnitsContainer}>
-            <Ionicons name="alert-circle-outline" size={20} color="#F97316" />
-            <Text style={styles.noUnitsText}>
-              No units in this property. Add units first.
-            </Text>
+        <View style={styles.propertyHeader}>
+          <View style={styles.propertyIconWrapper}>
+            <Ionicons name="business" size={20} color={COLORS.accent} />
           </View>
-        ) : (
-          units.map((unit) => (
-            <TouchableOpacity
-              key={unit.id}
-              style={[
-                styles.unitItem,
-                selectedUnits.includes(unit.id) && styles.unitItemSelected,
-              ]}
-              onPress={() => toggleUnitSelection(unit.id)}
-            >
-              <View style={styles.unitInfo}>
-                <Text style={styles.unitName}>{unit.name}</Text>
-                {unit.notes && (
-                  <Text style={styles.unitNotes} numberOfLines={1}>
-                    {unit.notes}
-                  </Text>
-                )}
+          <View style={styles.propertyHeaderText}>
+            <Text style={styles.propertyName}>{item.name}</Text>
+            {item.address && <Text style={styles.propertyAddress}>{item.address}</Text>}
+          </View>
+          <View style={styles.unitCountBadge}>
+            <Text style={styles.unitCountText}>{units.length}</Text>
+          </View>
+        </View>
+
+        <View style={styles.unitsList}>
+          {units.length === 0 ? (
+            <View style={styles.noUnitsContainer}>
+              <View style={styles.noUnitsIconWrapper}>
+                <Ionicons name="alert-circle" size={22} color={COLORS.warning} />
               </View>
-              <Ionicons
-                name={
-                  selectedUnits.includes(unit.id)
-                    ? 'checkmark-circle'
-                    : 'ellipse-outline'
-                }
-                size={24}
-                color={selectedUnits.includes(unit.id) ? '#4A90E2' : '#ccc'}
-              />
-            </TouchableOpacity>
-          ))
-        )}
+              <View style={styles.noUnitsTextWrapper}>
+                <Text style={styles.noUnitsTitle}>No units available</Text>
+                <Text style={styles.noUnitsText}>
+                  Add units to this property first
+                </Text>
+              </View>
+            </View>
+          ) : (
+            units.map((unit, index) => {
+              const isSelected = selectedUnits.includes(unit.id);
+              return (
+                <TouchableOpacity
+                  key={unit.id}
+                  style={[
+                    styles.unitItem,
+                    isSelected && styles.unitItemSelected,
+                    index === units.length - 1 && styles.unitItemLast,
+                  ]}
+                  onPress={() => toggleUnitSelection(unit.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.unitCheckbox}>
+                    {isSelected ? (
+                      <LinearGradient
+                        colors={[COLORS.accentGradientStart, COLORS.accentGradientEnd]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.checkboxSelected}
+                      >
+                        <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                      </LinearGradient>
+                    ) : (
+                      <View style={styles.checkboxUnselected} />
+                    )}
+                  </View>
+                  <View style={styles.unitInfo}>
+                    <Text style={[styles.unitName, isSelected && styles.unitNameSelected]}>
+                      {unit.name}
+                    </Text>
+                    {unit.notes && (
+                      <Text style={styles.unitNotes} numberOfLines={1}>
+                        {unit.notes}
+                      </Text>
+                    )}
+                  </View>
+                  {isSelected && (
+                    <View style={styles.selectedIndicator}>
+                      <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
       </View>
     );
   };
@@ -169,16 +215,21 @@ export default function AssignCleanerScreen({ route, navigation }) {
         Platform.OS === 'ios' ? (
           <Modal
             transparent
-            animationType="fade"
+            animationType="slide"
             visible={showDatePicker}
             onRequestClose={() => setShowDatePicker(false)}
           >
-            <View style={styles.pickerOverlay}>
-              <View style={styles.pickerContainer}>
+            <TouchableOpacity 
+              style={styles.pickerOverlay}
+              activeOpacity={1}
+              onPress={() => setShowDatePicker(false)}
+            >
+              <View style={styles.pickerContainer} onStartShouldSetResponder={() => true}>
                 <View style={styles.pickerHeader}>
                   <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                     <Text style={styles.pickerCancel}>Cancel</Text>
                   </TouchableOpacity>
+                  <Text style={styles.pickerTitle}>Select Date & Time</Text>
                   <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                     <Text style={styles.pickerDone}>Done</Text>
                   </TouchableOpacity>
@@ -195,7 +246,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
                   style={styles.picker}
                 />
               </View>
-            </View>
+            </TouchableOpacity>
           </Modal>
         ) : (
           <DateTimePicker
@@ -217,11 +268,19 @@ export default function AssignCleanerScreen({ route, navigation }) {
         renderItem={renderProperty}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.listHeader}>
-            <View style={styles.headerCard}>
+            <LinearGradient
+              colors={['#DBEAFE', '#BFDBFE']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.headerCard}
+            >
               <View style={styles.headerIconWrapper}>
-                <Ionicons name="person-circle" size={36} color={COLORS.accent} />
+                <View style={styles.headerIconInner}>
+                  <Ionicons name="person" size={28} color={COLORS.accent} />
+                </View>
               </View>
               <View style={styles.headerTextWrapper}>
                 <Text style={styles.headerTitle}>Assign to {cleanerName}</Text>
@@ -229,26 +288,59 @@ export default function AssignCleanerScreen({ route, navigation }) {
                   Select units for upcoming cleanings
                 </Text>
               </View>
-            </View>
+             
+            </LinearGradient>
 
             <View style={styles.dateCard}>
-              <Text style={styles.dateLabel}>Due date & time</Text>
+              <View style={styles.dateLabelRow}>
+                <Ionicons name="calendar" size={18} color={COLORS.accent} />
+                <Text style={styles.dateLabel}>Due date & time</Text>
+              </View>
               <TouchableOpacity
                 style={styles.dateButton}
                 onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.7}
               >
-                <Ionicons name="calendar-outline" size={20} color={COLORS.accent} />
-                <Text style={styles.dateText}>
-                  {dueDate.toLocaleDateString()} • {dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
+                <View style={styles.dateButtonContent}>
+                  <View style={styles.dateIconWrapper}>
+                    <Ionicons name="time-outline" size={22} color={COLORS.accent} />
+                  </View>
+                  <View style={styles.dateTextWrapper}>
+                    <Text style={styles.dateTextPrimary}>
+                      {dueDate.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}
+                    </Text>
+                    <Text style={styles.dateTextSecondary}>
+                      {dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+                </View>
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Select Properties & Units</Text>
+              <Text style={styles.sectionSubtitle}>
+                Tap units to assign cleaning tasks
+              </Text>
             </View>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.empty}>
             <View style={styles.emptyIconWrapper}>
-              <Ionicons name="home-outline" size={40} color={COLORS.textMuted} />
+              <LinearGradient
+                colors={['#DBEAFE', COLORS.accentSoft]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.emptyIconGradient}
+              >
+                <Ionicons name="home-outline" size={48} color={COLORS.accent} />
+              </LinearGradient>
             </View>
             <Text style={styles.emptyText}>No properties yet</Text>
             <Text style={styles.emptySubtext}>
@@ -257,20 +349,23 @@ export default function AssignCleanerScreen({ route, navigation }) {
             <TouchableOpacity
               style={styles.addPropertyButton}
               onPress={() => navigation.navigate('Properties')}
+              activeOpacity={0.8}
             >
-              <Ionicons name="add-circle" size={20} color={COLORS.accent} />
-              <Text style={styles.addPropertyButtonText}>Go to Properties</Text>
+              <LinearGradient
+                colors={[COLORS.accentGradientStart, COLORS.accentGradientEnd]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.addPropertyButtonGradient}
+              >
+                <Ionicons name="add-circle-outline" size={22} color="#FFFFFF" />
+                <Text style={styles.addPropertyButtonText}>Go to Properties</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         }
       />
 
       <View style={styles.footer}>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryText}>
-            {selectedUnits.length} units selected
-          </Text>
-        </View>
         <TouchableOpacity
           style={[
             styles.assignButton,
@@ -278,12 +373,29 @@ export default function AssignCleanerScreen({ route, navigation }) {
           ]}
           onPress={handleAssign}
           disabled={assigning || selectedUnits.length === 0}
+          activeOpacity={0.8}
         >
-          {assigning ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.assignButtonText}>Create Assignments</Text>
-          )}
+          <LinearGradient
+            colors={
+              assigning || selectedUnits.length === 0
+                ? ['#CBD5E1', '#94A3B8']
+                : [COLORS.accentGradientStart, COLORS.accentGradientEnd]
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.assignButtonGradient}
+          >
+            {assigning ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <>
+                <Ionicons name="paper-plane" size={20} color="#FFFFFF" />
+                <Text style={styles.assignButtonText}>
+                  Create Assignments ({selectedUnits.length})
+                </Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </View>
@@ -299,109 +411,228 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.background,
+  },
+  list: {
+    paddingHorizontal: 16,
+    paddingBottom: 24,
   },
   listHeader: {
-    paddingHorizontal: 4,
     paddingTop: 16,
-    paddingBottom: 4,
-    gap: 12,
+    paddingBottom: 8,
+    gap: 16,
   },
   headerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    padding: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   headerIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.accentSoft,
+    marginRight: 14,
+  },
+  headerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    shadowColor: COLORS.shadowDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
   headerTextWrapper: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: COLORS.textPrimary,
-    marginBottom: 2,
+    marginBottom: 4,
+    letterSpacing: 0.3,
   },
   headerSubtitle: {
     fontSize: 14,
     color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  headerDecoration: {
+    marginLeft: 8,
   },
   dateCard: {
     backgroundColor: COLORS.card,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 16,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderRadius: 18,
+    shadowColor: COLORS.shadowDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  dateLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-  },
-  dateButton: {
+  dateLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: COLORS.accentSoft,
-    borderRadius: 10,
-  },
-  dateText: {
-    fontSize: 15,
-    color: COLORS.accent,
-    marginLeft: 10,
-  },
-  list: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  propertyCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
+    gap: 6,
   },
-  propertyName: {
+  dateLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  dateButton: {
+    backgroundColor: COLORS.accentSoft,
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  dateButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+  },
+  dateIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  dateTextWrapper: {
+    flex: 1,
+  },
+  dateTextPrimary: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 2,
+  },
+  dateTextSecondary: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  sectionHeader: {
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: COLORS.textPrimary,
     marginBottom: 4,
   },
-  propertyAddress: {
+  sectionSubtitle: {
     fontSize: 14,
     color: COLORS.textSecondary,
-    marginBottom: 12,
+  },
+  propertyCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 14,
+    shadowColor: COLORS.shadowDark,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  propertyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  propertyIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.accentSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  propertyHeaderText: {
+    flex: 1,
+  },
+  propertyName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 3,
+  },
+  propertyAddress: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+  unitCountBadge: {
+    minWidth: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.accentSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  unitCountText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.accent,
+  },
+  unitsList: {
+    gap: 10,
   },
   unitItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 10,
-    marginBottom: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    backgroundColor: COLORS.background,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   unitItemSelected: {
     backgroundColor: COLORS.accentSoft,
-    borderWidth: 2,
     borderColor: COLORS.accent,
+  },
+  unitItemLast: {
+    marginBottom: 0,
+  },
+  unitCheckbox: {
+    marginRight: 12,
+  },
+  checkboxSelected: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxUnselected: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: COLORS.divider,
+    backgroundColor: COLORS.card,
   },
   unitInfo: {
     flex: 1,
@@ -412,131 +643,188 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: 2,
   },
+  unitNameSelected: {
+    color: COLORS.accent,
+    fontWeight: '700',
+  },
   unitNotes: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.textMuted,
+    fontStyle: 'italic',
+  },
+  selectedIndicator: {
+    marginLeft: 8,
+  },
+  noUnitsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.warningSoft,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  noUnitsIconWrapper: {
+    marginRight: 10,
+  },
+  noUnitsTextWrapper: {
+    flex: 1,
+  },
+  noUnitsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.warning,
+    marginBottom: 2,
+  },
+  noUnitsText: {
+    fontSize: 13,
+    color: COLORS.warning,
+    opacity: 0.8,
   },
   empty: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-    marginTop: 40,
+    paddingVertical: 60,
     paddingHorizontal: 32,
   },
   emptyIconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: COLORS.accentSoft,
+    marginBottom: 20,
+  },
+  emptyIconGradient: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 6,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 20,
     color: COLORS.textPrimary,
-    marginTop: 4,
-    fontWeight: '600',
+    fontWeight: '700',
+    marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.textSecondary,
-    marginTop: 8,
     textAlign: 'center',
+    lineHeight: 22,
   },
   addPropertyButton: {
+    marginTop: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  addPropertyButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.accentSoft,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 999,
-    marginTop: 20,
-    gap: 6,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
+    gap: 10,
   },
   addPropertyButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.accent,
-  },
-  noUnitsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: COLORS.warningSoft,
-    borderRadius: 10,
-    gap: 8,
-  },
-  noUnitsText: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.warning,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
   footer: {
     backgroundColor: COLORS.card,
-    padding: 15,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+    paddingHorizontal: 16,
     borderTopWidth: 1,
     borderTopColor: COLORS.divider,
-  },
-  summaryRow: {
-    marginBottom: 10,
-  },
-  summaryText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    shadowColor: COLORS.shadowDark,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 10,
   },
   assignButton: {
-    height: 50,
-    backgroundColor: COLORS.accent,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    height: 56,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   buttonDisabled: {
-    backgroundColor: '#93BFED',
+    opacity: 0.6,
+    shadowOpacity: 0.1,
+  },
+  assignButtonGradient: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
   },
   assignButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   pickerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
     justifyContent: 'flex-end',
   },
   pickerContainer: {
     backgroundColor: COLORS.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.divider,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+    shadowColor: COLORS.shadowDark,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 20,
   },
   pickerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
+  },
+  pickerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
   },
   pickerCancel: {
     fontSize: 16,
     color: COLORS.textSecondary,
+    fontWeight: '600',
+    minWidth: 60,
   },
   pickerDone: {
     fontSize: 16,
     color: COLORS.accent,
-    fontWeight: '600',
+    fontWeight: '700',
+    minWidth: 60,
+    textAlign: 'right',
   },
   picker: {
-    marginTop: 4,
+    marginTop: 8,
   },
 });
 
