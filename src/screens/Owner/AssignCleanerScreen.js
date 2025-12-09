@@ -7,10 +7,27 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../../api/client';
+
+const COLORS = {
+  background: '#F1F5F9',
+  card: '#FFFFFF',
+  cardBorder: 'rgba(15, 23, 42, 0.06)',
+  textPrimary: '#0F172A',
+  textSecondary: '#64748B',
+  textMuted: '#94A3B8',
+  accent: '#3B82F6',
+  accentSoft: '#EFF6FF',
+  danger: '#EF4444',
+  warning: '#F97316',
+  warningSoft: '#FFF7ED',
+  divider: '#E2E8F0',
+};
 
 export default function AssignCleanerScreen({ route, navigation }) {
   const { cleanerId, cleanerName } = route.params;
@@ -141,45 +158,58 @@ export default function AssignCleanerScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Assign to {cleanerName}</Text>
-        <Text style={styles.headerSubtitle}>
-          Select units and set due date
-        </Text>
-      </View>
-
-      <View style={styles.dateSelector}>
-        <Text style={styles.dateLabel}>Due Date & Time:</Text>
-        <TouchableOpacity
-          style={styles.dateButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Ionicons name="calendar-outline" size={20} color="#4A90E2" />
-          <Text style={styles.dateText}>
-            {dueDate.toLocaleDateString()} at {dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {showDatePicker && (
-        <DateTimePicker
-          value={dueDate}
-          mode="datetime"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowDatePicker(false);
-            if (selectedDate) {
-              setDueDate(selectedDate);
-            }
-          }}
-        />
+        Platform.OS === 'ios' ? (
+          <Modal
+            transparent
+            animationType="fade"
+            visible={showDatePicker}
+            onRequestClose={() => setShowDatePicker(false)}
+          >
+            <View style={styles.pickerOverlay}>
+              <View style={styles.pickerContainer}>
+                <View style={styles.pickerHeader}>
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text style={styles.pickerCancel}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                    <Text style={styles.pickerDone}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+                <DateTimePicker
+                  value={dueDate}
+                  mode="datetime"
+                  display="spinner"
+                  onChange={(event, selectedDate) => {
+                    if (selectedDate) {
+                      setDueDate(selectedDate);
+                    }
+                  }}
+                  style={styles.picker}
+                />
+              </View>
+            </View>
+          </Modal>
+        ) : (
+          <DateTimePicker
+            value={dueDate}
+            mode="datetime"
+            display="default"
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+              if (selectedDate) {
+                setDueDate(selectedDate);
+              }
+            }}
+          />
+        )
       )}
 
       <FlatList
@@ -187,9 +217,39 @@ export default function AssignCleanerScreen({ route, navigation }) {
         renderItem={renderProperty}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <View style={styles.headerCard}>
+              <View style={styles.headerIconWrapper}>
+                <Ionicons name="person-circle" size={36} color={COLORS.accent} />
+              </View>
+              <View style={styles.headerTextWrapper}>
+                <Text style={styles.headerTitle}>Assign to {cleanerName}</Text>
+                <Text style={styles.headerSubtitle}>
+                  Select units for upcoming cleanings
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.dateCard}>
+              <Text style={styles.dateLabel}>Due date & time</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={20} color={COLORS.accent} />
+                <Text style={styles.dateText}>
+                  {dueDate.toLocaleDateString()} • {dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="home-outline" size={64} color="#ccc" />
+            <View style={styles.emptyIconWrapper}>
+              <Ionicons name="home-outline" size={40} color={COLORS.textMuted} />
+            </View>
             <Text style={styles.emptyText}>No properties yet</Text>
             <Text style={styles.emptySubtext}>
               Add a property first before assigning cleaners
@@ -198,7 +258,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
               style={styles.addPropertyButton}
               onPress={() => navigation.navigate('Properties')}
             >
-              <Ionicons name="add-circle" size={20} color="#4A90E2" />
+              <Ionicons name="add-circle" size={20} color={COLORS.accent} />
               <Text style={styles.addPropertyButtonText}>Go to Properties</Text>
             </TouchableOpacity>
           </View>
@@ -233,89 +293,115 @@ export default function AssignCleanerScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.background,
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    backgroundColor: '#4A90E2',
-    padding: 20,
+  listHeader: {
+    paddingHorizontal: 4,
+    paddingTop: 16,
+    paddingBottom: 4,
+    gap: 12,
+  },
+  headerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  headerIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.accentSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerTextWrapper: {
+    flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 4,
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 2,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#E3F2FD',
+    color: COLORS.textSecondary,
   },
-  dateSelector: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  dateCard: {
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
   },
   dateLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.accentSoft,
+    borderRadius: 10,
   },
   dateText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 15,
+    color: COLORS.accent,
     marginLeft: 10,
   },
   list: {
-    padding: 15,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   propertyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
   },
   propertyName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: COLORS.textPrimary,
     marginBottom: 4,
   },
   propertyAddress: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 15,
+    color: COLORS.textSecondary,
+    marginBottom: 12,
   },
   unitItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
     marginBottom: 8,
   },
   unitItemSelected: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.accentSoft,
     borderWidth: 2,
-    borderColor: '#4A90E2',
+    borderColor: COLORS.accent,
   },
   unitInfo: {
     flex: 1,
@@ -323,12 +409,12 @@ const styles = StyleSheet.create({
   unitName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: COLORS.textPrimary,
     marginBottom: 2,
   },
   unitNotes: {
     fontSize: 12,
-    color: '#999',
+    color: COLORS.textMuted,
   },
   empty: {
     flex: 1,
@@ -336,51 +422,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
     marginTop: 40,
+    paddingHorizontal: 32,
+  },
+  emptyIconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: COLORS.accentSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   emptyText: {
     fontSize: 16,
-    color: '#999',
-    marginTop: 12,
+    color: COLORS.textPrimary,
+    marginTop: 4,
+    fontWeight: '600',
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
+    color: COLORS.textSecondary,
     marginTop: 8,
     textAlign: 'center',
   },
   addPropertyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.accentSoft,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 999,
     marginTop: 20,
-    gap: 8,
+    gap: 6,
   },
   addPropertyButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#4A90E2',
+    color: COLORS.accent,
   },
   noUnitsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#FFF7ED',
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.warningSoft,
+    borderRadius: 10,
     gap: 8,
   },
   noUnitsText: {
     flex: 1,
     fontSize: 14,
-    color: '#F97316',
+    color: COLORS.warning,
   },
   footer: {
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.card,
     padding: 15,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: COLORS.divider,
   },
   summaryRow: {
     marginBottom: 10,
@@ -392,8 +490,8 @@ const styles = StyleSheet.create({
   },
   assignButton: {
     height: 50,
-    backgroundColor: '#4A90E2',
-    borderRadius: 8,
+    backgroundColor: COLORS.accent,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -405,7 +503,40 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+    justifyContent: 'flex-end',
+  },
+  pickerContainer: {
+    backgroundColor: COLORS.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.divider,
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+  },
+  pickerCancel: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+  },
+  pickerDone: {
+    fontSize: 16,
+    color: COLORS.accent,
+    fontWeight: '600',
+  },
+  picker: {
+    marginTop: 4,
+  },
 });
-
-
 

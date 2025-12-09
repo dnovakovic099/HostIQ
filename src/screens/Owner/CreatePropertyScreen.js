@@ -226,18 +226,11 @@ export default function CreatePropertyScreen({ navigation }) {
         <View style={styles.progressStepWrapper}>
           <View style={[
             styles.progressDot,
-            step >= 1 && styles.progressDotActive,
-            step === 1 && styles.progressDotCurrent
+            step >= 1 && styles.progressDotCurrent
           ]}>
-            {step > 1 ? (
-              <View style={styles.checkmarkContainer}>
-                <Ionicons name="checkmark-circle" size={32} color="#10B981" />
-              </View>
-            ) : (
-              <View style={styles.stepNumberContainer}>
-                <Text style={styles.progressNumber}>1</Text>
-              </View>
-            )}
+            <View style={styles.stepNumberContainer}>
+              <Text style={styles.progressNumber}>1</Text>
+            </View>
           </View>
           <Text style={[styles.progressLabel, step === 1 && styles.progressLabelActive]}>
             Details
@@ -248,18 +241,11 @@ export default function CreatePropertyScreen({ navigation }) {
         <View style={styles.progressStepWrapper}>
           <View style={[
             styles.progressDot,
-            step >= 2 && styles.progressDotActive,
-            step === 2 && styles.progressDotCurrent
+            step >= 2 && styles.progressDotCurrent
           ]}>
-            {step > 2 ? (
-              <View style={styles.checkmarkContainer}>
-                <Ionicons name="checkmark-circle" size={32} color="#10B981" />
-              </View>
-            ) : (
-              <View style={styles.stepNumberContainer}>
-                <Text style={[styles.progressNumber, step < 2 && styles.progressNumberInactive]}>2</Text>
-              </View>
-            )}
+            <View style={styles.stepNumberContainer}>
+              <Text style={[styles.progressNumber, step < 2 && styles.progressNumberInactive]}>2</Text>
+            </View>
           </View>
           <Text style={[styles.progressLabel, step === 2 && styles.progressLabelActive]}>
             Rooms
@@ -270,8 +256,7 @@ export default function CreatePropertyScreen({ navigation }) {
         <View style={styles.progressStepWrapper}>
           <View style={[
             styles.progressDot,
-            step >= 3 && styles.progressDotActive,
-            step === 3 && styles.progressDotCurrent
+            step >= 3 && styles.progressDotCurrent
           ]}>
             <View style={styles.stepNumberContainer}>
               <Text style={[styles.progressNumber, step < 3 && styles.progressNumberInactive]}>3</Text>
@@ -296,7 +281,7 @@ export default function CreatePropertyScreen({ navigation }) {
       </View>
 
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Property Name *</Text>
+        <Text style={styles.label}>Property Name<Text style={styles.required}> *</Text></Text>
         <TextInput
           style={styles.input}
           placeholder="e.g., Sunset Beach House"
@@ -307,7 +292,7 @@ export default function CreatePropertyScreen({ navigation }) {
       </View>
 
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Address *</Text>
+        <Text style={styles.label}>Address<Text style={styles.required}>  *</Text></Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder="e.g., 123 Ocean Drive, Miami Beach, FL 33139"
@@ -420,10 +405,8 @@ export default function CreatePropertyScreen({ navigation }) {
 
       <View style={styles.reviewSection}>
         <View style={styles.reviewSectionHeader}>
-          <Text style={styles.reviewSectionTitle}>Rooms</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{rooms.length}</Text>
-          </View>
+          <Text style={styles.reviewSectionTitle}>Rooms Added</Text>
+          
         </View>
 
         {rooms.map((room) => (
@@ -492,7 +475,7 @@ export default function CreatePropertyScreen({ navigation }) {
               <ActivityIndicator color="#fff" />
             ) : (
               <>
-                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                
                 <Text style={styles.completeButtonText}>Create Property</Text>
               </>
             )}
@@ -643,7 +626,7 @@ export default function CreatePropertyScreen({ navigation }) {
               {editingRoom && (
                 <>
                   <View style={styles.formGroup}>
-                    <Text style={styles.label}>Room Name *</Text>
+                    <Text style={styles.label}>Room Name <Text style={styles.required}>*</Text></Text>
                     <TextInput
                       style={styles.input}
                       placeholder="e.g., Master Bedroom"
@@ -747,7 +730,7 @@ const styles = StyleSheet.create({
   },
   progressLineFill: {
     height: '100%',
-    backgroundColor: '#10B981',
+    backgroundColor: '#3B82F6',
     borderRadius: 2,
     minWidth: 0,
   },
@@ -929,10 +912,10 @@ const styles = StyleSheet.create({
   },
   roomSummaryActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 2,
   },
   iconButton: {
-    padding: 8,
+    padding: 2,
   },
   roomSummaryTips: {
     marginTop: 12,
@@ -1096,7 +1079,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   completeButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#0a8f2bff',
   },
   completeButtonText: {
     color: '#fff',
@@ -1107,6 +1090,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
+  },
+  required: {
+    color: 'red',
+    marginHorizontal: 4,
   },
   modalContent: {
     backgroundColor: '#fff',

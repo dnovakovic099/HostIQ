@@ -14,6 +14,25 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/client';
 
+const COLORS = {
+  background: '#F1F5F9',
+  card: '#FFFFFF',
+  cardBorder: 'rgba(15, 23, 42, 0.08)',
+  cardShadow: 'rgba(15, 23, 42, 0.08)',
+  textPrimary: '#0F172A',
+  textSecondary: '#64748B',
+  textMuted: '#94A3B8',
+  accent: '#3B82F6',
+  accentSoft: '#EFF6FF',
+  success: '#10B981',
+  successSoft: 'rgba(16, 185, 129, 0.08)',
+  warning: '#F59E0B',
+  warningSoft: 'rgba(245, 158, 11, 0.08)',
+  error: '#EF4444',
+  errorSoft: 'rgba(239, 68, 68, 0.06)',
+  divider: '#E2E8F0',
+};
+
 export default function PayCleanerScreen({ navigation, route }) {
   const { preselectedCleaner, inspectionId, propertyName } = route.params || {};
   
@@ -359,7 +378,7 @@ export default function PayCleanerScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB'
+    backgroundColor: COLORS.background
   },
   scrollView: {
     flex: 1
@@ -371,19 +390,56 @@ const styles = StyleSheet.create({
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    backgroundColor: COLORS.background
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6B7280'
+    color: COLORS.textSecondary
+  },
+  headerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+  },
+  headerIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.accentSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
   },
   statsCard: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder
   },
   statItem: {
     flex: 1,
@@ -392,16 +448,16 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1F2937'
+    color: COLORS.textPrimary
   },
   statLabel: {
     fontSize: 13,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 4
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E5E7EB'
+    backgroundColor: COLORS.divider
   },
   section: {
     marginBottom: 20
@@ -409,13 +465,14 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: COLORS.textSecondary,
     marginBottom: 8
   },
   cleanerSelector: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between'
@@ -429,13 +486,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#4F46E5',
+    backgroundColor: COLORS.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12
   },
   avatarText: {
-    color: '#FFF',
+    color: COLORS.accent,
     fontSize: 18,
     fontWeight: '700'
   },
@@ -445,17 +502,17 @@ const styles = StyleSheet.create({
   selectedCleanerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937'
+    color: COLORS.textPrimary
   },
   selectedCleanerEmail: {
     fontSize: 13,
-    color: '#6B7280'
+    color: COLORS.textSecondary
   },
   activeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#ECFDF5',
+    backgroundColor: COLORS.successSoft,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12
@@ -463,30 +520,31 @@ const styles = StyleSheet.create({
   activeBadgeText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#10B981'
+    color: COLORS.success
   },
   placeholderText: {
     fontSize: 16,
-    color: '#9CA3AF'
+    color: COLORS.textMuted
   },
   amountInputContainer: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center'
   },
   currencySymbol: {
     fontSize: 28,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     marginRight: 8
   },
   amountInput: {
     flex: 1,
     fontSize: 28,
     fontWeight: '600',
-    color: '#1F2937'
+    color: COLORS.textPrimary
   },
   quickAmounts: {
     flexDirection: 'row',
@@ -495,43 +553,44 @@ const styles = StyleSheet.create({
     marginBottom: 20
   },
   quickAmountBtn: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.card,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB'
+    borderColor: COLORS.cardBorder
   },
   quickAmountBtnActive: {
-    backgroundColor: '#4F46E5',
-    borderColor: '#4F46E5'
+    backgroundColor: COLORS.accent,
+    borderColor: COLORS.accent
   },
   quickAmountText: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#374151'
+    color: COLORS.textSecondary
   },
   quickAmountTextActive: {
     color: '#FFF'
   },
   descriptionInput: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
     padding: 16,
     fontSize: 16,
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     minHeight: 80,
     textAlignVertical: 'top'
   },
   breakdownCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 16
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16
   },
   breakdownTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     marginBottom: 12
   },
   breakdownRow: {
@@ -542,44 +601,44 @@ const styles = StyleSheet.create({
   },
   breakdownLabel: {
     fontSize: 15,
-    color: '#6B7280'
+    color: COLORS.textSecondary
   },
   breakdownValue: {
     fontSize: 15,
-    color: '#1F2937'
+    color: COLORS.textPrimary
   },
   breakdownFee: {
     fontSize: 15,
-    color: '#EF4444'
+    color: COLORS.error
   },
   breakdownDivider: {
     height: 1,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: COLORS.divider,
     marginVertical: 8
   },
   breakdownLabelBold: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937'
+    color: COLORS.textPrimary
   },
   breakdownValueBold: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#10B981'
+    color: COLORS.success
   },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.card,
     padding: 16,
     paddingBottom: 32,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB'
+    borderTopColor: COLORS.divider
   },
   sendButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: COLORS.accent,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -598,7 +657,7 @@ const styles = StyleSheet.create({
   // Modal
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFF'
+    backgroundColor: COLORS.background
   },
   modalHeader: {
     flexDirection: 'row',
@@ -606,12 +665,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB'
+    borderBottomColor: COLORS.divider
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937'
+    color: COLORS.textPrimary
   },
   cleanerList: {
     padding: 16
@@ -619,15 +678,15 @@ const styles = StyleSheet.create({
   cleanerOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.card,
     padding: 14,
     borderRadius: 12,
     marginBottom: 8
   },
   cleanerOptionSelected: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: COLORS.accentSoft,
     borderWidth: 2,
-    borderColor: '#4F46E5'
+    borderColor: COLORS.accent
   },
   cleanerOptionInfo: {
     flex: 1,
@@ -636,11 +695,11 @@ const styles = StyleSheet.create({
   cleanerOptionName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937'
+    color: COLORS.textPrimary
   },
   cleanerOptionEmail: {
     fontSize: 13,
-    color: '#6B7280'
+    color: COLORS.textSecondary
   },
   noBankBadge: {
     flexDirection: 'row',
@@ -659,13 +718,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     marginTop: 16
   },
   emptyText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 4
   }
 });
-

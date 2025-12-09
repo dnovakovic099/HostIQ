@@ -59,7 +59,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
     try {
       const response = await api.get(`/inspections/${inspectionId}`);
       const data = response.data;
-      
+
       if (!data) {
         setInspection(null);
         return;
@@ -84,7 +84,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
       }
 
       setInspection(data);
-      
+
       // Auto-select first room if available
       if (data.photo_quality_analysis?.room_results && !selectedRoomId) {
         const roomIds = Object.keys(data.photo_quality_analysis.room_results);
@@ -92,7 +92,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
           setSelectedRoomId(roomIds[0]);
         }
       }
-      
+
       setLoading(false);
     } catch (err) {
       console.error('Fetch inspection error:', err);
@@ -112,7 +112,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
   const handleEditInspection = () => {
     const { unit, failed_room_ids, media, photo_quality_analysis } = inspection || {};
     let rooms = unit?.rooms || [];
-    
+
     // Fallback: If rooms aren't in unit, try to reconstruct from room_results
     if (rooms.length === 0 && photo_quality_analysis?.room_results) {
       const roomResults = photo_quality_analysis.room_results;
@@ -124,7 +124,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
       }));
       console.log('📋 Reconstructed rooms from room_results:', rooms.length);
     }
-    
+
     if (rooms.length === 0) {
       Alert.alert('No Rooms', 'This inspection has no rooms defined');
       return;
@@ -150,7 +150,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
   const handleRedoInspection = () => {
     const { unit, failed_room_ids, photo_quality_analysis } = inspection || {};
     let rooms = unit?.rooms || [];
-    
+
     // Fallback: If rooms aren't in unit, try to reconstruct from room_results
     if (rooms.length === 0 && photo_quality_analysis?.room_results) {
       const roomResults = photo_quality_analysis.room_results;
@@ -162,7 +162,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
       }));
       console.log('📋 Reconstructed rooms from room_results:', rooms.length);
     }
-    
+
     if (rooms.length === 0) {
       Alert.alert('No Rooms', 'This inspection has no rooms defined');
       return;
@@ -187,7 +187,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
     // Get all room IDs from the inspection
     const roomResults = inspection?.photo_quality_analysis?.room_results || {};
     const allRoomIds = Object.keys(roomResults);
-    
+
     if (allRoomIds.length === 0) {
       Alert.alert('No Rooms', 'This inspection has no rooms to reject');
       return;
@@ -310,7 +310,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
   const photoQuality = inspection.photo_quality_analysis;
   const roomResults = photoQuality?.room_results || {};
   const roomIds = Object.keys(roomResults);
-  
+
   // Debug logging
   console.log('🔍 Inspection Debug:');
   console.log('  - Photo Quality:', photoQuality);
@@ -320,10 +320,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
   console.log('  - Media count:', inspection.media?.length);
   console.log('  - Media with room_id:', inspection.media?.filter(m => m.room_id).length);
   console.log('  - Selected Room ID:', selectedRoomId);
-  
+
   // Get selected room data or fall back to overall
   const selectedRoomData = selectedRoomId ? roomResults[selectedRoomId] : null;
-  
+
   // Debug logging for instruction adherence
   if (selectedRoomData) {
     console.log(`🔍 Selected room: ${selectedRoomData.room_name}`);
@@ -335,7 +335,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
       console.log(`⚠️  No instruction_adherence data for ${selectedRoomData.room_name}`);
     }
   }
-  
+
   // Use room-specific data if available, otherwise fall back to overall
   const improvements = selectedRoomData?.cleanliness_reasons || inspection.airbnb_grade_analysis?.improvements_needed || [];
   const allInventory = selectedRoomData?.damage_items || inspection.damage_analysis?.inventory || [];
@@ -343,23 +343,38 @@ export default function InspectionDetailScreen({ route, navigation }) {
   const isReady = selectedRoomData?.guest_ready ?? inspection.airbnb_grade_analysis?.guest_ready;
   const grade = selectedRoomData?.overall_grade || inspection.airbnb_grade_analysis?.overall_grade;
   const roomScore = selectedRoomData ? safeNumber(selectedRoomData.cleanliness_score, 0) : cleanlinessScore;
-  
+
+  const isCriticalIssue = (item) => {
+    const text = String(item || '').toUpperCase();
+    return (
+      text.includes('❌') ||
+      text.includes('WRONG ROOM') ||
+      text.includes('CRITICAL ERROR') ||
+      text.includes('NOT A BEDROOM') ||
+      text.includes('NOT A BATHROOM') ||
+      text.includes('NOT A KITCHEN')
+    );
+  };
+
+  const criticalIssues = improvements.filter(isCriticalIssue);
+  const nonCriticalImprovements = improvements.filter(item => !isCriticalIssue(item));
+
   // Filter media by selected room
   const allMedia = inspection.media || [];
-  const roomMedia = selectedRoomId 
-    ? allMedia.filter(m => m.room_id === selectedRoomId) 
+  const roomMedia = selectedRoomId
+    ? allMedia.filter(m => m.room_id === selectedRoomId)
     : allMedia;
 
   // Determine display status and colors
   const getStatusDisplay = () => {
     // Check for app/technical failures
     const errorMsg = inspection.summary_json?.error || '';
-    const isAppFailed = errorMsg.includes('blurred') || 
-                        errorMsg.includes('technical') || 
-                        errorMsg.includes('processing') ||
-                        errorMsg.includes('WRONG ROOM TYPE') ||
-                        errorMsg.includes('CRITICAL ERROR');
-    
+    const isAppFailed = errorMsg.includes('blurred') ||
+      errorMsg.includes('technical') ||
+      errorMsg.includes('processing') ||
+      errorMsg.includes('WRONG ROOM TYPE') ||
+      errorMsg.includes('CRITICAL ERROR');
+
     if (status === 'FAILED' || isAppFailed) {
       return {
         label: 'App Failed',
@@ -368,7 +383,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
         canEdit: true
       };
     }
-    
+
     if (status === 'REJECTED') {
       return {
         label: 'Rejected',
@@ -377,7 +392,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
         canEdit: true
       };
     }
-    
+
     // Not ready means cleaning failed
     if (!isReady && status === 'COMPLETE') {
       return {
@@ -387,7 +402,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
         canEdit: true
       };
     }
-    
+
     return {
       label: 'Ready',
       backgroundColor: '#E8F8ED',
@@ -407,163 +422,152 @@ export default function InspectionDetailScreen({ route, navigation }) {
         </View>
       ) : (status === 'COMPLETE' || status === 'FAILED' || status === 'REJECTED') && cleanlinessScore !== null && cleanlinessScore !== undefined ? (
         <>
-          {/* COMPACT HEADER */}
+          {/* COMPACT HEADER WITH ICONS */}
           <View style={styles.compactHeader}>
-            <View style={styles.headerRow}>
-              <View style={styles.headerLeft}>
+            {/* Top Row: Address + Score + Status */}
+            <View style={styles.headerTopRow}>
+              <View style={styles.headerAddressContainer}>
+                <Ionicons name="location" size={16} color="#64748B" />
                 <Text style={styles.headerAddress} numberOfLines={1}>{fullAddress}</Text>
-                <Text style={styles.headerDate}>{formattedDate}</Text>
               </View>
-              <View style={styles.headerRight}>
-                <View style={styles.scoreBox}>
-                  <Text style={styles.scoreBoxLabel}>Score</Text>
-                  <Text style={styles.scoreBoxValue}>
-                    {roomScore.toFixed(1)}
-                  </Text>
+
+              <View style={styles.headerBadges}>
+                <View style={[styles.statBadge, { backgroundColor: '#EFF6FF' }]}>
+                  <Ionicons name="star" size={16} color="#3B82F6" />
+                  <Text style={[styles.statValue, { color: '#3B82F6' }]}>{roomScore.toFixed(1)}</Text>
                 </View>
-                <View style={[styles.statusBox, { 
-                  backgroundColor: statusDisplay.backgroundColor
-                }]}>
-                  <Text style={[styles.statusBoxText, { 
-                    color: statusDisplay.textColor
-                  }]}>
+                <View style={[styles.statBadge, { backgroundColor: statusDisplay.backgroundColor }]}>
+                  <Text style={[styles.statValue, { color: statusDisplay.textColor }]}>
                     {statusDisplay.label}
                   </Text>
                 </View>
               </View>
             </View>
-            
-            {/* ROOM SELECTOR */}
+
+            {/* Bottom Row: Date */}
+            <View style={styles.headerDateRow}>
+              <Ionicons name="calendar-outline" size={14} color="#94A3B8" />
+              <Text style={styles.headerDate}>{formattedDate}</Text>
+            </View>
+
+            {/* Action Buttons Row */}
+            {(status === 'COMPLETE' || statusDisplay.canEdit || (userRole === 'OWNER' && status !== 'REJECTED')) && (
+              <View style={styles.headerActions}>
+                {status === 'COMPLETE' && (
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={() => navigation.navigate('CleaningReport', { inspectionId })}
+                  >
+                    <Ionicons name="document-text-outline" size={18} color="#10B981" />
+                    <Text style={[styles.actionBtnText, { color: '#10B981' }]}>Share Cleaning Report</Text>
+                  </TouchableOpacity>
+                )}
+
+                {userRole === 'CLEANER' && statusDisplay.canEdit && (
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={handleEditInspection}
+                  >
+                    <Ionicons name="create-outline" size={18} color="#3B82F6" />
+                    <Text style={[styles.actionBtnText, { color: '#3B82F6' }]}>Edit</Text>
+                  </TouchableOpacity>
+                )}
+
+                {userRole === 'OWNER' && status !== 'REJECTED' && (
+                  <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={handleOpenRejectModal}
+                  >
+                    <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
+                    <Text style={[styles.actionBtnText, { color: '#DC2626' }]}>Reject</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Room Selector */}
             {roomIds.length > 0 && (
               <View style={styles.roomSelectorContainer}>
-                <Text style={styles.roomSelectorLabel}>Select Room:</Text>
+                <View style={styles.roomSelectorHeader}>
+                  <Ionicons name="bed" size={16} color="#6B7280" />
+                  <Text style={styles.roomSelectorLabel}>Select Room:</Text>
+                </View>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.roomSelectorScroll}>
                   {roomIds.map(roomId => {
                     const room = roomResults[roomId];
                     const isSelected = roomId === selectedRoomId;
                     const photoCount = allMedia.filter(m => m.room_id === roomId).length;
-                    
+
                     return (
                       <TouchableOpacity
                         key={roomId}
                         style={[styles.roomTab, isSelected && styles.roomTabSelected]}
                         onPress={() => setSelectedRoomId(roomId)}
                       >
+                        <Ionicons
+                          name={isSelected ? "checkmark-circle" : "radio-button-off"}
+                          size={16}
+                          color={isSelected ? "#FFFFFF" : "#94A3B8"}
+                        />
                         <Text style={[styles.roomTabText, isSelected && styles.roomTabTextSelected]}>
                           {room.room_name}
                         </Text>
-                        <Text style={[styles.roomTabCount, isSelected && styles.roomTabCountSelected]}>
-                          {photoCount} {photoCount === 1 ? 'photo' : 'photos'}
-                        </Text>
+
                       </TouchableOpacity>
                     );
                   })}
                 </ScrollView>
               </View>
             )}
-            
-            <View style={styles.actionButtons}>
-              {/* Share Cleaning Report - for completed inspections */}
-              {status === 'COMPLETE' && (
-                <TouchableOpacity
-                  style={styles.shareReportButton}
-                  onPress={() => navigation.navigate('CleaningReport', { inspectionId })}
-                >
-                  <Ionicons name="document-text" size={18} color="#FFF" />
-                  <Text style={styles.shareReportButtonText}>Share Cleaning Report</Text>
-                </TouchableOpacity>
-              )}
-              
-              {/* Edit Inspection Button - for cleaners when inspection failed */}
-              {userRole === 'CLEANER' && statusDisplay.canEdit && (
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={handleEditInspection}
-                >
-                  <Text style={styles.editButtonText}>✏️ Edit Inspection</Text>
-                </TouchableOpacity>
-              )}
-              
-              {/* Only show reject button to owners and if status is not already rejected */}
-              {userRole === 'OWNER' && status !== 'REJECTED' && (
-                <TouchableOpacity
-                  style={styles.rejectButton}
-                  onPress={handleOpenRejectModal}
-                >
-                  <Text style={styles.rejectButtonText}>❌ Reject Inspection</Text>
-                </TouchableOpacity>
-              )}
-            </View>
           </View>
 
           <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
             {/* CRITICAL ERROR BANNER */}
-            {improvements.length > 0 && improvements.some(item => 
-              String(item).includes('❌') || 
-              String(item).toUpperCase().includes('WRONG ROOM') ||
-              String(item).toUpperCase().includes('CRITICAL ERROR') ||
-              String(item).toUpperCase().includes('NOT A BEDROOM') ||
-              String(item).toUpperCase().includes('NOT A BATHROOM') ||
-              String(item).toUpperCase().includes('NOT A KITCHEN')
-            ) && (
-              <View style={styles.criticalErrorBanner}>
-                <View style={styles.criticalErrorHeader}>
-                  <Text style={styles.criticalErrorIcon}>⚠️</Text>
-                  <Text style={styles.criticalErrorTitle}>Critical Issue Detected</Text>
+            {criticalIssues.length > 0 && (
+                <View style={styles.criticalErrorBanner}>
+                  <View style={styles.criticalErrorHeader}>
+                    <Ionicons name="alert-circle" size={20} color='#C62828'/>
+                    <Text style={styles.criticalErrorTitle}>Critical Issue</Text>
+                  </View>
+                  {criticalIssues.slice(0, 2).map((error, i) => (
+                    <Text
+                      key={i}
+                      style={styles.criticalErrorText}
+                    >
+                      {safeString(String(error).replace(/^❌\s*/i, ''))}
+                    </Text>
+                  ))}
+                  {criticalIssues.length > 2 && (
+                    <Text style={styles.criticalErrorMoreText}>
+                      + {criticalIssues.length - 2} more critical {criticalIssues.length - 2 === 1 ? 'issue' : 'issues'}
+                    </Text>
+                  )}
+                  <View style={styles.criticalErrorAction}>
+                    <Ionicons name="camera-outline" size={16} color="#78350F" />
+                    <Text style={styles.criticalErrorActionText}>
+                      Retake photos of the correct room
+                    </Text>
+                  </View>
                 </View>
-                {improvements
-                  .filter(item => 
-                    String(item).includes('❌') || 
-                    String(item).toUpperCase().includes('WRONG ROOM') ||
-                    String(item).toUpperCase().includes('CRITICAL ERROR') ||
-                    String(item).toUpperCase().includes('NOT A BEDROOM') ||
-                    String(item).toUpperCase().includes('NOT A BATHROOM') ||
-                    String(item).toUpperCase().includes('NOT A KITCHEN')
-                  )
-                  .map((error, i) => (
-                    <Text key={i} style={styles.criticalErrorText}>{safeString(error)}</Text>
-                  ))
-                }
-                <View style={styles.criticalErrorAction}>
-                  <Text style={styles.criticalErrorActionText}>
-                    📸 Please retake photos of the correct room and resubmit inspection
-                  </Text>
-                </View>
-              </View>
-            )}
-            
+              )}
+
             {/* IMPROVEMENTS NEEDED */}
             <View style={styles.card}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.sectionHeaderButton}
                 onPress={() => toggleSection('issues')}
               >
-                <Text style={styles.sectionTitle}>Improvements Needed ({improvements.filter(item => 
-                  !String(item).includes('❌') && 
-                  !String(item).toUpperCase().includes('WRONG ROOM') &&
-                  !String(item).toUpperCase().includes('CRITICAL ERROR')
-                ).length})</Text>
+                <Text style={styles.sectionTitle}>Improvements Needed ({nonCriticalImprovements.length})</Text>
                 <Text style={styles.expandIcon}>{expandedSections.issues ? '−' : '+'}</Text>
               </TouchableOpacity>
               {expandedSections.issues ? (
                 <View style={styles.issuesList}>
-                  {improvements.filter(item => 
-                    !String(item).includes('❌') && 
-                    !String(item).toUpperCase().includes('WRONG ROOM') &&
-                    !String(item).toUpperCase().includes('CRITICAL ERROR')
-                  ).length > 0 ? (
-                    improvements
-                      .filter(item => 
-                        !String(item).includes('❌') && 
-                        !String(item).toUpperCase().includes('WRONG ROOM') &&
-                        !String(item).toUpperCase().includes('CRITICAL ERROR')
-                      )
-                      .map((item, i) => (
-                        <View key={i} style={styles.issueItem}>
-                          <View style={styles.bulletDot} />
-                          <Text style={styles.issueText}>{safeString(item)}</Text>
-                        </View>
-                      ))
+                  {nonCriticalImprovements.length > 0 ? (
+                    nonCriticalImprovements.map((item, i) => (
+                      <View key={i} style={styles.issueItem}>
+                        <Text style={styles.issueText}>{safeString(item)}</Text>
+                      </View>
+                    ))
                   ) : (
                     <View style={styles.emptyStateContainer}>
                       <Text style={styles.emptyStateText}>
@@ -580,7 +584,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
 
             {/* COMPLETE INVENTORY */}
             <View style={styles.card}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.sectionHeaderButton}
                 onPress={() => toggleSection('inventory')}
               >
@@ -602,10 +606,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
                             ) : null}
                           </View>
                           {item.condition_score && (
-                            <View style={[styles.scoreBadge, { 
+                            <View style={[styles.scoreBadge, {
                               backgroundColor: getRatingBgColor(item.condition_score || 10)
                             }]}>
-                              <Text style={[styles.scoreBadgeText, { 
+                              <Text style={[styles.scoreBadgeText, {
                                 color: getRatingColor(item.condition_score || 10)
                               }]}>
                                 {safeNumber(item.condition_score, 10)}/10
@@ -633,17 +637,17 @@ export default function InspectionDetailScreen({ route, navigation }) {
             {/* INSTRUCTION ADHERENCE */}
             {selectedRoomData?.instruction_adherence && selectedRoomData?.has_custom_requirements && (
               <View style={styles.card}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.sectionHeaderButton}
                   onPress={() => toggleSection('instructions')}
                 >
                   <View style={styles.sectionHeaderWithScore}>
                     <Text style={styles.sectionTitle}>Special Instructions</Text>
                     {selectedRoomData.instruction_adherence.adherence_score !== undefined && (
-                      <View style={[styles.adherenceScoreBadge, { 
+                      <View style={[styles.adherenceScoreBadge, {
                         backgroundColor: getRatingBgColor(selectedRoomData.instruction_adherence.adherence_score)
                       }]}>
-                        <Text style={[styles.adherenceScoreText, { 
+                        <Text style={[styles.adherenceScoreText, {
                           color: getRatingColor(selectedRoomData.instruction_adherence.adherence_score)
                         }]}>
                           {safeNumber(selectedRoomData.instruction_adherence.adherence_score, 0)}/10
@@ -690,10 +694,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
 
                     {selectedRoomData.instruction_adherence.requirements_missed && selectedRoomData.instruction_adherence.requirements_missed.length > 0 && (
                       <View style={styles.missedSection}>
-                        <Text style={styles.missedTitle}>⚠️ Missed Requirements:</Text>
+                        <Text style={styles.missedTitle}>Missed Requirements:</Text>
                         {selectedRoomData.instruction_adherence.requirements_missed.map((missed, idx) => (
                           <View key={idx} style={styles.bulletPoint}>
-                            <Text style={styles.bullet}>•</Text>
+                            <Text style={[styles.bullet, { color: '#E65100' }]}>•</Text>
                             <Text style={styles.missedText}>{safeString(missed)}</Text>
                           </View>
                         ))}
@@ -718,7 +722,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
             {/* PHOTO QUALITY */}
             {roomPhotoQuality ? (
               <View style={styles.card}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.sectionHeaderButton}
                   onPress={() => toggleSection('photoQuality')}
                 >
@@ -730,7 +734,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
                     <View style={styles.photoQualityScores}>
                       <View style={styles.qualityMetric}>
                         <Text style={styles.metricLabel}>Overall</Text>
-                        <Text style={[styles.metricValue, { 
+                        <Text style={[styles.metricValue, {
                           color: getRatingColor(roomPhotoQuality.photo_quality_score || 0)
                         }]}>
                           {safeNumber(roomPhotoQuality.photo_quality_score, 0)}/10
@@ -738,7 +742,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
                       </View>
                       <View style={styles.qualityMetric}>
                         <Text style={styles.metricLabel}>Composition</Text>
-                        <Text style={[styles.metricValue, { 
+                        <Text style={[styles.metricValue, {
                           color: getRatingColor(roomPhotoQuality.composition_score || 0)
                         }]}>
                           {safeNumber(roomPhotoQuality.composition_score, 0)}/10
@@ -746,7 +750,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
                       </View>
                       <View style={styles.qualityMetric}>
                         <Text style={styles.metricLabel}>Lighting</Text>
-                        <Text style={[styles.metricValue, { 
+                        <Text style={[styles.metricValue, {
                           color: getRatingColor(roomPhotoQuality.lighting_score || 0)
                         }]}>
                           {safeNumber(roomPhotoQuality.lighting_score, 0)}/10
@@ -754,7 +758,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
                       </View>
                       <View style={styles.qualityMetric}>
                         <Text style={styles.metricLabel}>Technical</Text>
-                        <Text style={[styles.metricValue, { 
+                        <Text style={[styles.metricValue, {
                           color: getRatingColor(roomPhotoQuality.technical_score || 0)
                         }]}>
                           {safeNumber(roomPhotoQuality.technical_score, 0)}/10
@@ -762,7 +766,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
                       </View>
                       <View style={styles.qualityMetric}>
                         <Text style={styles.metricLabel}>Coverage</Text>
-                        <Text style={[styles.metricValue, { 
+                        <Text style={[styles.metricValue, {
                           color: getRatingColor(roomPhotoQuality.coverage_score || 0)
                         }]}>
                           {safeNumber(roomPhotoQuality.coverage_score, 0)}/10
@@ -774,15 +778,15 @@ export default function InspectionDetailScreen({ route, navigation }) {
                     {roomPhotoQuality.coverage_percentage !== undefined && roomPhotoQuality.coverage_percentage !== null ? (
                       <View style={styles.coveragePercentageSection}>
                         <Text style={styles.coveragePercentageLabel}>Room Coverage</Text>
-                        <Text style={[styles.coveragePercentageValue, { 
-                          color: roomPhotoQuality.coverage_percentage >= 70 ? colors.success : 
-                                 roomPhotoQuality.coverage_percentage >= 30 ? colors.warning : colors.error
+                        <Text style={[styles.coveragePercentageValue, {
+                          color: roomPhotoQuality.coverage_percentage >= 70 ? colors.success :
+                            roomPhotoQuality.coverage_percentage >= 30 ? colors.warning : colors.error
                         }]}>
                           {roomPhotoQuality.coverage_percentage}%
                         </Text>
                         <Text style={styles.coveragePercentageHint}>
-                          {roomPhotoQuality.coverage_percentage >= 70 ? 'Good coverage' : 
-                           roomPhotoQuality.coverage_percentage >= 30 ? 'Minimum met • Aim for 70%+' : 'Below minimum (30%)'}
+                          {roomPhotoQuality.coverage_percentage >= 70 ? 'Good coverage' :
+                            roomPhotoQuality.coverage_percentage >= 30 ? 'Minimum met • Aim for 70%+' : 'Below minimum (30%)'}
                         </Text>
                       </View>
                     ) : null}
@@ -823,7 +827,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
             {/* INSPECTION PHOTOS */}
             {roomMedia.length > 0 && (
               <View style={styles.card}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.sectionHeaderButton}
                   onPress={() => toggleSection('photos')}
                 >
@@ -879,10 +883,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
                     style={[styles.modalRoomItem, isSelected && styles.modalRoomItemSelected]}
                     onPress={() => toggleFailedRoom(roomId)}
                   >
-                    <Ionicons 
-                      name={isSelected ? "checkbox" : "square-outline"} 
-                      size={24} 
-                      color={isSelected ? colors.primary.main : colors.text.secondary} 
+                    <Ionicons
+                      name={isSelected ? "checkbox" : "square-outline"}
+                      size={24}
+                      color={isSelected ? colors.primary.main : colors.text.secondary}
                     />
                     <Text style={[styles.modalRoomText, isSelected && styles.modalRoomTextSelected]}>
                       {roomData.room_name || `Room ${roomId.substring(0, 8)}`}
@@ -961,91 +965,117 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginTop: 16,
   },
-  
-  // COMPACT HEADER
+
+  // COMPACT HEADER WITH ICONS
   compactHeader: {
-    backgroundColor: colors.background.card,
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.light,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    borderBottomColor: '#E5E7EB',
   },
-  headerRow: {
+  headerTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  headerLeft: {
+  headerAddressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     flex: 1,
+    marginRight: 8,
   },
   headerAddress: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: 4,
+    color: '#1F2937',
+    flex: 1,
   },
-  headerDate: {
-    fontSize: 13,
-    fontWeight: '400',
-    color: colors.text.muted,
-  },
-  headerRight: {
+  headerDateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 4,
+    marginBottom: 12,
   },
-  scoreBox: {
+  headerDate: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  headerBadges: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-  },
-  scoreBoxLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: colors.text.muted,
-    marginBottom: 2,
-  },
-  scoreBoxValue: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: colors.primary.main,
-  },
-  gradeBox: {
-    alignItems: 'center',
-    paddingHorizontal: 8,
-  },
-  gradeBoxLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: colors.text.muted,
-    marginBottom: 4,
-  },
-  gradeBadge: {
-    backgroundColor: colors.background.secondary,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  gradeBadgeText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  statusBox: {
-    paddingHorizontal: 12,
+    gap: 4,
     paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 8,
   },
-  statusBoxText: {
+  statValue: {
     fontSize: 12,
+    fontWeight: '700',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#10B981',
+  },
+  actionBtnText: {
+    fontSize: 14,
     fontWeight: '600',
   },
-  
+
+  // STATUS AND ACTION CARD
+  statusActionCard: {
+    flexDirection: 'row',
+    paddingTop: 16,
+  },
+  statusBadge: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  statusBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  shareReportButtonCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#10B981',
+    gap: 8,
+  },
+  shareReportButtonCardText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10B981',
+  },
+
   // CARD
   card: {
     backgroundColor: colors.background.card,
@@ -1059,7 +1089,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  
+
   // SECTIONS
   sectionHeaderButton: {
     flexDirection: 'row',
@@ -1077,7 +1107,7 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     color: colors.text.muted,
   },
-  
+
   // ISSUES
   issuesList: {
     gap: 14,
@@ -1094,13 +1124,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.main,
     marginTop: 9,
   },
+  bullet: {
+    flexDirection: 'row',
+    fontSize: 16,
+    fontWeight: '600',
+
+    marginBottom: 4,
+  },
   issueText: {
     flex: 1,
     fontSize: 16,
     lineHeight: 24,
     color: colors.text.secondary,
   },
-  
+
   // ITEMS
   itemsList: {
     gap: 0,
@@ -1139,7 +1176,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border.light,
   },
-  
+
   // PHOTO QUALITY
   photoQualityScores: {
     flexDirection: 'row',
@@ -1181,7 +1218,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.text.secondary,
   },
-  
+
   // PHOTOS
   photoGrid: {
     flexDirection: 'row',
@@ -1201,55 +1238,59 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   roomSelectorContainer: {
-    marginTop: 12,
+    marginBottom: 4,
+  },
+  roomSelectorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     marginBottom: 8,
+    marginLeft: 4,
   },
   roomSelectorLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: 8,
+    color: '#6B7280',
   },
   roomSelectorScroll: {
     flexDirection: 'row',
   },
   roomTab: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginRight: 10,
-    borderRadius: 10,
-    backgroundColor: '#F5F5F5',
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   roomTabSelected: {
-    backgroundColor: colors.primary.main,
-    borderColor: colors.primary.main,
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
   },
   roomTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: 3,
+    color: '#374151',
   },
   roomTabTextSelected: {
     color: '#FFFFFF',
-    fontWeight: '700',
   },
   roomTabCount: {
     fontSize: 11,
-    color: colors.text.secondary,
-    textAlign: 'center',
+    fontWeight: '600',
+    color: '#9CA3AF',
+    backgroundColor: '#E5E7EB',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
   roomTabCountSelected: {
     color: '#FFFFFF',
-    opacity: 0.9,
-  },
-  actionButtons: {
-    marginTop: 12,
-    gap: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
   },
   editButton: {
     backgroundColor: colors.primary.main,
@@ -1263,16 +1304,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  shareReportButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#10B981',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 8,
-  },
+
   shareReportButtonText: {
     fontSize: 15,
     fontWeight: '600',
@@ -1424,57 +1456,59 @@ const styles = StyleSheet.create({
     padding: 6,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
-  
+
   // Critical Error Banner Styles
   criticalErrorBanner: {
-    backgroundColor: '#FFF5F5',
-    borderLeftWidth: 4,
-    borderLeftColor: '#EF4444',
+    backgroundColor: '#FFEBEE',
     borderRadius: 8,
-    padding: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     marginHorizontal: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    marginTop: 6,
+    marginBottom: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: '#C62828',
   },
   criticalErrorHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  criticalErrorIcon: {
-    fontSize: 20,
-    marginRight: 8,
+    gap: 8,
+    marginBottom: 6,
   },
   criticalErrorTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
-    color: '#DC2626',
+    color: '#C62828',
     flex: 1,
   },
   criticalErrorText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#991B1B',
-    marginBottom: 8,
-    fontWeight: '500',
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#C62828',
+    marginBottom: 2,
+    paddingLeft: 28,
+  },
+  criticalErrorMoreText: {
+    fontSize: 12,
+    color: '#C62828',
+    paddingLeft: 28,
+    marginTop: 2,
   },
   criticalErrorAction: {
-    marginTop: 4,
-    padding: 8,
-    backgroundColor: '#FEE2E2',
-    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+    paddingLeft: 28,
   },
   criticalErrorActionText: {
+    flex: 1,
     fontSize: 13,
-    color: '#7F1D1D',
+    color: '#C62828',
     fontWeight: '600',
-    textAlign: 'center',
+
   },
-  
+
   // Photo Quality Feedback Styles
   feedbackSection: {
     marginTop: 20,
@@ -1509,7 +1543,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#475569',
   },
-  
+
   // Instruction Adherence Styles
   sectionHeaderWithScore: {
     flexDirection: 'row',
@@ -1587,6 +1621,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#E65100',
     marginBottom: 8,
+  },
+  bulletPoint: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 4,
   },
   missedText: {
     flex: 1,

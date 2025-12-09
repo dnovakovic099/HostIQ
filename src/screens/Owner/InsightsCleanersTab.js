@@ -13,8 +13,26 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../api/client';
+
+const COLORS = {
+  background: '#F1F5F9',
+  card: '#FFFFFF',
+  cardBorder: 'rgba(15, 23, 42, 0.08)',
+  cardShadow: 'rgba(15, 23, 42, 0.08)',
+  textPrimary: '#0F172A',
+  textSecondary: '#64748B',
+  textMuted: '#94A3B8',
+  accent: '#3B82F6',
+  accentSoft: '#EFF6FF',
+  success: '#10B981',
+  successSoft: 'rgba(16, 185, 129, 0.08)',
+  warning: '#F59E0B',
+  warningSoft: 'rgba(245, 158, 11, 0.08)',
+  error: '#EF4444',
+  errorSoft: 'rgba(239, 68, 68, 0.06)',
+  divider: '#E2E8F0',
+};
 
 export default function InsightsCleanersTab({ navigation }) {
   const [loading, setLoading] = useState(true);
@@ -146,9 +164,9 @@ export default function InsightsCleanersTab({ navigation }) {
   };
 
   const getPassRateColor = (rate) => {
-    if (rate >= 90) return '#10B981';
-    if (rate >= 70) return '#F59E0B';
-    return '#EF4444';
+    if (rate >= 90) return COLORS.success;
+    if (rate >= 70) return COLORS.warning;
+    return COLORS.error;
   };
 
   const formatDate = (dateString) => {
@@ -166,12 +184,9 @@ export default function InsightsCleanersTab({ navigation }) {
         onPress={() => navigation.navigate('PayCleaner')}
         activeOpacity={0.8}
       >
-        <LinearGradient
-          colors={['#10B981', '#059669']}
-          style={styles.quickActionIcon}
-        >
-          <Ionicons name="wallet" size={20} color="#FFF" />
-        </LinearGradient>
+        <View style={[styles.quickActionIcon, { backgroundColor: COLORS.successSoft }]}>
+          <Ionicons name="wallet" size={20} color={COLORS.success} />
+        </View>
         <View style={styles.quickActionContent}>
           <Text style={styles.quickActionTitle}>Pay Cleaner</Text>
           <Text style={styles.quickActionDesc}>Send payments</Text>
@@ -184,12 +199,9 @@ export default function InsightsCleanersTab({ navigation }) {
         onPress={() => navigation.navigate('PaymentHistory')}
         activeOpacity={0.8}
       >
-        <LinearGradient
-          colors={['#4A90E2', '#3D7FD9']}
-          style={styles.quickActionIcon}
-        >
-          <Ionicons name="receipt" size={20} color="#FFF" />
-        </LinearGradient>
+        <View style={[styles.quickActionIcon, { backgroundColor: COLORS.accentSoft }]}>
+          <Ionicons name="receipt" size={20} color={COLORS.accent} />
+        </View>
         <View style={styles.quickActionContent}>
           <Text style={styles.quickActionTitle}>Payment History</Text>
           <Text style={styles.quickActionDesc}>View transactions</Text>
@@ -264,18 +276,18 @@ export default function InsightsCleanersTab({ navigation }) {
             <Text style={styles.statLabel}>Total</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={[styles.statValue, { color: '#10B981' }]}>{item.passedCount || 0}</Text>
+            <Text style={[styles.statValue, { color: COLORS.success }]}>{item.passedCount || 0}</Text>
             <Text style={styles.statLabel}>Passed</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={[styles.statValue, { color: '#EF4444' }]}>{item.failedCount || 0}</Text>
+            <Text style={[styles.statValue, { color: COLORS.error }]}>{item.failedCount || 0}</Text>
             <Text style={styles.statLabel}>Failed</Text>
           </View>
         </View>
 
         <View style={styles.cardFooter}>
           <Text style={styles.viewReportsText}>View Inspections</Text>
-          <Ionicons name="chevron-forward" size={16} color="#4A90E2" />
+          <Ionicons name="chevron-forward" size={16} color={COLORS.accent} />
         </View>
       </TouchableOpacity>
     );
@@ -301,7 +313,7 @@ export default function InsightsCleanersTab({ navigation }) {
 
         {loadingInspections ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4A90E2" />
+            <ActivityIndicator size="large" color={COLORS.accent} />
             <Text style={styles.loadingText}>Loading inspections...</Text>
           </View>
         ) : (
@@ -335,18 +347,18 @@ export default function InsightsCleanersTab({ navigation }) {
                     {score != null && (
                       <Text style={[
                         styles.inspectionScore,
-                        { color: score >= 7 ? '#10B981' : score >= 5 ? '#F59E0B' : '#EF4444' }
+                        { color: score >= 7 ? COLORS.success : score >= 5 ? COLORS.warning : COLORS.error }
                       ]}>
                         {score.toFixed(1)}
                       </Text>
                     )}
                     <View style={[
                       styles.inspectionStatusBadge,
-                      { backgroundColor: isGuestReady ? '#ECFDF5' : '#FEF2F2' }
+                      { backgroundColor: isGuestReady ? COLORS.successSoft : COLORS.errorSoft }
                     ]}>
                       <Text style={[
                         styles.inspectionStatusText,
-                        { color: isGuestReady ? '#10B981' : '#EF4444' }
+                        { color: isGuestReady ? COLORS.success : COLORS.error }
                       ]}>
                         {isGuestReady ? 'Passed' : 'Failed'}
                       </Text>
@@ -358,7 +370,7 @@ export default function InsightsCleanersTab({ navigation }) {
             }}
             ListEmptyComponent={
               <View style={styles.emptyReports}>
-                <Ionicons name="clipboard-outline" size={48} color="#D1D5DB" />
+                <Ionicons name="clipboard-outline" size={48} color={COLORS.textMuted} />
                 <Text style={styles.emptyTitle}>No Inspections Yet</Text>
                 <Text style={styles.emptyText}>
                   This cleaner hasn't completed any inspections
@@ -374,7 +386,7 @@ export default function InsightsCleanersTab({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color={COLORS.accent} />
         <Text style={styles.loadingText}>Loading performance data...</Text>
       </View>
     );
@@ -397,12 +409,12 @@ export default function InsightsCleanersTab({ navigation }) {
         }
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4A90E2" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="people-outline" size={48} color="#4A90E2" />
+              <Ionicons name="people-outline" size={48} color={COLORS.accent} />
             </View>
             <Text style={styles.emptyTitle}>No Cleaners Yet</Text>
             <Text style={styles.emptyText}>
@@ -419,7 +431,7 @@ export default function InsightsCleanersTab({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.background,
   },
   loadingContainer: {
     flex: 1,
@@ -430,25 +442,30 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 15,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
   },
   listContent: {
     paddingBottom: 20,
   },
   // Quick Actions
   quickActionsContainer: {
-    padding: 16,
-    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    gap: 8,
   },
   quickAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 14,
-    borderRadius: 14,
+    backgroundColor: COLORS.card,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: COLORS.cardShadow,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
@@ -472,23 +489,26 @@ const styles = StyleSheet.create({
   quickActionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   quickActionDesc: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   // Summary Card
   summaryCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
     marginHorizontal: 16,
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     borderRadius: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: COLORS.cardShadow,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
@@ -501,7 +521,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 14,
@@ -517,22 +537,22 @@ const styles = StyleSheet.create({
   summaryStatValue: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   summaryStatLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 4,
   },
   summaryStatDivider: {
     width: 1,
     height: 40,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: COLORS.divider,
   },
   sectionHeaderText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginHorizontal: 16,
@@ -540,14 +560,17 @@ const styles = StyleSheet.create({
   },
   // Cleaner Card
   cleanerCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
     marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: COLORS.cardShadow,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 8,
@@ -566,13 +589,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#4A90E2',
+    backgroundColor: COLORS.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   avatarText: {
-    color: '#FFF',
+    color: COLORS.accent,
     fontSize: 18,
     fontWeight: '700',
   },
@@ -582,11 +605,11 @@ const styles = StyleSheet.create({
   cleanerName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   cleanerEmail: {
     fontSize: 13,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   trendBadge: {
@@ -598,9 +621,10 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.background,
     borderRadius: 12,
-    padding: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     marginBottom: 12,
   },
   statBox: {
@@ -610,11 +634,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   statLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   issuesPreview: {
@@ -622,7 +646,7 @@ const styles = StyleSheet.create({
   },
   issuesLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginBottom: 8,
   },
   issuesTags: {
@@ -631,14 +655,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   issueTag: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: COLORS.errorSoft,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
   issueTagText: {
     fontSize: 12,
-    color: '#EF4444',
+    color: COLORS.error,
     fontWeight: '500',
   },
   cardFooter: {
@@ -651,7 +675,7 @@ const styles = StyleSheet.create({
   },
   viewReportsText: {
     fontSize: 14,
-    color: '#4A90E2',
+    color: COLORS.accent,
     fontWeight: '600',
     marginRight: 4,
   },
@@ -665,7 +689,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 20,
-    backgroundColor: '#E3F2FD',
+    backgroundColor: COLORS.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -673,18 +697,18 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.background,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -692,12 +716,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: COLORS.divider,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   reportsListContent: {
     padding: 16,
@@ -714,9 +738,10 @@ const styles = StyleSheet.create({
   inspectionListItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginBottom: 10,
   },
   inspectionListLeft: {
@@ -725,16 +750,16 @@ const styles = StyleSheet.create({
   inspectionPropertyName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   inspectionUnitName: {
     fontSize: 13,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   inspectionDate: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: COLORS.textMuted,
     marginTop: 4,
   },
   inspectionListRight: {
@@ -758,7 +783,7 @@ const styles = StyleSheet.create({
   // Avg score badge
   avgScoreBadge: {
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: COLORS.background,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -766,14 +791,14 @@ const styles = StyleSheet.create({
   avgScoreText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   avgScoreLabel: {
     fontSize: 10,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
   },
   reportNumberBadge: {
-    backgroundColor: '#1F2937',
+    backgroundColor: COLORS.textPrimary,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -793,7 +818,7 @@ const styles = StyleSheet.create({
   },
   reportListLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
   },
   reportListMeta: {
     flexDirection: 'row',
@@ -803,7 +828,7 @@ const styles = StyleSheet.create({
   },
   reportListDate: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: COLORS.textMuted,
   },
   emptyReports: {
     alignItems: 'center',
@@ -814,10 +839,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailSummaryCard: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.card,
     margin: 16,
     padding: 20,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
   },
   detailSummaryRow: {
     flexDirection: 'row',
@@ -830,11 +857,11 @@ const styles = StyleSheet.create({
   detailSummaryValue: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   detailSummaryLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 4,
   },
   inspectionCounts: {
@@ -843,7 +870,7 @@ const styles = StyleSheet.create({
   },
   countItem: {
     flex: 1,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: COLORS.background,
     padding: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -851,21 +878,21 @@ const styles = StyleSheet.create({
   countValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   countLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 2,
   },
   section: {
     marginHorizontal: 16,
     marginBottom: 16,
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.card,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.cardBorder,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -876,15 +903,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
   },
   feedbackText: {
     fontSize: 14,
-    color: '#374151',
+    color: COLORS.textSecondary,
     lineHeight: 22,
   },
   issueItem: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: COLORS.errorSoft,
     padding: 12,
     borderRadius: 10,
     marginBottom: 8,
@@ -897,11 +924,11 @@ const styles = StyleSheet.create({
   issueItemText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     flex: 1,
   },
   issueBadge: {
-    backgroundColor: '#EF4444',
+    backgroundColor: COLORS.error,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -913,12 +940,12 @@ const styles = StyleSheet.create({
   },
   issueCategory: {
     fontSize: 12,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     marginTop: 4,
     textTransform: 'capitalize',
   },
   improvementItem: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: COLORS.background,
     padding: 12,
     borderRadius: 10,
     marginBottom: 8,
@@ -926,13 +953,12 @@ const styles = StyleSheet.create({
   improvementArea: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: COLORS.textPrimary,
     marginBottom: 4,
   },
   improvementTip: {
     fontSize: 13,
-    color: '#6B7280',
+    color: COLORS.textSecondary,
     lineHeight: 20,
   },
 });
-

@@ -378,7 +378,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     <View style={styles.cardBody}>
                                         {/* Modern Header with Left Accent */}
                                         <View style={styles.cardContentWrapper}>
-                                            <View style={styles.leftAccent} />
+                                           
                                             <View style={styles.cardContent}>
                                                 {/* Top Row: Property Info + Score */}
                                                 <View style={styles.cardTopRow}>

@@ -148,7 +148,7 @@ export default function PropertiesScreen({ navigation }) {
             onPress={() => handleDelete(item, isPMS)}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="trash-outline" size={18} color={COLORS.textMuted} />
+            <Ionicons name="trash-outline" size={18} color={COLORS.error} />
           </TouchableOpacity>
         </View>
 
