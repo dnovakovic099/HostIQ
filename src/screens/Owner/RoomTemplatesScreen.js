@@ -212,57 +212,6 @@ export default function RoomTemplatesScreen({ navigation }) {
     </View>
   );
 
-  const renderRoomTypePicker = () => (
-    <Modal
-      visible={showRoomTypePicker}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowRoomTypePicker(false)}
-    >
-      <View style={styles.pickerOverlay}>
-        <View style={styles.pickerContainer}>
-          <View style={styles.pickerHeader}>
-            <Text style={styles.pickerTitle}>Select Room Type</Text>
-            <TouchableOpacity onPress={() => setShowRoomTypePicker(false)}>
-              <Ionicons name="close" size={24} color="#1D1D1F" />
-            </TouchableOpacity>
-          </View>
-          
-          <ScrollView style={styles.pickerScroll}>
-            {ROOM_TYPES.map((type) => (
-              <TouchableOpacity
-                key={type.value}
-                style={[
-                  styles.pickerOption,
-                  roomType === type.value && styles.pickerOptionSelected
-                ]}
-                onPress={() => {
-                  setRoomType(type.value);
-                  setShowRoomTypePicker(false);
-                }}
-              >
-                <Ionicons 
-                  name={type.icon} 
-                  size={20} 
-                  color={roomType === type.value ? '#007AFF' : '#3C3C43'} 
-                />
-                <Text style={[
-                  styles.pickerOptionText,
-                  roomType === type.value && styles.pickerOptionTextSelected
-                ]}>
-                  {type.label}
-                </Text>
-                {roomType === type.value && (
-                  <Ionicons name="checkmark" size={20} color="#007AFF" />
-                )}
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
-  );
-
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -311,6 +260,7 @@ export default function RoomTemplatesScreen({ navigation }) {
       <Modal
         visible={modalVisible}
         animationType="slide"
+        presentationStyle="fullScreen"
         onRequestClose={closeModal}
       >
         <SafeAreaView style={styles.modalContainer}>
@@ -346,14 +296,53 @@ export default function RoomTemplatesScreen({ navigation }) {
               <Text style={styles.label}>Room Type *</Text>
               <TouchableOpacity
                 style={styles.pickerButton}
-                onPress={() => setShowRoomTypePicker(true)}
+                activeOpacity={0.7}
+                onPress={() => {
+                  console.log('Room type picker button pressed');
+                  setShowRoomTypePicker(!showRoomTypePicker);
+                }}
               >
                 <View style={styles.pickerButtonContent}>
                   <Ionicons name={getRoomTypeIcon(roomType)} size={20} color="#3C3C43" />
                   <Text style={styles.pickerButtonText}>{getRoomTypeLabel(roomType)}</Text>
                 </View>
-                <Ionicons name="chevron-down" size={20} color="#8E8E93" />
+                <Ionicons name={showRoomTypePicker ? "chevron-up" : "chevron-down"} size={20} color="#8E8E93" />
               </TouchableOpacity>
+              
+              {showRoomTypePicker && (
+                <ScrollView style={styles.inlinePickerContainer} nestedScrollEnabled={true}>
+                  {ROOM_TYPES.map((type) => (
+                    <TouchableOpacity
+                      key={type.value}
+                      style={[
+                        styles.inlinePickerOption,
+                        roomType === type.value && styles.inlinePickerOptionSelected
+                      ]}
+                      onPress={() => {
+                        setRoomType(type.value);
+                        setShowRoomTypePicker(false);
+                      }}
+                    >
+                      <View style={styles.inlinePickerIconContainer}>
+                        <Ionicons 
+                          name={type.icon} 
+                          size={24} 
+                          color="#4A90E2"
+                        />
+                      </View>
+                      <Text style={[
+                        styles.inlinePickerOptionText,
+                        roomType === type.value && styles.inlinePickerOptionTextSelected
+                      ]}>
+                        {type.label}
+                      </Text>
+                      {roomType === type.value && (
+                        <Ionicons name="checkmark" size={20} color="#4A90E2" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
             </View>
 
             <View style={styles.formGroup}>
@@ -387,8 +376,6 @@ export default function RoomTemplatesScreen({ navigation }) {
           </ScrollView>
         </SafeAreaView>
       </Modal>
-
-      {renderRoomTypePicker()}
     </View>
   );
 }
@@ -659,54 +646,42 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     letterSpacing: -0.2,
   },
-  // Room Type Picker Modal
-  pickerOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  pickerContainer: {
+  // Inline Room Type Picker
+  inlinePickerContainer: {
+    marginTop: 8,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
+    borderWidth: 0.5,
+    borderColor: 'rgba(60, 60, 67, 0.18)',
+    borderRadius: 10,
+    maxHeight: 300,
   },
-  pickerHeader: {
+  inlinePickerOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(60, 60, 67, 0.18)',
-  },
-  pickerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#000000',
-    letterSpacing: -0.4,
-  },
-  pickerScroll: {
-    maxHeight: 400,
-  },
-  pickerOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
+    padding: 12,
     borderBottomWidth: 0.5,
     borderBottomColor: 'rgba(60, 60, 67, 0.12)',
-    gap: 12,
   },
-  pickerOptionSelected: {
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
+  inlinePickerIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f0f7ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  pickerOptionText: {
+  inlinePickerOptionSelected: {
+    backgroundColor: 'rgba(74, 144, 226, 0.05)',
+  },
+  inlinePickerOptionText: {
     flex: 1,
     fontSize: 17,
     color: '#000000',
     letterSpacing: -0.4,
   },
-  pickerOptionTextSelected: {
-    color: '#007AFF',
+  inlinePickerOptionTextSelected: {
+    color: '#4A90E2',
     fontWeight: '600',
   },
 });

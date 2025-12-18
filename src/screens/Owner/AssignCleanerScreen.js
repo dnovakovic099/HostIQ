@@ -10,6 +10,7 @@ import {
   Modal,
   Platform,
   Animated,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -187,11 +188,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
                       </Text>
                     )}
                   </View>
-                  {isSelected && (
-                    <View style={styles.selectedIndicator}>
-                      <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
-                    </View>
-                  )}
+                 
                 </TouchableOpacity>
               );
             })
@@ -211,6 +208,30 @@ export default function AssignCleanerScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* Header Gradient */}
+      <LinearGradient
+        colors={['#DBEAFE', '#93C5FD']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0.8 }}
+        style={styles.headerWrapper}
+      >
+        <SafeAreaView>
+          <View style={styles.headerGradient}>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="person" size={28} color="#4A90E2" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>Assign to {cleanerName}</Text>
+              <Text style={styles.headerSubtitle}>
+                Select units for upcoming cleanings
+              </Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
       {showDatePicker && (
         Platform.OS === 'ios' ? (
           <Modal
@@ -271,25 +292,6 @@ export default function AssignCleanerScreen({ route, navigation }) {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.listHeader}>
-            <LinearGradient
-              colors={['#DBEAFE', '#BFDBFE']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.headerCard}
-            >
-              <View style={styles.headerIconWrapper}>
-                <View style={styles.headerIconInner}>
-                  <Ionicons name="person" size={28} color={COLORS.accent} />
-                </View>
-              </View>
-              <View style={styles.headerTextWrapper}>
-                <Text style={styles.headerTitle}>Assign to {cleanerName}</Text>
-                <Text style={styles.headerSubtitle}>
-                  Select units for upcoming cleanings
-                </Text>
-              </View>
-             
-            </LinearGradient>
 
             <View style={styles.dateCard}>
               <View style={styles.dateLabelRow}>
@@ -417,22 +419,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
-  listHeader: {
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 16,
+  // Header Gradient
+  headerWrapper: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
   },
-  headerCard: {
+  headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
   },
   headerIconWrapper: {
     marginRight: 14,
@@ -441,14 +439,14 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.shadowDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+  },
+  listHeader: {
+    paddingTop: 16,
+    paddingBottom: 8,
+    gap: 16,
   },
   headerTextWrapper: {
     flex: 1,

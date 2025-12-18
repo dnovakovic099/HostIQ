@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,12 @@ import {
   Alert,
   TextInput,
   Modal,
+  SafeAreaView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 
 export default function ManageCleanersScreen({ navigation }) {
@@ -26,10 +30,17 @@ export default function ManageCleanersScreen({ navigation }) {
     fetchCleaners();
   }, []);
 
+  // Refresh cleaners list when screen comes into focus
+  // This ensures assignment counts are updated after deleting assignments
+  useFocusEffect(
+    useCallback(() => {
+      fetchCleaners();
+    }, [])
+  );
+
   const fetchCleaners = async () => {
     try {
       const response = await api.get('/owner/cleaners');
-      console.log('📋 Fetched cleaners:', response.data);
       setCleaners(response.data);
     } catch (error) {
       console.error('Error fetching cleaners:', error);
@@ -94,36 +105,72 @@ export default function ManageCleanersScreen({ navigation }) {
     );
   };
 
-  const renderCleaner = ({ item }) => (
-    <View style={styles.cleanerCard}>
-      <View style={styles.cleanerAvatar}>
-        <Text style={styles.cleanerAvatarText}>
-          {item.name.charAt(0).toUpperCase()}
-        </Text>
-      </View>
-      <View style={styles.cleanerInfo}>
-        <Text style={styles.cleanerName}>{item.name}</Text>
-        <Text style={styles.cleanerEmail}>{item.email}</Text>
-        <Text style={styles.cleanerStats}>
-          {item._count?.assignments || 0} assignments
-        </Text>
-      </View>
+  const renderCleaner = ({ item }) => {
+    const navigateToAssignments = () => {
+      navigation.navigate('CleanerAssignments', {
+        cleanerId: item.id,
+        cleanerName: item.name,
+        assignments: item.assignments || [],
+      });
+    };
+
+    return (
       <TouchableOpacity
-        style={styles.assignButton}
-        onPress={() =>
-          navigation.navigate('AssignCleaner', { cleanerId: item.id, cleanerName: item.name })
-        }
+        style={styles.cleanerCard}
+        activeOpacity={0.7}
+        onPress={navigateToAssignments}
       >
-        <Ionicons name="add-circle-outline" size={24} color="#4A90E2" />
+        <TouchableOpacity
+          style={styles.removeButton}
+          onPress={() => handleRemoveCleaner(item)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons name="trash-outline" size={18} color="#EF4444" />
+        </TouchableOpacity>
+
+        <View style={styles.cleanerHeader}>
+          <LinearGradient
+            colors={['#EFF6FF', '#DBEAFE']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.cleanerAvatar}
+          >
+            <Text style={styles.cleanerAvatarText}>
+              {item.name.charAt(0).toUpperCase()}
+            </Text>
+          </LinearGradient>
+          
+          <View style={styles.cleanerInfo}>
+            <Text style={styles.cleanerName}>{item.name}</Text>
+            <Text style={styles.cleanerEmail}>{item.email}</Text>
+            <TouchableOpacity
+              style={styles.statPill}
+              onPress={navigateToAssignments}
+            >
+              <Ionicons name="calendar-outline" size={14} color="#4A90E2" />
+              <Text style={styles.cleanerStats}>
+                {item._count?.assignments || 0} {(item._count?.assignments || 0) === 1 ? 'assignment' : 'assignments'}
+              </Text>
+              <Ionicons name="arrow-forward" size={14} color="#4A90E2" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.assignButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            navigation.navigate('AssignCleaner', { cleanerId: item.id, cleanerName: item.name });
+          }}
+        >
+          <View style={styles.assignButtonContent}>
+            <Ionicons name="add-circle-outline" size={20} color="#4A90E2" />
+            <Text style={styles.assignButtonText}>Assign New</Text>
+          </View>
+        </TouchableOpacity>
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => handleRemoveCleaner(item)}
-      >
-        <Ionicons name="trash-outline" size={20} color="#F44336" />
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -135,6 +182,30 @@ export default function ManageCleanersScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* Header Gradient */}
+      <LinearGradient
+        colors={['#DBEAFE', '#93C5FD']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0.8 }}
+        style={styles.headerWrapper}
+      >
+        <SafeAreaView>
+          <View style={styles.headerGradient}>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="people" size={28} color="#4A90E2" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>My Cleaners</Text>
+              <Text style={styles.headerSubtitle}>
+                {cleaners.length} {cleaners.length === 1 ? 'cleaner' : 'cleaners'}
+              </Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
       <FlatList
         data={cleaners}
         renderItem={renderCleaner}
@@ -142,7 +213,14 @@ export default function ManageCleanersScreen({ navigation }) {
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="people-outline" size={64} color="#ccc" />
+            <LinearGradient
+              colors={['#DBEAFE', '#93C5FD']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.emptyIcon}
+            >
+              <Ionicons name="people-outline" size={48} color="#4A90E2" />
+            </LinearGradient>
             <Text style={styles.emptyText}>No cleaners yet</Text>
             <Text style={styles.emptySubtext}>
               Add cleaners to manage your properties
@@ -154,8 +232,16 @@ export default function ManageCleanersScreen({ navigation }) {
       <TouchableOpacity
         style={styles.fab}
         onPress={() => setShowInviteModal(true)}
+        activeOpacity={0.9}
       >
-        <Ionicons name="person-add" size={24} color="#fff" />
+        <LinearGradient
+          colors={['#60A5FA', '#3B82F6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabGradient}
+        >
+          <Ionicons name="person-add" size={28} color="#FFF" />
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Create Cleaner Modal */}
@@ -221,102 +307,215 @@ export default function ManageCleanersScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F8FAFC',
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8FAFC',
   },
-  list: {
-    padding: 15,
+  // Header Gradient
+  headerWrapper: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
   },
-  cleanerCard: {
+  headerGradient: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
   },
-  cleanerAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#4A90E2',
+  headerIconWrapper: {
+    marginRight: 14,
+  },
+  headerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  list: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  // Cleaner Card
+  cleanerCard: {
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    padding: 4,
+    zIndex: 10,
+  },
+  cleanerHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    gap: 12,
+  },
+  cleanerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
   cleanerAvatarText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#4A90E2',
   },
   cleanerInfo: {
     flex: 1,
+    paddingRight: 32,
   },
   cleanerName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 2,
-  },
-  cleanerEmail: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1F2937',
+    lineHeight: 22,
     marginBottom: 4,
   },
+  cleanerEmail: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  statPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#EFF6FF',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    gap: 5,
+  },
   cleanerStats: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6B7280',
   },
   assignButton: {
-    padding: 8,
-    marginRight: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E7FF',
   },
-  removeButton: {
-    padding: 8,
+  assignButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
+  assignButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#4A90E2',
+  },
+  // Empty State
   empty: {
-    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 80,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-    marginTop: 60,
+    marginBottom: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#999',
-    marginTop: 20,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 8,
+    fontSize: 15,
+    color: '#6B7280',
     textAlign: 'center',
+    lineHeight: 22,
   },
+  // FAB
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#4A90E2',
+    bottom: 24,
+    borderRadius: 18,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  fabGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
   },
   modalOverlay: {
     flex: 1,

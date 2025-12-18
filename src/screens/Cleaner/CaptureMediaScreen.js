@@ -12,12 +12,15 @@ import {
   FlatList,
   TextInput,
   SafeAreaView,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Camera } from 'expo-camera';
 import api from '../../api/client';
+import { API_URL } from '../../config/api';
 import { useInspectionStore } from '../../store/inspectionStore';
 import { getRoomSuggestionByType } from '../../config/roomSuggestions';
 import colors from '../../theme/colors';
@@ -64,8 +67,6 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const [isLoadingExisting, setIsLoadingExisting] = useState(isEditing && existingMedia.length > 0);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
-  const [selectedPhotoForTagging, setSelectedPhotoForTagging] = useState(null);
-  const [showRoomPicker, setShowRoomPicker] = useState(false);
   const [selectedPhotoForView, setSelectedPhotoForView] = useState(null);
   const [damageReport, setDamageReport] = useState('');
   const { createInspection } = useInspectionStore();
@@ -76,9 +77,42 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const [selectedValuableItem, setSelectedValuableItem] = useState(null); // For photo taking
   const [valuableItemNotes, setValuableItemNotes] = useState('');
   const [showValuableItemModal, setShowValuableItemModal] = useState(false);
+  
+  // Listen for updates from RoomCaptureScreen
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Check if we have updated photos from RoomCaptureScreen
+      const params = route.params;
+      if (params?.updatedRoomPhotos) {
+        const roomId = params.updatedRoomId;
+        // Update photos for this room
+        setPhotos(prev => {
+          const filtered = prev.filter(p => p.roomId !== roomId);
+          return [...filtered, ...params.updatedRoomPhotos];
+        });
+        // Clear the params
+        navigation.setParams({ updatedRoomPhotos: undefined, updatedRoomId: undefined });
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, route.params]);
 
   const hasRooms = rooms.length > 0;
   const failedRoomIdsSet = new Set(failedRoomIds);
+  
+  // Toggle room collapse
+  const toggleRoomCollapse = (roomId) => {
+    setCollapsedRooms(prev => {
+      const next = new Set(prev);
+      if (next.has(roomId)) {
+        next.delete(roomId);
+      } else {
+        next.add(roomId);
+      }
+      return next;
+    });
+  };
   
   // Fetch valuable items for all rooms in this unit
   React.useEffect(() => {
@@ -89,12 +123,21 @@ export default function CaptureMediaScreen({ route, navigation }) {
       try {
         console.log('🏷️ Fetching valuable items for unit:', theUnitId);
         const response = await api.get(`/valuable-items/unit/${theUnitId}`);
+        console.log('📥 API Response:', JSON.stringify(response.data, null, 2));
         const allItems = response.data.rooms?.flatMap(room => 
-          room.valuable_items.map(item => ({
-            ...item,
-            roomName: room.name,
-            roomId: room.id
-          }))
+          room.valuable_items.map(item => {
+            console.log('📸 Valuable item data:', {
+              id: item.id,
+              name: item.name,
+              reference_photo: item.reference_photo,
+              hasReferencePhoto: !!item.reference_photo
+            });
+            return {
+              ...item,
+              roomName: room.name,
+              roomId: room.id
+            };
+          })
         ) || [];
         console.log(`📦 Found ${allItems.length} valuable items to verify`);
         setValuableItems(allItems);
@@ -109,16 +152,24 @@ export default function CaptureMediaScreen({ route, navigation }) {
 
   // Load existing photos when editing
   React.useEffect(() => {
-    if (isEditing && existingMedia.length > 0) {
+    if (isEditing && existingMedia && existingMedia.length > 0) {
       console.log('📸 Loading existing media:', existingMedia.length);
       console.log('📸 First media item:', existingMedia[0]);
       const loadedPhotos = existingMedia
-        .filter(m => m.type === 'PHOTO')  // ✅ Fixed: use correct field name
+        .filter(m => m && m.type === 'PHOTO' && m.url)
         .map((media, index) => {
           const room = rooms.find(r => r.id === media.room_id);
+          // Ensure URL is a full URL if it's relative
+          let photoUrl = media.url;
+          if (photoUrl && !photoUrl.startsWith('http') && !photoUrl.startsWith('file://')) {
+            // If it's a relative URL, prepend API base URL
+            const apiBase = api.defaults?.baseURL?.replace('/api', '') || '';
+            photoUrl = photoUrl.startsWith('/') ? apiBase + photoUrl : apiBase + '/' + photoUrl;
+          }
+          
           return {
             id: `existing_${media.id}_${index}`,
-            uri: media.url,  // ✅ Fixed: use correct field name
+            uri: photoUrl,
             roomId: media.room_id,
             roomName: room?.name || 'Unknown Room',
             isExisting: true,
@@ -127,6 +178,9 @@ export default function CaptureMediaScreen({ route, navigation }) {
         });
       console.log('✅ Loaded', loadedPhotos.length, 'existing photos');
       setPhotos(loadedPhotos);
+      setIsLoadingExisting(false);
+    } else if (isEditing) {
+      console.log('⚠️ isEditing is true but no existingMedia provided');
       setIsLoadingExisting(false);
     }
   }, [isEditing, existingMedia, rooms]);
@@ -143,13 +197,62 @@ export default function CaptureMediaScreen({ route, navigation }) {
   };
 
   const ensureInspection = async () => {
-    if (inspection) return inspection;
+    // If we have an inspection ID, check its status first
+    if (inspectionId) {
+      try {
+        const inspectionResponse = await api.get(`/cleaner/inspections/${inspectionId}`);
+        const inspectionData = inspectionResponse.data;
+        
+        // If inspection is FAILED or REJECTED, we need to create a new one
+        if (inspectionData.status === 'FAILED' || inspectionData.status === 'REJECTED') {
+          console.log('⚠️ Inspection is FAILED/REJECTED, creating new inspection...');
+          
+          // Get unit_id from inspection or assignment
+          const unitIdForNew = inspectionData.unit_id || assignment?.unit_id || unitId;
+          if (!unitIdForNew) {
+            throw new Error('Cannot create new inspection: missing unit_id');
+          }
+          
+          const response = await api.post('/cleaner/inspections', {
+            unit_id: unitIdForNew,
+            assignment_id: assignment?.id,
+          });
+          setInspection(response.data);
+          createInspection(response.data);
+          console.log('✅ Created new inspection:', response.data.id);
+          return response.data;
+        }
+        
+        // Inspection is valid, use it
+        setInspection(inspectionData);
+        return inspectionData;
+      } catch (error) {
+        console.error('Error checking inspection status:', error);
+        // Fall through to create new inspection
+      }
+    }
 
+    // Create new inspection if we don't have one or if previous check failed
     if (assignment) {
       try {
         const response = await api.post('/cleaner/inspections', {
           unit_id: assignment.unit_id,
           assignment_id: assignment.id,
+        });
+        setInspection(response.data);
+        createInspection(response.data);
+        return response.data;
+      } catch (error) {
+        Alert.alert('Error', 'Failed to create inspection');
+        throw error;
+      }
+    }
+    
+    // If we have unitId but no assignment, create inspection with unitId
+    if (unitId && !inspection) {
+      try {
+        const response = await api.post('/cleaner/inspections', {
+          unit_id: unitId,
         });
         setInspection(response.data);
         createInspection(response.data);
@@ -179,7 +282,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
     }
   };
 
-  const handleTakePhoto = async () => {
+  const handleTakePhotoForRoom = async (room) => {
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
@@ -195,14 +298,10 @@ export default function CaptureMediaScreen({ route, navigation }) {
         const newPhoto = {
           id: Date.now().toString(),
           uri: resizedUri,
-          roomId: null,
-          roomName: 'Unassigned',
+          roomId: room.id,
+          roomName: room.name,
         };
         setPhotos(prev => [...prev, newPhoto]);
-        
-        // Immediately show room picker for the new photo
-        setSelectedPhotoForTagging(newPhoto);
-        setShowRoomPicker(true);
       }
     } catch (error) {
       console.error('Camera error:', error);
@@ -210,7 +309,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
     }
   };
 
-  const handlePickFromGallery = async () => {
+  const handlePickFromGalleryForRoom = async (room) => {
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
@@ -228,42 +327,17 @@ export default function CaptureMediaScreen({ route, navigation }) {
             return {
               id: `${Date.now()}_${index}`,
               uri: resizedUri,
-              roomId: null,
-              roomName: 'Unassigned',
+              roomId: room.id,
+              roomName: room.name,
             };
           })
         );
         setPhotos(prev => [...prev, ...newPhotos]);
-        
-        // If only one photo, show room picker immediately
-        // If multiple, they can assign rooms individually later
-        if (newPhotos.length === 1) {
-          setSelectedPhotoForTagging(newPhotos[0]);
-          setShowRoomPicker(true);
-        } else {
-          Alert.alert(
-            'Photos Added',
-            `${newPhotos.length} photos added. Tap "Assign Room" on each photo to categorize them.`,
-            [{ text: 'OK' }]
-          );
-        }
       }
     } catch (error) {
       console.error('Gallery error:', error);
       Alert.alert('Error', 'Failed to pick photos');
     }
-  };
-
-  const handleAssignRoom = (photoId, room) => {
-    setPhotos(prev => prev.map(photo => 
-      photo.id === photoId 
-        ? { ...photo, roomId: room.id, roomName: room.name }
-        : photo
-    ));
-    setShowRoomPicker(false);
-    setSelectedPhotoForTagging(null);
-    
-    // No modal - keeps the user moving fast
   };
 
   const handleDeletePhoto = (photoId) => {
@@ -287,17 +361,6 @@ export default function CaptureMediaScreen({ route, navigation }) {
       Alert.alert(
         'No Photos',
         'Please capture at least one photo before submitting.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-
-    // Validation: All photos must be assigned to rooms
-    const unassignedPhotos = photos.filter(p => !p.roomId);
-    if (unassignedPhotos.length > 0) {
-      Alert.alert(
-        'Unassigned Photos',
-        `You have ${unassignedPhotos.length} photo(s) without a room assignment. Please assign all photos to rooms before submitting.`,
         [{ text: 'OK' }]
       );
       return;
@@ -511,7 +574,6 @@ export default function CaptureMediaScreen({ route, navigation }) {
     room,
     photos: photos.filter(p => p.roomId === room.id),
   }));
-  const unassignedPhotos = photos.filter(p => !p.roomId);
 
   const displayPropertyName = assignment?.unit?.property?.name || propertyName || 'Property';
   const displayUnitName = assignment?.unit?.name || unitName || 'Unit';
@@ -546,34 +608,32 @@ export default function CaptureMediaScreen({ route, navigation }) {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Custom Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#4A90E2" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <Text style={styles.headerTitle}>Capture Inspection</Text>
-          <Text style={styles.headerSubtitle}>
-            {displayPropertyName} • {displayUnitName}
-          </Text>
-        </View>
-      </View>
-
-      {/* Edit Mode Tips Banner */}
-      {isEditing && !isRejected && (
-        <View style={styles.editTipsBanner}>
-          <Ionicons name="information-circle" size={18} color="#3B82F6" />
-          <View style={styles.editTipsTextContainer}>
-            <Text style={styles.editTipsTitle}>✏️ Editing Inspection</Text>
-            <Text style={styles.editTipsText}>
-              • Add more photos or replace existing ones{'\n'}
-              • Photos are grouped by room below{'\n'}
-              • Tap any photo to view or delete it
-            </Text>
+    <View style={styles.container}>
+      {/* Beautiful Gradient Header */}
+      <LinearGradient
+        colors={['#DBEAFE', '#93C5FD']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0.8 }}
+        style={styles.headerWrapper}
+      >
+        <SafeAreaView>
+          <View style={styles.headerGradient}>
+           
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="camera" size={28} color="#4A90E2" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>Capture Inspection</Text>
+              <Text style={styles.headerSubtitle}>
+                {displayPropertyName} • {displayUnitName}
+              </Text>
+            </View>
           </View>
-        </View>
-      )}
+        </SafeAreaView>
+      </LinearGradient>
+
 
       {/* Rejection Warning Banner */}
       {isRejected && (
@@ -591,319 +651,272 @@ export default function CaptureMediaScreen({ route, navigation }) {
         </View>
       )}
 
-      {/* Photo Count Summary - Compact */}
-      {photos.length > 0 && (
-        <View style={styles.summaryBar}>
-          <View style={styles.summaryItem}>
-            <Ionicons name="images" size={14} color="#64748B" />
-            <Text style={styles.summaryText}>{photos.length}</Text>
+      {/* Rooms & Cleaning Tips - REDESIGNED */}
+      <View style={styles.roomsOverviewCard}>
+        <View style={styles.roomsOverviewHeader}>
+          <LinearGradient
+            colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.08)']}
+            style={styles.roomsHeaderIcon}
+          >
+            <Ionicons name="bed" size={20} color="#3B82F6" />
+          </LinearGradient>
+          <Text style={styles.roomsOverviewTitle}>Rooms to Clean</Text>
+          <View style={styles.roomsCountBadge}>
+            <Text style={styles.roomsCountText}>{rooms.length}</Text>
           </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Ionicons name="checkmark-circle" size={14} color="#10B981" />
-            <Text style={styles.summaryText}>
-              {photos.filter(p => p.roomId).length}
-            </Text>
-          </View>
-          {unassignedPhotos.length > 0 && (
-            <>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Ionicons name="alert-circle" size={14} color="#F59E0B" />
-                <Text style={styles.summaryText}>
-                  {unassignedPhotos.length} unassigned
-                </Text>
-              </View>
-            </>
-          )}
         </View>
-      )}
 
-      {/* Photo Groups */}
+        {rooms.map((room) => {
+          const roomPhotos = photos.filter(p => p.roomId === room.id);
+          const isComplete = roomPhotos.length > 0;
+          
+          return (
+            <TouchableOpacity
+              key={room.id}
+              style={[
+                styles.modernRoomCard,
+                isComplete && styles.modernRoomCardComplete,
+                failedRoomIdsSet.has(room.id) && styles.modernRoomCardFailed
+              ]}
+              onPress={() => navigation.navigate('RoomCapture', {
+                room,
+                assignment,
+                inspectionId,
+                propertyId,
+                propertyName,
+                unitName,
+                unitId,
+                rooms,
+                isRejected,
+                failedRoomIds,
+                rejectionReason,
+                existingMedia: existingMedia.filter(m => m.room_id === room.id),
+                isEditing,
+                allPhotos: photos, // Pass all photos to maintain state
+              })}
+              activeOpacity={0.7}
+            >
+              <View style={styles.modernRoomHeader}>
+                <View style={styles.modernRoomTitleRow}>
+                  <Text style={styles.modernRoomName}>{room.name}</Text>
+                  {isComplete && (
+                    <View style={styles.completeBadge}>
+                      <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                      <Text style={styles.completeBadgeText}>{roomPhotos.length} photo{roomPhotos.length > 1 ? 's' : ''}</Text>
+                    </View>
+                  )}
+                </View>
+                {room.tips && (
+                  <Text style={styles.modernRoomTips} numberOfLines={2}>
+                    {room.tips}
+                  </Text>
+                )}
+              </View>
+
+              <View style={styles.roomCardFooter}>
+                
+                <Text style={styles.roomCardActionText}>
+                  {isComplete ? 'View & Edit Photos' : 'Add Photos'}
+                </Text>
+                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      
+   
+
+      {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Valuable Items Section */}
         {valuableItems.length > 0 && (
-          <View style={styles.valuableItemsSection}>
+          <View style={styles.valuableItemsCard}>
             <View style={styles.valuableItemsHeader}>
-              <View style={styles.valuableItemsHeaderLeft}>
-                <Ionicons name="shield-checkmark" size={18} color="#5856D6" />
-                <Text style={styles.valuableItemsTitle}>Valuable Items</Text>
-              </View>
-              <View style={styles.valuableItemsCount}>
+              <LinearGradient
+                colors={['rgba(88, 86, 214, 0.15)', 'rgba(88, 86, 214, 0.08)']}
+                style={styles.valuableItemsHeaderIcon}
+              >
+                <Ionicons name="shield-checkmark" size={20} color="#5856D6" />
+              </LinearGradient>
+              <Text style={styles.valuableItemsTitle}>Valuable Items</Text>
+              <View style={styles.valuableItemsCountBadge}>
                 <Text style={styles.valuableItemsCountText}>
                   {Object.values(valuableItemPhotos).filter(p => p.uri).length}/{valuableItems.length}
                 </Text>
               </View>
             </View>
-            <Text style={styles.valuableItemsSubtitle}>
-              Photograph each item to verify it's present and undamaged
-            </Text>
             
-            <View style={styles.valuableItemsList}>
-              {valuableItems.map((item) => {
-                const hasPhoto = !!valuableItemPhotos[item.id]?.uri;
-                return (
-                  <View key={item.id} style={styles.valuableItemCard}>
+            {valuableItems.map((item) => {
+              const hasPhoto = !!valuableItemPhotos[item.id]?.uri;
+              // Fix reference photo URL - backend may return relative path or full URL
+              let referencePhotoUrl = item.reference_photo;
+              if (referencePhotoUrl) {
+                // Ensure it's a string and trim whitespace
+                referencePhotoUrl = String(referencePhotoUrl).trim();
+                
+                
+                const isFullUrl = referencePhotoUrl.startsWith('http://') || referencePhotoUrl.startsWith('https://');
+                
+                if (isFullUrl) {                  
+                  const productionUrl = 'https://roomify-server-production.up.railway.app';
+                  const baseUrl = API_URL.replace('/api', '');
+                  
+                  
+                  if (referencePhotoUrl.includes(productionUrl)) {
+                    if (!baseUrl.includes('roomify-server-production')) {
+                      
+                      const path = referencePhotoUrl.replace(productionUrl, '');
+                      referencePhotoUrl = baseUrl + path;
+                    }
+                    
+                  }
+                  
+                } else {
+                 
+                  const baseUrl = API_URL.replace('/api', '');
+                  const path = referencePhotoUrl.startsWith('/') ? referencePhotoUrl : '/' + referencePhotoUrl;
+                  referencePhotoUrl = baseUrl + path;
+                }
+              } else {
+                console.log(`   ⚠️ No reference_photo found for this item`);
+              }
+              
+           
+              
+              return (
+                <View key={item.id} style={[
+                  styles.valuableItemCard,
+                  hasPhoto && styles.valuableItemCardComplete
+                ]}>
+                  <View style={styles.valuableItemHeader}>
+                    <View style={styles.valuableItemTitleRow}>
+                      <Text style={styles.valuableItemName}>{item.name}</Text>
+                      {hasPhoto && (
+                        <View style={styles.valuableItemCompleteBadge}>
+                          <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+                          <Text style={styles.valuableItemCompleteText}>Verified</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.valuableItemRoom}>{item.roomName}</Text>
+                    {item.description && (
+                      <Text style={styles.valuableItemDescription} numberOfLines={2}>
+                        {item.description}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Reference Photo Display */}
+                  {referencePhotoUrl && (
+                    <View style={styles.referencePhotoContainer}>
+                      <Text style={styles.referencePhotoLabel}>Reference Photo:</Text>
+                      <TouchableOpacity
+                        style={styles.referencePhotoThumbnail}
+                        onPress={() => setSelectedPhotoForView({ uri: referencePhotoUrl, roomName: `${item.name} - Reference` })}
+                        activeOpacity={0.7}
+                      >
+                        <Image
+                          source={{ uri: referencePhotoUrl }}
+                          style={styles.referencePhotoImage}
+                          resizeMode="cover"
+                          onError={(error) => {
+                            console.error(`❌ Failed to load reference photo for ${item.name}:`, error.nativeEvent.error);
+                            console.error(`   URL was: ${referencePhotoUrl}`);
+                          }}
+                          onLoad={() => {
+                            console.log(`✅ Successfully loaded reference photo for ${item.name}`);
+                          }}
+                        />
+                        <View style={styles.referencePhotoOverlay}>
+                          <Ionicons name="eye-outline" size={20} color="#FFF" />
+                          <Text style={styles.referencePhotoOverlayText}>View</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  <View style={styles.valuableItemActions}>
                     <TouchableOpacity
-                      style={[
-                        styles.valuableItemPhotoArea,
-                        hasPhoto && styles.valuableItemPhotoAreaComplete
-                      ]}
+                      style={styles.valuableItemPhotoButton}
                       onPress={() => handleValuableItemPhoto(item)}
+                      activeOpacity={0.7}
                     >
                       {hasPhoto ? (
-                        <>
+                        <View style={styles.valuableItemPhotoPreview}>
                           <Image
                             source={{ uri: valuableItemPhotos[item.id].uri }}
                             style={styles.valuableItemPhotoThumbnail}
                           />
-                          <View style={styles.valuableItemCheckmark}>
-                            <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+                          <View style={styles.valuableItemPhotoOverlay}>
+                            <Ionicons name="camera" size={16} color="#FFF" />
+                            <Text style={styles.valuableItemPhotoButtonText}>Retake</Text>
                           </View>
-                        </>
+                        </View>
                       ) : (
                         <>
-                          <Ionicons name="camera" size={28} color="#5856D6" />
-                          <Text style={styles.valuableItemPhotoText}>Tap to verify</Text>
+                          <Ionicons name="camera" size={20} color="#5856D6" />
+                          <Text style={styles.valuableItemPhotoButtonText}>Take Photo</Text>
                         </>
                       )}
                     </TouchableOpacity>
                     
-                    <View style={styles.valuableItemInfo}>
-                      <Text style={styles.valuableItemName}>{item.name}</Text>
-                      <Text style={styles.valuableItemRoom}>{item.roomName}</Text>
-                      {item.description && (
-                        <Text style={styles.valuableItemDescription} numberOfLines={1}>
-                          {item.description}
-                        </Text>
-                      )}
-                      {hasPhoto && (
-                        <TouchableOpacity
-                          style={styles.addNoteButton}
-                          onPress={() => {
-                            setSelectedValuableItem(item);
-                            setValuableItemNotes(valuableItemPhotos[item.id]?.notes || '');
-                            setShowValuableItemModal(true);
-                          }}
-                        >
-                          <Ionicons name="chatbubble-outline" size={12} color="#5856D6" />
-                          <Text style={styles.addNoteText}>
-                            {valuableItemPhotos[item.id]?.notes ? 'Edit note' : 'Add note'}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    
-                    {item.reference_photo && (
+                    {hasPhoto && (
                       <TouchableOpacity
-                        style={styles.referencePhotoButton}
-                        onPress={() => setSelectedPhotoForView({ uri: item.reference_photo, roomName: 'Reference Photo' })}
+                        style={styles.addNoteButton}
+                        onPress={() => {
+                          setSelectedValuableItem(item);
+                          setValuableItemNotes(valuableItemPhotos[item.id]?.notes || '');
+                          setShowValuableItemModal(true);
+                        }}
+                        activeOpacity={0.7}
                       >
-                        <Ionicons name="eye-outline" size={16} color="#8E8E93" />
+                        <Ionicons name="chatbubble-outline" size={16} color="#5856D6" />
+                        <Text style={styles.addNoteText}>
+                          {valuableItemPhotos[item.id]?.notes ? 'Edit Note' : 'Add Note'}
+                        </Text>
                       </TouchableOpacity>
                     )}
                   </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
-        {/* Unassigned Photos */}
-        {unassignedPhotos.length > 0 && (
-          <View style={[styles.roomSection, styles.firstSection]}>
-            <View style={styles.roomHeader}>
-              <Ionicons name="help-circle" size={16} color="#94A3B8" />
-              <Text style={styles.roomTitle}>Unassigned ({unassignedPhotos.length})</Text>
-            </View>
-            <View style={styles.photoGrid}>
-              {unassignedPhotos.map(photo => (
-                <View key={photo.id} style={styles.photoCard}>
-                  <TouchableOpacity 
-                    style={styles.photoImageContainer}
-                    onPress={() => setSelectedPhotoForView(photo)}
-                    activeOpacity={0.9}
-                  >
-                    <Image source={{ uri: photo.uri }} style={styles.photoImage} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.assignButton}
-                    onPress={() => {
-                      setSelectedPhotoForTagging(photo);
-                      setShowRoomPicker(true);
-                    }}
-                  >
-                    <Ionicons name="pricetag" size={12} color="#FFF" />
-                    <Text style={styles.assignButtonText}>Assign</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.deletePhotoButton}
-                    onPress={() => handleDeletePhoto(photo.id)}
-                  >
-                    <Ionicons name="close-circle" size={18} color="#EF4444" />
-                  </TouchableOpacity>
                 </View>
-              ))}
-            </View>
+              );
+            })}
           </View>
         )}
 
-        {/* Photos by Room */}
-        {photosByRoom.map(({ room, photos: roomPhotos }, index) => {
-          if (roomPhotos.length === 0) return null;
-          const isFailedRoom = failedRoomIdsSet.has(room.id);
-          const isFirst = index === 0 && unassignedPhotos.length === 0;
-          return (
-            <View key={room.id} style={[styles.roomSection, isFirst && styles.firstSection, isFailedRoom && styles.failedRoomSection]}>
-              <View style={styles.roomHeader}>
-                <Ionicons 
-                  name={getRoomIcon(room.type)} 
-                  size={16} 
-                  color={isFailedRoom ? '#DC2626' : getRoomColor(room.id)} 
-                />
-                <Text style={[styles.roomTitle, isFailedRoom && styles.failedRoomTitle]}>
-                  {room.name} ({roomPhotos.length})
-                  {isFailedRoom && ' ⚠️ Needs Re-Upload'}
-                </Text>
-              </View>
-              {room.tips && (
-                <View style={styles.tipsContainer}>
-                  <Ionicons name="information-circle" size={12} color="#3B82F6" />
-                  <Text style={styles.tipsText}>{room.tips}</Text>
-                </View>
-              )}
-              <View style={styles.photoGrid}>
-                {roomPhotos.map(photo => (
-                  <View key={photo.id} style={styles.photoCard}>
-                    <TouchableOpacity 
-                      style={styles.photoImageContainer}
-                      onPress={() => setSelectedPhotoForView(photo)}
-                      activeOpacity={0.9}
-                    >
-                      <Image source={{ uri: photo.uri }} style={styles.photoImage} />
-                      <View 
-                        style={[
-                          styles.roomBadge, 
-                          { backgroundColor: getRoomColor(photo.roomId) }
-                        ]}
-                      >
-                        <Text style={styles.roomBadgeText}>{photo.roomName}</Text>
-                      </View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.reassignButton}
-                      onPress={() => {
-                        setSelectedPhotoForTagging(photo);
-                        setShowRoomPicker(true);
-                      }}
-                    >
-                      <Ionicons name="pencil" size={10} color="#FFF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.deletePhotoButton}
-                      onPress={() => handleDeletePhoto(photo.id)}
-                    >
-                      <Ionicons name="close-circle" size={18} color="#EF4444" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            </View>
-          );
-        })}
-
-        {/* Empty State */}
-        {photos.length === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="camera-outline" size={40} color="#CBD5E1" />
-            <Text style={styles.emptyStateTitle}>No Photos Yet</Text>
-            <Text style={styles.emptyStateText}>
-              Take photos or import from your gallery, then assign each photo to a room.
-            </Text>
-          </View>
-        )}
-
-        {/* Damage Report Section */}
+        {/* Submit Button */}
         {photos.length > 0 && (
-          <View style={styles.damageReportSection}>
-            <View style={styles.damageReportHeader}>
-              <Ionicons name="alert-circle-outline" size={18} color="#F59E0B" />
-              <Text style={styles.damageReportTitle}>Damage Report (Optional)</Text>
-            </View>
-            <TextInput
-              style={styles.damageReportInput}
-              placeholder="Report any damage or issues found during inspection..."
-              placeholderTextColor="#94A3B8"
-              value={damageReport}
-              onChangeText={setDamageReport}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
+          <View style={styles.submitContainer}>
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                uploading && styles.submitButtonDisabled,
+              ]}
+              onPress={handleSubmitInspection}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <>
+                  <ActivityIndicator color="#FFF" size="small" style={{ marginRight: 8 }} />
+                  <Text style={styles.submitButtonText}>
+                    Uploading {uploadProgress.current}/{uploadProgress.total}...
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+                  <Text style={styles.submitButtonText}>
+                    Submit Inspection ({photos.length} photos)
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         )}
 
         <View style={styles.bottomPadding} />
       </ScrollView>
-
-      {/* Photo Guidelines Tip */}
-      <View style={styles.photoTipBanner}>
-        <Ionicons name="bulb" size={16} color="#F59E0B" />
-        <Text style={styles.photoTipText}>
-          📸 <Text style={styles.photoTipBold}>Show the entire room</Text> - Stand in corner, capture 70%+ of room (all walls, floor, furniture)
-        </Text>
-      </View>
-
-      {/* Capture Buttons - Always visible */}
-      <View style={styles.captureButtonsContainer}>
-        <TouchableOpacity
-          style={styles.cameraButton}
-          onPress={handleTakePhoto}
-          disabled={uploading}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="camera" size={20} color="#FFF" />
-          <Text style={styles.cameraButtonText}>Take Photo</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.galleryButton}
-          onPress={handlePickFromGallery}
-          disabled={uploading}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="images" size={20} color="#3B82F6" />
-          <Text style={styles.galleryButtonText}>Gallery</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Submit Button */}
-      {photos.length > 0 && (
-        <View style={styles.submitContainer}>
-          <TouchableOpacity
-            style={[
-              styles.submitButton,
-              (uploading || unassignedPhotos.length > 0) && styles.submitButtonDisabled,
-            ]}
-            onPress={handleSubmitInspection}
-            disabled={uploading || unassignedPhotos.length > 0}
-          >
-            {uploading ? (
-              <>
-                <ActivityIndicator color="#FFF" size="small" style={{ marginRight: 8 }} />
-                <Text style={styles.submitButtonText}>
-                  Uploading {uploadProgress.current}/{uploadProgress.total}...
-                </Text>
-              </>
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle" size={24} color="#FFF" />
-                <Text style={styles.submitButtonText}>
-                  Submit Inspection ({photos.length} photos)
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* Photo Enlargement Modal */}
       <Modal
@@ -1005,142 +1018,360 @@ export default function CaptureMediaScreen({ route, navigation }) {
         </View>
       </Modal>
 
-      {/* Room Picker Modal - Centered */}
-      <Modal
-        visible={showRoomPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowRoomPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity 
-            style={styles.modalBackdrop}
-            activeOpacity={1}
-            onPress={() => setShowRoomPicker(false)}
-          />
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Assign to Room</Text>
-              <TouchableOpacity 
-                onPress={() => setShowRoomPicker(false)}
-                style={styles.modalCloseButton}
-              >
-                <Ionicons name="close" size={24} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.roomList} showsVerticalScrollIndicator={false}>
-              {rooms.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.roomOption}
-                  onPress={() => handleAssignRoom(selectedPhotoForTagging?.id, item)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.roomIconContainer, { backgroundColor: getRoomColor(item.id) + '20' }]}>
-                    <Ionicons 
-                      name={getRoomIcon(item.type)} 
-                      size={20} 
-                      color={getRoomColor(item.id)} 
-                    />
-                  </View>
-                  <View style={styles.roomOptionText}>
-                    <Text style={styles.roomOptionName}>{item.name}</Text>
-                    {item.tips && (
-                      <Text style={styles.roomOptionTips} numberOfLines={2}>
-                        {item.tips}
-                      </Text>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8FAFC',
   },
-  header: {
+  // Beautiful Gradient Header
+  headerWrapper: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
   },
   backButton: {
     marginRight: 12,
-    padding: 4,
   },
-  headerContent: {
+  backButtonCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIconWrapper: {
+    marginRight: 14,
+  },
+  headerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
     flex: 1,
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 2,
-    letterSpacing: -0.5,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+    letterSpacing: 0.3,
   },
   headerSubtitle: {
-    fontSize: 13,
-    color: '#8E8E93',
-    letterSpacing: -0.1,
+    fontSize: 14,
+    color: '#475569',
+    fontWeight: '500',
   },
-  summaryBar: {
+  // Modern Rooms Overview Card
+  roomsOverviewCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  roomsOverviewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: 'rgba(0, 122, 255, 0.05)',
+    marginBottom: 16,
+    gap: 10,
+    paddingVertical: 4,
   },
-  summaryItem: {
+  roomsCollapseIcon: {
+    marginLeft: 4,
+  },
+  roomsHeaderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  roomsOverviewTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1F2937',
+    flex: 1,
+  },
+  roomsCountBadge: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  roomsCountText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  
+  // Modern Room Cards
+  modernRoomCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  modernRoomCardComplete: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+  },
+  modernRoomCardFailed: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+  },
+  modernRoomHeader: {
+    marginBottom: 8,
+  },
+  modernRoomTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  modernRoomName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  completeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  completeBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10B981',
+  },
+  modernRoomTips: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+  },
+  roomCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    gap: 6,
+  },
+  roomCardActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
+  capturePrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  capturePromptText: {
+    fontSize: 12,
+    color: '#3B82F6',
+    fontWeight: '600',
+  },
+  // Room Card Capture Buttons
+  roomCaptureButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  roomCameraButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3B82F6',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 6,
+  },
+  roomCameraButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  roomGalleryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#3B82F6',
+    gap: 6,
+  },
+  roomGalleryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#3B82F6',
+  },
+  // Summary Card
+  summaryCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  summaryItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  summaryNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  summaryLabel: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '500',
   },
   summaryDivider: {
     width: 1,
-    height: 12,
-    backgroundColor: 'rgba(60, 60, 67, 0.18)',
-    marginHorizontal: 8,
-  },
-  summaryText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#007AFF',
-    letterSpacing: -0.1,
+    height: 32,
+    backgroundColor: '#E2E8F0',
   },
   content: {
     flex: 1,
   },
   scrollContent: {
     paddingTop: 8,
+    paddingBottom: 20,
   },
   firstSection: {
     marginTop: 0,
   },
   roomSection: {
-    marginTop: 12,
-    paddingHorizontal: 16,
+    marginTop: 8,
+    marginHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   failedRoomSection: {
-    backgroundColor: 'rgba(255, 59, 48, 0.08)',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginHorizontal: 0,
+    backgroundColor: 'rgba(255, 59, 48, 0.06)',
     borderLeftWidth: 3,
     borderLeftColor: '#FF3B30',
+    borderColor: 'rgba(255, 59, 48, 0.2)',
   },
+  // Modern Room Section Header
+  modernRoomSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  roomHeaderTextContainer: {
+    flex: 1,
+  },
+  roomSectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modernRoomSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  roomSectionTips: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  roomHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  collapseIcon: {
+    marginLeft: 4,
+  },
+  roomPhotoCount: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  roomPhotoCountText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  failedRoomTitle: {
+    color: '#DC2626',
+  },
+  
+  // Old styles (keeping for compatibility)
   roomHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1152,9 +1383,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#000000',
     letterSpacing: -0.3,
-  },
-  failedRoomTitle: {
-    color: '#FF3B30',
   },
   editTipsBanner: {
     flexDirection: 'row',
@@ -1227,17 +1455,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    marginTop: 12,
   },
   photoCard: {
-    width: '23%',
+    width: (Dimensions.get('window').width - 64) / 3, // 3 columns with margins
     aspectRatio: 1,
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
-    backgroundColor: '#FFF',
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.06)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
     elevation: 2,
   },
   photoImageContainer: {
@@ -1247,53 +1478,43 @@ const styles = StyleSheet.create({
   photoImage: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
   },
   roomBadge: {
     position: 'absolute',
-    top: 6,
-    left: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.95)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   roomBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFF',
-    letterSpacing: 0.2,
-  },
-  assignButton: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 122, 255, 0.95)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    gap: 3,
-  },
-  assignButtonText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#FFF',
+    letterSpacing: 0.3,
   },
-  reassignButton: {
+  deletePhotoButton: {
     position: 'absolute',
-    bottom: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     width: 24,
     height: 24,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  deletePhotoButton: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   emptyState: {
     alignItems: 'center',
@@ -1315,81 +1536,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     lineHeight: 16,
   },
-  captureButtonsContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 32,
-    backgroundColor: '#FFF',
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    gap: 10,
-    zIndex: 100,
-  },
-  cameraButton: {
-    flex: 1,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 4,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cameraButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFF',
-    letterSpacing: -0.2,
-  },
-  galleryButton: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 4,
-    borderWidth: 1.5,
-    borderColor: '#007AFF',
-  },
-  galleryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#007AFF',
-    letterSpacing: -0.2,
-  },
   submitContainer: {
-    position: 'absolute',
-    bottom: 120,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    backgroundColor: 'transparent',
-    zIndex: 101,
+    marginTop: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
   },
   submitButton: {
     backgroundColor: '#34C759',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
-    borderRadius: 10,
-    gap: 6,
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
     shadowColor: '#34C759',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitButtonDisabled: {
     backgroundColor: '#C7C7CC',
@@ -1478,36 +1642,42 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   damageReportSection: {
-    marginTop: 16,
+    marginTop: 20,
     marginHorizontal: 16,
-    padding: 12,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    ...shadows.small,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   damageReportHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.xs,
+    gap: 8,
+    marginBottom: 12,
   },
   damageReportTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
     color: '#F59E0B',
   },
   damageReportInput: {
-    minHeight: 80,
-    padding: spacing.sm,
+    minHeight: 100,
+    padding: 12,
     backgroundColor: '#F8FAFC',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     fontSize: 13,
     color: '#1E293B',
   },
   bottomPadding: {
-    height: 180,
+    height: 32,
   },
   photoTipBanner: {
     position: 'absolute',
@@ -1607,132 +1777,235 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  // Valuable Items Styles
-  valuableItemsSection: {
+  // Valuable Items Styles - Matching Rooms Layout
+  valuableItemsCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 0,
-    marginTop: 8,
-    marginBottom: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 0,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    shadowColor: '#5856D6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   valuableItemsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 16,
+    gap: 10,
   },
-  valuableItemsHeaderLeft: {
-    flexDirection: 'row',
+  valuableItemsHeaderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
   },
   valuableItemsTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.4,
+    color: '#1F2937',
+    flex: 1,
   },
-  valuableItemsCount: {
-    backgroundColor: '#5856D615',
+  valuableItemsCountBadge: {
+    backgroundColor: '#5856D6',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
   },
   valuableItemsCountText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#5856D6',
-  },
-  valuableItemsSubtitle: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginBottom: 12,
-  },
-  valuableItemsList: {
-    gap: 10,
+    color: '#FFFFFF',
   },
   valuableItemCard: {
-    flexDirection: 'row',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
-    padding: 10,
-    alignItems: 'center',
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
-  valuableItemPhotoArea: {
-    width: 70,
-    height: 70,
-    borderRadius: 10,
-    backgroundColor: '#E5E5EA',
-    borderWidth: 2,
-    borderColor: '#5856D6',
-    borderStyle: 'dashed',
+  valuableItemCardComplete: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+  },
+  valuableItemHeader: {
+    marginBottom: 12,
+  },
+  valuableItemTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  valuableItemName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    flex: 1,
+  },
+  valuableItemCompleteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  valuableItemCompleteText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#10B981',
+  },
+  valuableItemRoom: {
+    fontSize: 13,
+    color: '#5856D6',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  valuableItemDescription: {
+    fontSize: 13,
+    color: '#64748B',
+    lineHeight: 18,
+  },
+  valuableItemActions: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    flexWrap: 'wrap',
+  },
+  valuableItemPhotoButton: {
+    flex: 1,
+    minWidth: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#5856D6',
+    gap: 6,
+    position: 'relative',
+    height: 44,
   },
-  valuableItemPhotoAreaComplete: {
-    borderStyle: 'solid',
-    borderColor: '#34C759',
+  valuableItemPhotoPreview: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
   valuableItemPhotoThumbnail: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
   },
-  valuableItemCheckmark: {
+  valuableItemPhotoOverlay: {
     position: 'absolute',
-    top: 4,
-    right: 4,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
   },
-  valuableItemPhotoText: {
-    fontSize: 10,
-    color: '#5856D6',
+  valuableItemPhotoButtonText: {
+    fontSize: 13,
     fontWeight: '600',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  valuableItemInfo: {
-    flex: 1,
-  },
-  valuableItemName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 2,
-  },
-  valuableItemRoom: {
-    fontSize: 12,
     color: '#5856D6',
-    fontWeight: '500',
-    marginBottom: 2,
   },
-  valuableItemDescription: {
+  referencePhotoContainer: {
+    marginBottom: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
+  referencePhotoLabel: {
     fontSize: 12,
-    color: '#8E8E93',
+    fontWeight: '600',
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  referencePhotoThumbnail: {
+    width: '100%',
+    height: 120,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    position: 'relative',
+  },
+  referencePhotoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  referencePhotoOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+  },
+  referencePhotoOverlayText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  referencePhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#5856D6',
+    gap: 6,
+    minWidth: 100,
+  },
+  referencePhotoText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#5856D6',
   },
   addNoteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#5856D6',
+    gap: 6,
+    minWidth: 100,
   },
   addNoteText: {
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '600',
     color: '#5856D6',
-    fontWeight: '500',
-  },
-  referencePhotoButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E5E5EA',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
   },
   // Valuable Item Modal
   valuableItemModalContent: {

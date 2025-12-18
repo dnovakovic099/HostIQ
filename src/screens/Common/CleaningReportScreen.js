@@ -30,6 +30,38 @@ try {
 const { width } = Dimensions.get('window');
 const PHOTO_SIZE = (width - 48) / 3;
 
+// Helper function to fix image URLs (convert production URLs to local when using local API)
+const fixImageUrl = (url) => {
+  if (!url) return url;
+  
+  // Ensure it's a string and trim whitespace
+  url = String(url).trim();
+  
+  // Check if it's already a full URL
+  const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
+  
+  if (isFullUrl) {
+    // Backend returned a full URL
+    // If it's pointing to production but we're using local API, replace it
+    const productionUrl = 'https://roomify-server-production.up.railway.app';
+    const baseUrl = API_URL.replace('/api', '');
+    
+    // Only replace if URL contains production domain AND we're using local API
+    if (url.includes(productionUrl) && !baseUrl.includes('roomify-server-production')) {
+      // Extract the path from the production URL and use local base
+      const path = url.replace(productionUrl, '');
+      return baseUrl + path;
+    }
+    // Otherwise use the full URL as-is
+    return url;
+  } else {
+    // It's a relative path (starts with /), construct full URL
+    const baseUrl = API_URL.replace('/api', '');
+    const path = url.startsWith('/') ? url : '/' + url;
+    return baseUrl + path;
+  }
+};
+
 const GRADE_COLORS = {
   'A+': '#10B981',
   'A': '#10B981',
@@ -361,7 +393,7 @@ export default function CleaningReportScreen({ route, navigation }) {
             {displayPhotos?.map((photo, index) => (
               <View key={photo.id || index} style={styles.photoWrapper}>
                 <Image
-                  source={{ uri: photo.url }}
+                  source={{ uri: fixImageUrl(photo.url) }}
                   style={styles.photo}
                   resizeMode="cover"
                 />

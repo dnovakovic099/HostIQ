@@ -10,6 +10,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -132,28 +133,42 @@ export default function PropertiesScreen({ navigation }) {
         })}
         activeOpacity={0.7}
       >
+        {/* Delete Button */}
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={() => handleDelete(item, isPMS)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Ionicons name="trash-outline" size={18} color={COLORS.error} />
+        </TouchableOpacity>
+
         {/* Header */}
         <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
+          <LinearGradient
+            colors={['#EFF6FF', '#DBEAFE']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.propertyIcon}
+          >
+            <Ionicons name="home" size={20} color={COLORS.primary} />
+          </LinearGradient>
+          
+          <View style={styles.cardHeaderContent}>
             {isPMS && (
-              <View style={styles.pmsBadge}>
-                <Ionicons name="cloud" size={10} color={COLORS.pms} />
+              <LinearGradient
+                colors={['#60A5FA', '#3B82F6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.pmsBadge}
+              >
+                <Ionicons name="cloud" size={10} color="#FFFFFF" />
                 <Text style={styles.pmsBadgeText}>{item.pmsProvider}</Text>
-              </View>
+              </LinearGradient>
             )}
             <Text style={styles.propertyName} numberOfLines={2}>{name}</Text>
+            <Text style={styles.address} numberOfLines={2}>{address}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            onPress={() => handleDelete(item, isPMS)}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <Ionicons name="trash-outline" size={18} color={COLORS.error} />
-          </TouchableOpacity>
         </View>
-
-        {/* Address */}
-        <Text style={styles.address} numberOfLines={2}>{address}</Text>
 
         {/* Footer */}
         <View style={styles.cardFooter}>
@@ -161,7 +176,7 @@ export default function PropertiesScreen({ navigation }) {
           <View style={styles.stats}>
             {!isPMS && unitCount > 0 && (
               <View style={styles.statPill}>
-                <Ionicons name="layers-outline" size={14} color={COLORS.textSecondary} />
+                <Ionicons name="layers-outline" size={14} color={COLORS.primary} />
                 <Text style={styles.statText}>{unitCount} unit{unitCount !== 1 ? 's' : ''}</Text>
               </View>
             )}
@@ -180,7 +195,9 @@ export default function PropertiesScreen({ navigation }) {
           </View>
 
           {/* Arrow */}
-          <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
+          <View style={styles.arrowButton}>
+            <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -188,9 +205,14 @@ export default function PropertiesScreen({ navigation }) {
 
   const renderEmpty = () => (
     <View style={styles.emptyState}>
-      <View style={styles.emptyIcon}>
+      <LinearGradient
+        colors={['#DBEAFE', '#BFDBFE']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.emptyIcon}
+      >
         <Ionicons name="home-outline" size={48} color={COLORS.primary} />
-      </View>
+      </LinearGradient>
       <Text style={styles.emptyTitle}>No Properties Yet</Text>
       <Text style={styles.emptyText}>
         Add your first property to start managing cleanings
@@ -198,8 +220,17 @@ export default function PropertiesScreen({ navigation }) {
       <TouchableOpacity
         style={styles.emptyButton}
         onPress={() => navigation.navigate('CreateProperty')}
+        activeOpacity={0.8}
       >
-        <Text style={styles.emptyButtonText}>Add Property</Text>
+        <LinearGradient
+          colors={['#60A5FA', '#3B82F6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.emptyButtonGradient}
+        >
+          <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+          <Text style={styles.emptyButtonText}>Add Property</Text>
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -217,8 +248,32 @@ export default function PropertiesScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* Header Gradient */}
+      <LinearGradient
+        colors={['#DBEAFE', '#93C5FD']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0.8 }}
+        style={styles.headerWrapper}
+      >
+        <SafeAreaView>
+          <View style={styles.headerGradient}>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="business" size={28} color={COLORS.primary} />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>My Properties</Text>
+              <Text style={styles.headerSubtitle}>
+                {allProperties.length} {allProperties.length === 1 ? 'property' : 'properties'}
+              </Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
       {/* Search */}
-      {hasProperties && (
+      {hasProperties && allProperties.length > 0 && (
         <View style={styles.searchWrapper}>
           <View style={styles.searchBar}>
             <Ionicons name="search" size={18} color={COLORS.textMuted} />
@@ -270,7 +325,9 @@ export default function PropertiesScreen({ navigation }) {
           activeOpacity={0.9}
         >
           <LinearGradient
-            colors={[COLORS.primary, '#3D7FD9']}
+            colors={['#60A5FA', '#3B82F6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={styles.fabGradient}
           >
             <Ionicons name="add" size={28} color="#FFF" />
@@ -292,11 +349,51 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.bg,
   },
+  // Header Gradient
+  headerWrapper: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
+  },
+  headerIconWrapper: {
+    marginRight: 14,
+  },
+  headerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+    
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#475569',
+    fontWeight: '500',
+  },
   // Search
   searchWrapper: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   searchBar: {
     flexDirection: 'row',
@@ -322,6 +419,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: COLORS.text,
+    
   },
   // List
   listContent: {
@@ -330,15 +428,18 @@ const styles = StyleSheet.create({
   },
   // Card
   card: {
+    position: 'relative',
     backgroundColor: COLORS.card,
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: '#3B82F6',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
+        shadowOpacity: 0.08,
         shadowRadius: 8,
       },
       android: {
@@ -346,48 +447,60 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  deleteBtn: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    padding: 4,
+    zIndex: 10,
+  },
   cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 6,
+    marginBottom: 12,
+    gap: 12,
   },
-  cardHeaderLeft: {
+  propertyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  cardHeaderContent: {
     flex: 1,
-    marginRight: 12,
+    paddingRight: 32,
   },
   pmsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: '#E3F2FD',
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: 6,
     gap: 4,
+    overflow: 'hidden',
     marginBottom: 6,
   },
   pmsBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: COLORS.pms,
+    color: '#FFFFFF',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   propertyName: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text,
     lineHeight: 22,
-  },
-  deleteBtn: {
-    padding: 4,
+    marginBottom: 4,
   },
   address: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
-    lineHeight: 20,
-    marginBottom: 12,
+    lineHeight: 18,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -395,7 +508,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: '#E0E7FF',
   },
   stats: {
     flexDirection: 'row',
@@ -404,7 +517,7 @@ const styles = StyleSheet.create({
   statPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#EFF6FF',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 8,
@@ -415,8 +528,16 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '600',
     color: COLORS.textSecondary,
+  },
+  arrowButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // Empty
   emptyState: {
@@ -428,10 +549,21 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   emptyTitle: {
     fontSize: 20,
@@ -447,10 +579,27 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   emptyButton: {
-    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  emptyButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 28,
     paddingVertical: 14,
-    borderRadius: 12,
+    gap: 8,
   },
   emptyButtonText: {
     fontSize: 16,
@@ -474,7 +623,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     ...Platform.select({
       ios: {
-        shadowColor: COLORS.primary,
+        shadowColor: '#3B82F6',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,

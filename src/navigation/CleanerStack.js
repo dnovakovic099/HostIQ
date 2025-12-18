@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import CleanerHistoryScreen from '../screens/Cleaner/CleanerHistoryScreen';
 import CreateInspectionScreen from '../screens/Cleaner/CreateInspectionScreen';
 import CaptureMediaScreen from '../screens/Cleaner/CaptureMediaScreen';
+import RoomCaptureScreen from '../screens/Cleaner/RoomCaptureScreen';
 // import VideoCaptureScreen from '../screens/Cleaner/VideoCaptureScreen'; // Temporarily disabled - missing expo-av
 import ReviewAndSubmitScreen from '../screens/Cleaner/ReviewAndSubmitScreen';
 import InspectionDetailScreen from '../screens/Common/InspectionDetailScreen';
@@ -40,7 +41,7 @@ export default function CleanerStack() {
       <Stack.Screen 
         name="CleanerHome" 
         component={CleanerHistoryScreen}
-        options={{ title: "HostIQ" }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="CreateInspection" 
@@ -50,6 +51,11 @@ export default function CleanerStack() {
       <Stack.Screen 
         name="CaptureMedia" 
         component={CaptureMediaScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="RoomCapture" 
+        component={RoomCaptureScreen}
         options={{ headerShown: false }}
       />
       {/* Temporarily disabled - missing expo-av

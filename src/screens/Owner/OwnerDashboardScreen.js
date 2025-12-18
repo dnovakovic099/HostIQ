@@ -11,6 +11,7 @@ import {
     Image,
     Dimensions,
     Platform,
+    StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -205,13 +206,13 @@ export default function OwnerDashboardScreen({ navigation }) {
                     end={{ x: 1, y: 1 }}
                     style={styles.welcomeSection}
                 >
-                    {/* Decorative circles */}
-                    <View style={styles.decorativeCircle1} />
-                    <View style={styles.decorativeCircle2} />
-
-                    {/* Property-themed icons */}
-                    <Ionicons name="home" size={80} color="rgba(59, 130, 246, 0.05)" style={styles.decorativeIcon1} />
-                    <Ionicons name="business" size={60} color="rgba(16, 185, 129, 0.04)" style={styles.decorativeIcon2} />
+                    {/* Decorative circles with icons */}
+                    <View style={styles.decorativeCircle1}>
+                        <Ionicons name="home" size={80} color="rgba(37, 86, 165, 0.05)" />
+                    </View>
+                    <View style={styles.decorativeCircle2}>
+                        <Ionicons name="business" size={60} color="rgba(16, 125, 89, 0.04)" />
+                    </View>
 
                     <View style={styles.welcomeContent}>
                         <Text style={styles.welcomeGreeting}>Hello! </Text>
@@ -453,62 +454,56 @@ const styles = StyleSheet.create({
     },
     // Welcome Section
     welcomeSection: {
-        paddingHorizontal: 20,
-        paddingTop: 32,
-        paddingBottom: 28,
+        paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 20 : 40,
+        paddingBottom: 60,
+        paddingLeft: 24,
+        paddingRight: 24,
         position: 'relative',
         overflow: 'hidden',
         borderBottomLeftRadius: 32,
         borderBottomRightRadius: 32,
+        marginHorizontal: 0,
+        marginBottom: 0,
     },
     welcomeContent: {
-        zIndex: 2,
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        zIndex: 1,
     },
     welcomeGreeting: {
-        fontSize: 16,
+        marginTop: 30,
+        fontSize: 32,
+        fontWeight: '300',
         color: COLORS.text.secondary,
-        fontWeight: '500',
-        marginBottom: 4,
     },
     welcomeName: {
-        fontSize: 36,
-        fontWeight: '800',
+        fontSize: 32,
+        fontWeight: '700',
         color: COLORS.text.primary,
-        letterSpacing: -1.2,
     },
     decorativeCircle1: {
         position: 'absolute',
         width: 200,
         height: 200,
         borderRadius: 100,
-        backgroundColor: 'rgba(59, 130, 246, 0.08)',
-        top: -80,
-        right: -50,
-        zIndex: 1,
+        backgroundColor: 'rgba(59, 130, 246, 0.06)',
+        top: -60,
+        right: -40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 0,
     },
     decorativeCircle2: {
         position: 'absolute',
         width: 150,
         height: 150,
         borderRadius: 75,
-        backgroundColor: 'rgba(16, 185, 129, 0.06)',
-        bottom: -40,
+        backgroundColor: 'rgba(16, 185, 129, 0.04)',
+        bottom: -30,
         left: -30,
-        zIndex: 1,
-    },
-    decorativeIcon1: {
-        position: 'absolute',
-        top: 20,
-        right: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
         zIndex: 0,
-        opacity: 0.4,
-    },
-    decorativeIcon2: {
-        position: 'absolute',
-        bottom: 15,
-        left: 40,
-        zIndex: 0,
-        opacity: 0.3,
     },
     // Usage Section
     usageSection: {

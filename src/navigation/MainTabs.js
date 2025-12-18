@@ -50,7 +50,7 @@ function PropertiesStack() {
       <Stack.Screen 
         name="PropertiesList" 
         component={PropertiesScreen}
-        options={{ title: 'My Properties' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="PropertyDetail" 

@@ -14,9 +14,42 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/client';
+import { API_URL } from '../../config/api';
 import colors, { getScoreColor } from '../../theme/colors';
 
 const { width } = Dimensions.get('window');
+
+// Helper function to fix image URLs (convert production URLs to local when using local API)
+const fixImageUrl = (url) => {
+  if (!url) return url;
+  
+  // Ensure it's a string and trim whitespace
+  url = String(url).trim();
+  
+  // Check if it's already a full URL
+  const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
+  
+  if (isFullUrl) {
+    // Backend returned a full URL
+    // If it's pointing to production but we're using local API, replace it
+    const productionUrl = 'https://roomify-server-production.up.railway.app';
+    const baseUrl = API_URL.replace('/api', '');
+    
+    // Only replace if URL contains production domain AND we're using local API
+    if (url.includes(productionUrl) && !baseUrl.includes('roomify-server-production')) {
+      // Extract the path from the production URL and use local base
+      const path = url.replace(productionUrl, '');
+      return baseUrl + path;
+    }
+    // Otherwise use the full URL as-is
+    return url;
+  } else {
+    // It's a relative path (starts with /), construct full URL
+    const baseUrl = API_URL.replace('/api', '');
+    const path = url.startsWith('/') ? url : '/' + url;
+    return baseUrl + path;
+  }
+};
 
 export default function InspectionDetailScreen({ route, navigation }) {
   const { inspectionId, userRole } = route?.params || {};
@@ -846,7 +879,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
                     {roomMedia.map((media, index) => (
                       <View key={media.id || index} style={styles.photoContainer}>
                         <Image
-                          source={{ uri: media.url }}
+                          source={{ uri: fixImageUrl(media.url) }}
                           style={styles.photoThumbnail}
                           resizeMode="cover"
                         />

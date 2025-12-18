@@ -9,6 +9,7 @@ import BillingScreen from '../screens/Owner/BillingScreen';
 import ManageCleanersScreen from '../screens/Owner/ManageCleanersScreen';
 import CreatePropertyScreen from '../screens/Owner/CreatePropertyScreen';
 import AssignCleanerScreen from '../screens/Owner/AssignCleanerScreen';
+import CleanerAssignmentsScreen from '../screens/Owner/CleanerAssignmentsScreen';
 import InspectionReportsScreen from '../screens/Owner/InspectionReportsScreen';
 import ListingOptimizationScreen from '../screens/Owner/ListingOptimizationScreen';
 import SubscriptionManagementScreen from '../screens/Owner/SubscriptionManagementScreen';
@@ -45,12 +46,12 @@ export default function OwnerStack() {
       <Stack.Screen 
         name="OwnerDashboard" 
         component={OwnerDashboardScreen}
-        options={{ title: 'Dashboard' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="ManageCleaners" 
         component={ManageCleanersScreen}
-        options={{ title: 'Manage Cleaners' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="CreateProperty" 
@@ -60,7 +61,12 @@ export default function OwnerStack() {
       <Stack.Screen 
         name="AssignCleaner" 
         component={AssignCleanerScreen}
-        options={{ title: 'Assign Cleaner' }}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="CleanerAssignments" 
+        component={CleanerAssignmentsScreen}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="InspectionReports" 
