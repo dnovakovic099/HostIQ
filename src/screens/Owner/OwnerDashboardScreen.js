@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -199,81 +199,99 @@ export default function OwnerDashboardScreen({ navigation }) {
                     <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.accent} />
                 }
             >
-                {/* Welcome Header */}
-                <LinearGradient
-                    colors={['#EBF4FF', '#F8FBFF', COLORS.background]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.welcomeSection}
-                >
-                    {/* Decorative circles with icons */}
-                    <View style={styles.decorativeCircle1}>
-                        <Ionicons name="home" size={80} color="rgba(37, 86, 165, 0.05)" />
-                    </View>
-                    <View style={styles.decorativeCircle2}>
-                        <Ionicons name="business" size={60} color="rgba(16, 125, 89, 0.04)" />
-                    </View>
+                {/* Welcome Header with Integrated Quick Actions */}
+                <View style={styles.headerContainer}>
+                    <LinearGradient
+                        colors={['#B8D4E8', '#A8C5E0', '#8BB3D6', '#6FA0CC']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.welcomeSection}
+                    >
+                        {/* Animated decorative elements */}
+                        <View style={styles.decorativeCircle1}>
+                            <Ionicons name="home" size={100} color="rgba(66, 165, 245, 0.22)" />
+                        </View>
+                        <View style={styles.decorativeCircle2}>
+                            <Ionicons name="business" size={70} color="rgba(66, 165, 245, 0.22)" />
+                        </View>
+                        <View style={styles.decorativeCircle3}>
+                            <Ionicons name="bed" size={50} color="rgba(33, 150, 243, 0.20)" />
+                        </View>
 
-                    <View style={styles.welcomeContent}>
-                        <Text style={styles.welcomeGreeting}>Hello! </Text>
-                        <Text style={styles.welcomeName}>{userName}</Text>
-                    </View>
-                </LinearGradient>
+                        <View style={styles.welcomeContent}>
+                            <Text style={styles.welcomeGreeting}>Hello, </Text>
+                            <Text style={styles.welcomeName}>{userName}!</Text>
+                        </View>
+                        <Text style={styles.welcomeSubtitle}>Manage your properties with ease</Text>
+                    </LinearGradient>
 
-                {/* Usage Indicator */}
-                {/* <LinearGradient
-                    colors={['rgba(59, 130, 246, 0.03)', 'transparent']}
-                    style={styles.usageSection}
-                >
-                    <UsageIndicator navigation={navigation} />
-                </LinearGradient> */}
+                    {/* Quick Actions Card - Floating above header */}
+                    <View style={styles.quickActionsCard}>
+                        <View style={styles.quickActions}>
+                            <TouchableOpacity
+                                style={styles.quickActionBtn}
+                                onPress={() => navigation.navigate('Properties', { screen: 'CreateProperty' })}
+                                activeOpacity={0.7}
+                            >
+                                <LinearGradient
+                                    colors={['#A8D5E2', '#7EC8E3']}
+                                    style={styles.quickActionCircle}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                >
+                                    <Ionicons name="home" size={22} color="#FFFFFF" />
+                                </LinearGradient>
+                                <Text style={styles.quickActionText}>Property</Text>
+                            </TouchableOpacity>
 
-                {/* Quick Actions */}
-                <View style={styles.quickActionsContainer}>
-                    <View style={styles.quickActions}>
-                        <TouchableOpacity
-                            style={styles.quickActionBtn}
-                            onPress={() => navigation.navigate('Properties', { screen: 'CreateProperty' })}
-                            activeOpacity={0.8}
-                        >
-                            <View style={[styles.quickActionCircle, { backgroundColor: '#A8D5E2' }]}>
-                                <Ionicons name="home" size={24} color="#2C6B7F" />
-                            </View>
-                            <Text style={styles.quickActionText}>Property</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.quickActionBtn}
+                                onPress={() => navigation.navigate('ManageCleaners')}
+                                activeOpacity={0.7}
+                            >
+                                <LinearGradient
+                                    colors={['#D4C5F9', '#B794F6']}
+                                    style={styles.quickActionCircle}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                >
+                                    <Ionicons name="people" size={20} color="#FFFFFF" />
+                                </LinearGradient>
+                                <Text style={styles.quickActionText}>Team</Text>
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.quickActionBtn}
-                            onPress={() => navigation.navigate('ManageCleaners')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={[styles.quickActionCircle, { backgroundColor: '#D4C5F9' }]}>
-                                <Ionicons name="people" size={22} color="#6B4BA1" />
-                            </View>
-                            <Text style={styles.quickActionText}>Team</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.quickActionBtn}
+                                onPress={() => navigation.navigate('SubscriptionManagement')}
+                                activeOpacity={0.7}
+                            >
+                                <LinearGradient
+                                    colors={['#FFD4C4', '#FFB8A3']}
+                                    style={styles.quickActionCircle}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                >
+                                    <Ionicons name="card" size={20} color="#FFFFFF" />
+                                </LinearGradient>
+                                <Text style={styles.quickActionText}>Plans</Text>
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.quickActionBtn}
-                            onPress={() => navigation.navigate('SubscriptionManagement')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={[styles.quickActionCircle, { backgroundColor: '#FFD4C4' }]}>
-                                <Ionicons name="card" size={22} color="#C76640" />
-                            </View>
-                            <Text style={styles.quickActionText}>Plans</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.quickActionBtn}
-                            onPress={() => navigation.navigate('Insights')}
-                            activeOpacity={0.8}
-                        >
-                            <View style={[styles.quickActionCircle, { backgroundColor: '#C4D7FF' }]}>
-                                <Ionicons name="analytics" size={22} color="#4A6FA5" />
-                            </View>
-                            <Text style={styles.quickActionText}>Issues</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.quickActionBtn}
+                                onPress={() => navigation.navigate('Insights')}
+                                activeOpacity={0.7}
+                            >
+                                <LinearGradient
+                                    colors={['#C4D7FF', '#93C5FD']}
+                                    style={styles.quickActionCircle}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                >
+                                    <Ionicons name="analytics" size={20} color="#FFFFFF" />
+                                </LinearGradient>
+                                <Text style={styles.quickActionText}>Issues</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
 
@@ -452,55 +470,80 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: COLORS.background,
     },
+    // Header Container
+    headerContainer: {
+        position: 'relative',
+        marginBottom: 20,
+    },
     // Welcome Section
     welcomeSection: {
-        paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 20 : 40,
-        paddingBottom: 60,
+        paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 20 : 50,
+        paddingBottom: 100,
         paddingLeft: 24,
         paddingRight: 24,
         position: 'relative',
         overflow: 'hidden',
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
         marginHorizontal: 0,
         marginBottom: 0,
     },
     welcomeContent: {
         flexDirection: 'row',
         alignItems: 'baseline',
+        flexWrap: 'wrap',
         zIndex: 1,
+        marginBottom: 8,
     },
     welcomeGreeting: {
-        marginTop: 30,
-        fontSize: 32,
-        fontWeight: '300',
-        color: COLORS.text.secondary,
+        fontSize: 28,
+        fontWeight: '400',
+        color: 'rgba(47, 47, 47, 0.95)',
     },
     welcomeName: {
-        fontSize: 32,
+        fontSize: 28,
         fontWeight: '700',
-        color: COLORS.text.primary,
+        color: 'rgba(47, 47, 47, 0.95)',
+    },
+    welcomeSubtitle: {
+        fontSize: 15,
+        fontWeight: '500',
+        color: 'rgba(90, 89, 89, 0.95)',
+        marginTop: 4,
+        zIndex: 1,
     },
     decorativeCircle1: {
         position: 'absolute',
-        width: 200,
-        height: 200,
-        borderRadius: 100,
-        backgroundColor: 'rgba(59, 130, 246, 0.06)',
+        width: 220,
+        height: 220,
+        borderRadius: 110,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         top: -60,
-        right: -40,
+        right: -50,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 0,
     },
     decorativeCircle2: {
         position: 'absolute',
-        width: 150,
-        height: 150,
-        borderRadius: 75,
-        backgroundColor: 'rgba(16, 185, 129, 0.04)',
-        bottom: -30,
-        left: -30,
+        width: 180,
+        height: 180,
+        borderRadius: 90,
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        bottom: -10,
+        left: -40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 0,
+    },
+    decorativeCircle3: {
+        position: 'absolute',
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        top: 60,
+        right: 80,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 0,
@@ -513,7 +556,7 @@ const styles = StyleSheet.create({
     // Section
     section: {
         paddingHorizontal: 16,
-        marginTop: 20,
+        marginTop: 40,
     },
     sectionTitle: {
         fontSize: 22,
@@ -544,33 +587,64 @@ const styles = StyleSheet.create({
         color: COLORS.text.secondary,
         fontWeight: '700',
     },
-    // Quick Actions
-    quickActionsContainer: {
-        paddingVertical: 24,
-        paddingHorizontal: 16,
+    // Quick Actions Card
+    quickActionsCard: {
+        position: 'absolute',
+        bottom: -35,
+        left: 16,
+        right: 16,
+        backgroundColor: COLORS.card,
+        borderRadius: 20,
+        paddingVertical: 18,
+        paddingHorizontal: 10,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.15,
+                shadowRadius: 20,
+            },
+            android: {
+                elevation: 8,
+            },
+        }),
+        borderWidth: 1,
+        borderColor: 'rgba(15, 23, 42, 0.06)',
     },
     quickActions: {
         flexDirection: 'row',
-        justifyContent: 'center',
-        gap: 28,
+        justifyContent: 'space-around',
+        alignItems: 'center',
     },
     quickActionBtn: {
         alignItems: 'center',
-        width: 72,
+        flex: 1,
     },
     quickActionCircle: {
-        width: 60,
-        height: 60,
-        borderRadius: 18,
+        width: 55,
+        height: 55,
+        borderRadius: 16,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 6,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.18,
+                shadowRadius: 6,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
     },
     quickActionText: {
-        fontSize: 13,
-        color: COLORS.text.secondary,
-        fontWeight: '600',
+        fontSize: 11,
+        color: COLORS.text.primary,
+        fontWeight: '700',
         textAlign: 'center',
+        letterSpacing: -0.2,
     },
     // Alert
     alertCard: {

@@ -11,16 +11,21 @@ import {
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 import { ROOM_SUGGESTIONS, getRoomSuggestionByType } from '../../config/roomSuggestions';
 
 export default function CreatePropertyScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   // Wizard state
   const [step, setStep] = useState(1); // 1: Property Info, 2: Add Rooms, 3: Review
 
   // Property details
   const [propertyName, setPropertyName] = useState('');
   const [address, setAddress] = useState('');
+  
+  // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
+  const tabBarHeight = 110 + insets.bottom;
 
   // Rooms
   const [rooms, setRooms] = useState([]);
@@ -446,7 +451,7 @@ export default function CreatePropertyScreen({ navigation }) {
       </View>
 
       {/* Navigation Buttons */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: tabBarHeight }]}>
         {step > 1 && (
           <TouchableOpacity
             style={[styles.footerButton, styles.backButton]}
@@ -793,6 +798,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    marginBottom: 80,
   },
   stepContent: {
     flex: 1,
@@ -1041,8 +1047,13 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     padding: 16,
+    paddingTop: 16,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',

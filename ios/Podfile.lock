@@ -31,13 +31,19 @@ PODS:
     - ExpoModulesCore
   - ExpoLocalAuthentication (13.4.1):
     - ExpoModulesCore
+  - ExpoMailComposer (12.3.0):
+    - ExpoModulesCore
   - ExpoModulesCore (1.5.13):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
     - React-NativeModulesApple
     - React-RCTAppDelegate
     - ReactCommon/turbomodule/core
+  - ExpoPrint (12.4.2):
+    - ExpoModulesCore
   - ExpoSecureStore (12.3.1):
+    - ExpoModulesCore
+  - ExpoSharing (11.5.0):
     - ExpoModulesCore
   - EXSplashScreen (0.20.5):
     - ExpoModulesCore
@@ -488,6 +494,8 @@ PODS:
   - RNScreens (3.22.1):
     - React-Core
     - React-RCTImage
+  - RNSVG (15.15.1):
+    - React-Core
   - SocketRocket (0.6.1)
   - Yoga (1.14.0)
 
@@ -508,8 +516,11 @@ DEPENDENCIES:
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoLinearGradient (from `../node_modules/expo-linear-gradient/ios`)
   - ExpoLocalAuthentication (from `../node_modules/expo-local-authentication/ios`)
+  - ExpoMailComposer (from `../node_modules/expo-mail-composer/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
+  - ExpoPrint (from `../node_modules/expo-print/ios`)
   - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
+  - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - EXSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - FBReactNativeSpec (from `../node_modules/react-native/React/FBReactNativeSpec`)
@@ -557,6 +568,7 @@ DEPENDENCIES:
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNIap (from `../node_modules/react-native-iap`)
   - RNScreens (from `../node_modules/react-native-screens`)
+  - RNSVG (from `../node_modules/react-native-svg`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
@@ -598,10 +610,16 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-linear-gradient/ios"
   ExpoLocalAuthentication:
     :path: "../node_modules/expo-local-authentication/ios"
+  ExpoMailComposer:
+    :path: "../node_modules/expo-mail-composer/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
+  ExpoPrint:
+    :path: "../node_modules/expo-print/ios"
   ExpoSecureStore:
     :path: "../node_modules/expo-secure-store/ios"
+  ExpoSharing:
+    :path: "../node_modules/expo-sharing/ios"
   EXSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
   FBLazyVector:
@@ -692,6 +710,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-iap"
   RNScreens:
     :path: "../node_modules/react-native-screens"
+  RNSVG:
+    :path: "../node_modules/react-native-svg"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
@@ -712,8 +732,11 @@ SPEC CHECKSUMS:
   ExpoKeepAwake: 8ab1087501f5ccb91146447756b787575b13f13e
   ExpoLinearGradient: 1db30c60fe141f185b0ca5556cc85deb3ee9f245
   ExpoLocalAuthentication: 1cda963cd342803e67405c28466913312ee2a964
+  ExpoMailComposer: 218fc7ad8b2a6a5ffa1c5eefaebb439c96af7188
   ExpoModulesCore: 3312621274fbba06fe382a37d8218a43cd522823
+  ExpoPrint: 4a03df176e5f20b7ee4ba3fce98b5557b54ed667
   ExpoSecureStore: 4682182dd6bdbd73dde41e91d0a4e205a96b819f
+  ExpoSharing: 2a0c99d8b3b2e99a47196d8dda2b62ccd9829d38
   EXSplashScreen: 84a7d9a965a2203e138528326fc3a511818e3fd1
   FBLazyVector: f91d538f197fa71a7d5b77ec2069d49550c0eb96
   FBReactNativeSpec: b13d1c23d6ed82d6b66aad7a253edf8ba76c4a4c
@@ -761,6 +784,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: 627182485becfd74f122c83f93cce2be20c2e8c8
   RNIap: 65051c94a29a17bd8356bcf16a878821862eecd0
   RNScreens: 39db1910d2ea9ae885dcda43086818e9f8b714d0
+  RNSVG: 843cb94bebafcbd6e86842ac76d2c5d4836ba0a0
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
   Yoga: d0003f849d2b5224c072cef6568b540d8bb15cd3
 

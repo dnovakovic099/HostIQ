@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/client';
+import CustomTabBar from '../components/CustomTabBar';
 import CleanerStack from './CleanerStack';
 import OwnerStack from './OwnerStack';
 import SettingsScreen from '../screens/Common/SettingsScreen';
@@ -193,30 +194,10 @@ export default function MainTabs() {
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
-          if (route.name === 'HomeTab') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Inspections') {
-            iconName = focused ? 'clipboard' : 'clipboard-outline';
-          } else if (route.name === 'Properties') {
-            iconName = focused ? 'business' : 'business-outline';
-          } else if (route.name === 'Pricing') {
-            iconName = focused ? 'pricetag' : 'pricetag-outline';
-          } else if (route.name === 'Insights') {
-            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
-          } else if (route.name === 'Settings') {
-            iconName = focused ? 'settings' : 'settings-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#4A90E2',
-        tabBarInactiveTintColor: 'gray',
+      tabBar={(props) => <CustomTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-      })}
+      }}
     >
       {isCleaner && (
         <Tab.Screen 
@@ -243,13 +224,11 @@ export default function MainTabs() {
             component={InsightsStack}
             options={{ title: 'Insights' }}
           />
-          {hasPMSConnected && (
-            <Tab.Screen 
-              name="Pricing" 
-              component={PricingStack}
-              options={{ title: 'Pricing' }}
-            />
-          )}
+          <Tab.Screen 
+            name="Pricing" 
+            component={PricingStack}
+            options={{ title: 'Pricing' }}
+          />
         </>
       )}
 

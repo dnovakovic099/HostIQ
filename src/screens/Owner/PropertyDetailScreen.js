@@ -42,10 +42,14 @@ export default function PropertyDetailScreen({ route, navigation }) {
   const [saving, setSaving] = useState(false);
   const [togglingFiveStar, setTogglingFiveStar] = useState(false);
   
-  const [addRoomModal, setAddRoomModal] = useState(false);
-  const [newRoomName, setNewRoomName] = useState('');
-  const [newRoomType, setNewRoomType] = useState('bedroom');
+  const [showRoomPicker, setShowRoomPicker] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [editingRoom, setEditingRoom] = useState(null);
+  const [selectedRoomType, setSelectedRoomType] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [addingRoom, setAddingRoom] = useState(false);
+  const [selectedUnitForRoom, setSelectedUnitForRoom] = useState(null);
 
   useEffect(() => {
     if (isPMS) {
@@ -152,24 +156,197 @@ export default function PropertyDetailScreen({ route, navigation }) {
     }
   };
 
-  const handleAddRoom = async () => {
-    if (!newRoomName.trim()) {
+  const addRoomFromType = async (roomType) => {
+    setSelectedRoomType(roomType);
+    setShowRoomPicker(false);
+
+    // Fetch templates for this room type
+    setLoadingTemplates(true);
+    try {
+      const response = await api.get('/room-templates');
+      const allTemplates = response.data.templates || [];
+      const typeTemplates = allTemplates.filter(t => t.room_type === roomType);
+
+      if (typeTemplates.length > 0) {
+        setTemplates(typeTemplates);
+        setShowTemplatePicker(true);
+      } else {
+        // No templates, create room from scratch
+        createRoomFromScratch(roomType);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      // If error, create from scratch
+      createRoomFromScratch(roomType);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const createRoomFromScratch = (roomType) => {
+    const suggestion = getRoomSuggestionByType(roomType);
+    const allRooms = getAllRooms();
+    const count = allRooms.filter(r => r.room_type === roomType).length;
+
+    const newRoom = {
+      id: Date.now().toString(),
+      name: count > 0 ? `${suggestion.defaultName} ${count + 1}` : suggestion.defaultName,
+      room_type: roomType,
+      tips: '',
+      exampleTips: suggestion.exampleTips,
+    };
+
+    setEditingRoom(newRoom);
+  };
+
+  const createRoomFromTemplate = (template) => {
+    const allRooms = getAllRooms();
+    const count = allRooms.filter(r => r.room_type === template.room_type).length;
+
+    const newRoom = {
+      id: Date.now().toString(),
+      name: count > 0 ? `${template.name} ${count + 1}` : template.name,
+      room_type: template.room_type,
+      tips: template.tips || '',
+      exampleTips: getRoomSuggestionByType(template.room_type).exampleTips,
+    };
+
+    setEditingRoom(newRoom);
+    setShowTemplatePicker(false);
+  };
+
+  const insertExampleTip = (tip) => {
+    if (!editingRoom) return;
+    const currentTips = editingRoom.tips.trim();
+    const newTips = currentTips
+      ? `${currentTips}\n• ${tip}`
+      : `• ${tip}`;
+    setEditingRoom({ ...editingRoom, tips: newTips });
+  };
+
+  const saveRoom = async () => {
+    if (!editingRoom || !editingRoom.name.trim()) {
       Alert.alert('Error', 'Please enter a room name');
       return;
     }
-    
+
+    if (!editingRoom.tips || !editingRoom.tips.trim()) {
+      Alert.alert('Required', 'Please add cleaning tips for this room');
+      return;
+    }
+
+    // For non-PMS properties, need to select a unit
+    if (!isPMS && !selectedUnitForRoom) {
+      if (units.length === 0) {
+        Alert.alert('Error', 'No units available. Please create a unit first.');
+        return;
+      }
+      // Auto-select first unit if only one exists
+      if (units.length === 1) {
+        setSelectedUnitForRoom(units[0]);
+      } else {
+        Alert.alert('Error', 'Please select a unit to add the room to');
+        return;
+      }
+    }
+
     setAddingRoom(true);
     try {
-      const response = await api.post(`/pms/properties/${propertyId}/rooms`, {
-        name: newRoomName.trim(),
-        room_type: newRoomType,
-      });
-      setRooms([...rooms, response.data]);
-      setAddRoomModal(false);
-      setNewRoomName('');
-      setNewRoomType('bedroom');
+      let response;
+      let unitId;
+
+      // Use same room format as CreatePropertyScreen: name, room_type, tips
+      const roomPayload = {
+        name: editingRoom.name.trim(),
+        room_type: editingRoom.room_type,
+        tips: editingRoom.tips.trim() || '',
+      };
+
+      if (isPMS) {
+        // PMS properties: add room directly to property
+        response = await api.post(`/pms/properties/${propertyId}/rooms`, roomPayload);
+        setRooms([...rooms, response.data]);
+      } else {
+        // Non-PMS properties: add room to unit (same pattern as valuable items)
+        // Follow pattern: POST /valuable-items/room/${roomId} -> POST /owner/rooms with unit_id
+        unitId = selectedUnitForRoom?.id || units[0]?.id;
+        
+        // Use same pattern as valuable items: POST with unit_id in payload
+        const roomPayloadWithUnit = {
+          ...roomPayload,
+          unit_id: unitId,
+        };
+        
+        
+        
+        // POST /owner/rooms (same pattern as valuable items)
+        response = await api.post('/owner/rooms', roomPayloadWithUnit);
+        console.log('✅ Room added successfully');
+        
+        // Refresh units to get updated room list
+        await fetchUnits();
+        
+        // Check if unit was created by a cleaner and auto-assign (only once, when first room is added)
+        const updatedUnitsResponse = await api.get(`/owner/properties/${propertyId}/units`);
+        const updatedUnit = updatedUnitsResponse.data.find(u => u.id === unitId);
+        const selectedUnit = units.find(u => u.id === unitId);
+        
+        // Only auto-assign if:
+        // 1. Unit was created by cleaner
+        // 2. This is the first room being added (unit had no rooms before)
+        // 3. No completed inspection exists for this unit
+        const hadNoRoomsBefore = !selectedUnit?.rooms || selectedUnit.rooms.length === 0;
+        const hasCompletedInspection = updatedUnit?.inspections?.some(
+          inv => inv.status === 'COMPLETE' || inv.status === 'APPROVED' || inv.status === 'SUBMITTED'
+        );
+        
+        if (updatedUnit?.created_by_cleaner_id && hadNoRoomsBefore && !hasCompletedInspection) {
+          // Check if assignment already exists for this unit
+          try {
+            // Get cleaner's assignments from /owner/cleaners endpoint
+            const cleanersResponse = await api.get('/owner/cleaners');
+            const cleaner = cleanersResponse.data.find(
+              c => String(c.id) === String(updatedUnit.created_by_cleaner_id)
+            );
+            
+            const existingAssignment = cleaner?.assignments?.find(
+              a => String(a.unit_id) === String(unitId) && 
+                   (a.status === 'PENDING' || a.status === 'IN_PROGRESS')
+            );
+            
+            if (!existingAssignment) {
+              // No existing assignment, create one
+              await api.post('/owner/assignments/bulk', {
+                cleaner_id: updatedUnit.created_by_cleaner_id,
+                unit_ids: [unitId],
+                due_at: new Date().toISOString(),
+              });
+              
+              Alert.alert(
+                'Success',
+                'Room added and cleaner assigned!',
+                [{ text: 'OK' }]
+              );
+            } else {
+              // Assignment already exists
+              Alert.alert('Success', 'Room added successfully!');
+            }
+          } catch (assignError) {
+            console.error('Auto-assignment error:', assignError);
+            // Still show success for room addition even if assignment fails
+            Alert.alert('Success', 'Room added successfully!');
+          }
+        } else {
+          // Room added successfully, no auto-assignment needed
+          Alert.alert('Success', 'Room added successfully!');
+        }
+      }
+
+      setEditingRoom(null);
+      setSelectedUnitForRoom(null);
     } catch (error) {
-      Alert.alert('Error', 'Failed to add room');
+      console.error('Save room error:', error);
+      Alert.alert('Error', error.response?.data?.error || 'Failed to save room');
     } finally {
       setAddingRoom(false);
     }
@@ -367,11 +544,19 @@ export default function PropertyDetailScreen({ route, navigation }) {
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionHeader}>ROOMS</Text>
-            {isPMS && (
-              <TouchableOpacity onPress={() => setAddRoomModal(true)}>
-                <Text style={styles.addButton}>Add</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => {
+                // Auto-select first unit if only one exists
+                if (!isPMS && units.length === 1) {
+                  setSelectedUnitForRoom(units[0]);
+                }
+                setShowRoomPicker(true);
+              }}
+            >
+              <Ionicons name="add" size={14} color={COLORS.primary} />
+              <Text style={styles.addButtonText}>Add</Text>
+            </TouchableOpacity>
           </View>
           
           {allRooms.length === 0 ? (
@@ -379,13 +564,16 @@ export default function PropertyDetailScreen({ route, navigation }) {
               <Ionicons name="bed-outline" size={40} color={COLORS.textTertiary} />
               <Text style={styles.emptyTitle}>No Rooms</Text>
               <Text style={styles.emptyText}>
-                {isPMS ? 'Add rooms to enable inspections' : 'Add rooms when editing the property'}
+                Add rooms to enable inspections
               </Text>
-              {isPMS && (
-                <TouchableOpacity style={styles.emptyButton} onPress={() => setAddRoomModal(true)}>
-                  <Text style={styles.emptyButtonText}>Add Room</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity style={styles.emptyButton} onPress={() => {
+                if (!isPMS && units.length === 1) {
+                  setSelectedUnitForRoom(units[0]);
+                }
+                setShowRoomPicker(true);
+              }}>
+                <Text style={styles.emptyButtonText}>Add Room</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.card}>
@@ -421,9 +609,9 @@ export default function PropertyDetailScreen({ route, navigation }) {
                       <View style={styles.tipsBox}>
                         <View style={styles.tipsHeader}>
                           <Text style={styles.tipsLabel}>Cleaning Tips</Text>
-                          <TouchableOpacity onPress={() => openEditModal('tips', room)}>
+                          {/* <TouchableOpacity onPress={() => openEditModal('tips', room)}>
                             <Text style={styles.editLink}>Edit</Text>
-                          </TouchableOpacity>
+                          </TouchableOpacity> */}
                         </View>
                         <Text style={[styles.tipsText, !room.tips && styles.tipsEmpty]}>
                           {room.tips || 'No tips added'}
@@ -514,13 +702,13 @@ export default function PropertyDetailScreen({ route, navigation }) {
 
       {/* Edit Modal */}
       <Modal visible={editModal.visible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+        <View style={styles.editModalOverlay}>
           <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
+            <View style={styles.editModalHeader}>
               <TouchableOpacity onPress={() => setEditModal({ visible: false, type: null, data: null })}>
                 <Text style={styles.modalCancel}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>
+              <Text style={styles.editModalTitle}>
                 {editModal.type === 'name' ? 'Name' : 
                  editModal.type === 'address' ? 'Address' : 'Tips'}
               </Text>
@@ -546,70 +734,259 @@ export default function PropertyDetailScreen({ route, navigation }) {
         </View>
       </Modal>
 
-      {/* Add Room Modal */}
-      <Modal visible={addRoomModal} transparent animationType="slide">
+      {/* Room Type Picker Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showRoomPicker}
+        onRequestClose={() => setShowRoomPicker(false)}
+      >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={() => {
-                setAddRoomModal(false);
-                setNewRoomName('');
-                setNewRoomType('bedroom');
-              }}>
-                <Text style={styles.modalCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Add Room</Text>
-              <TouchableOpacity onPress={handleAddRoom} disabled={addingRoom}>
-                {addingRoom ? (
-                  <ActivityIndicator size="small" color={COLORS.primary} />
-                ) : (
-                  <Text style={styles.modalSave}>Add</Text>
-                )}
+              <Text style={styles.modalTitle}>Choose Room Type</Text>
+              <TouchableOpacity onPress={() => setShowRoomPicker(false)}>
+                <Ionicons name="close" size={28} color="#333" />
               </TouchableOpacity>
             </View>
-            
-            <Text style={styles.inputLabel}>Room Name</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={newRoomName}
-              onChangeText={setNewRoomName}
-              placeholder="e.g., Master Bedroom"
-              placeholderTextColor={COLORS.textTertiary}
-              autoFocus
-            />
-            
-            <Text style={styles.inputLabel}>Room Type</Text>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.typeScroll}
-            >
-              {ROOM_SUGGESTIONS.map(type => (
+
+            <ScrollView style={styles.roomTypeList}>
+              {ROOM_SUGGESTIONS.map((suggestion) => (
                 <TouchableOpacity
-                  key={type.type}
-                  style={[
-                    styles.typeChip,
-                    newRoomType === type.type && styles.typeChipActive
-                  ]}
-                  onPress={() => setNewRoomType(type.type)}
+                  key={suggestion.type}
+                  style={styles.roomTypeOption}
+                  onPress={() => addRoomFromType(suggestion.type)}
                 >
-                  <Ionicons 
-                    name={type.icon} 
-                    size={16} 
-                    color={newRoomType === type.type ? '#FFF' : COLORS.textSecondary} 
-                  />
-                  <Text style={[
-                    styles.typeChipText,
-                    newRoomType === type.type && styles.typeChipTextActive
-                  ]}>
-                    {type.label}
-                  </Text>
+                  <View style={styles.roomTypeLeft}>
+                    <View style={styles.roomTypeIconContainer}>
+                      <Ionicons name={suggestion.icon} size={28} color="#4A90E2" />
+                    </View>
+                    <View>
+                      <Text style={styles.roomTypeLabel}>{suggestion.label}</Text>
+                      <Text style={styles.roomTypeHint}>
+                        {suggestion.exampleTips[0].substring(0, 40)}...
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={24} color="#ccc" />
                 </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         </View>
       </Modal>
+
+      {/* Template Picker Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showTemplatePicker}
+        onRequestClose={() => setShowTemplatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Choose Template</Text>
+              <TouchableOpacity onPress={() => setShowTemplatePicker(false)}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.templateList}>
+              {/* Create from Scratch Option */}
+              <TouchableOpacity
+                style={styles.templateOption}
+                onPress={() => {
+                  setShowTemplatePicker(false);
+                  createRoomFromScratch(selectedRoomType);
+                }}
+              >
+                <View style={styles.templateLeft}>
+                  <View style={[styles.templateIconContainer, { backgroundColor: '#F2F2F7' }]}>
+                    <Ionicons name="create-outline" size={28} color="#8E8E93" />
+                  </View>
+                  <View style={styles.templateInfo}>
+                    <Text style={styles.templateLabel}>Create from Scratch</Text>
+                    <Text style={styles.templateHint}>Start with a blank room</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={24} color="#ccc" />
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.templateDivider}>
+                <View style={styles.templateDividerLine} />
+                <Text style={styles.templateDividerText}>OR USE TEMPLATE</Text>
+                <View style={styles.templateDividerLine} />
+              </View>
+
+              {/* Templates */}
+              {templates.map((template) => (
+                <TouchableOpacity
+                  key={template.id}
+                  style={styles.templateOption}
+                  onPress={() => createRoomFromTemplate(template)}
+                >
+                  <View style={styles.templateLeft}>
+                    <View style={styles.templateIconContainer}>
+                      <Ionicons name={getRoomIcon(template.room_type)} size={28} color="#007AFF" />
+                    </View>
+                    <View style={styles.templateInfo}>
+                      <View style={styles.templateNameRow}>
+                        <Text style={styles.templateLabel}>{template.name}</Text>
+                        {template.is_default && (
+                          <View style={styles.defaultBadge}>
+                            <Text style={styles.defaultBadgeText}>Default</Text>
+                          </View>
+                        )}
+                      </View>
+                      {template.tips && (
+                        <Text style={styles.templateHint} numberOfLines={2}>
+                          {template.tips}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={24} color="#ccc" />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Room Edit Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={editingRoom !== null}
+        onRequestClose={() => {
+          setEditingRoom(null);
+          setSelectedUnitForRoom(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {getAllRooms().find(r => r.id === editingRoom?.id) ? 'Edit Room' : 'New Room'}
+              </Text>
+              <TouchableOpacity onPress={() => {
+                setEditingRoom(null);
+                setSelectedUnitForRoom(null);
+              }}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.editRoomContent}>
+              {editingRoom && (
+                <>
+                  {!isPMS && units.length > 1 && (
+                    <View style={styles.formGroup}>
+                      <Text style={styles.label}>Select Unit <Text style={styles.required}>*</Text></Text>
+                      <ScrollView style={styles.unitSelector} nestedScrollEnabled>
+                        {units.map((unit) => (
+                          <TouchableOpacity
+                            key={unit.id}
+                            style={[
+                              styles.unitOption,
+                              selectedUnitForRoom?.id === unit.id && styles.unitOptionSelected,
+                            ]}
+                            onPress={() => setSelectedUnitForRoom(unit)}
+                          >
+                            <Text style={[
+                              styles.unitOptionText,
+                              selectedUnitForRoom?.id === unit.id && styles.unitOptionTextSelected,
+                            ]}>
+                              {unit.name}
+                            </Text>
+                            {selectedUnitForRoom?.id === unit.id && (
+                              <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} />
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Room Name <Text style={styles.required}>*</Text></Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="e.g., Master Bedroom"
+                      value={editingRoom.name}
+                      onChangeText={(text) => setEditingRoom({ ...editingRoom, name: text })}
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Room Type</Text>
+                    <Text style={styles.roomTypeDisplay}>
+                      {getRoomLabel(editingRoom.room_type)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Tips for AI & Cleaner <Text style={styles.required}>*</Text></Text>
+                    <Text style={styles.labelHint}>
+                      What should be checked or photographed?
+                    </Text>
+
+                    {editingRoom.exampleTips && editingRoom.exampleTips.length > 0 && (
+                      <View style={styles.quickAddSection}>
+                        <Text style={styles.quickAddTitle}>Quick Add:</Text>
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          style={styles.quickAddScroll}
+                        >
+                          {editingRoom.exampleTips.map((tip, idx) => (
+                            <TouchableOpacity
+                              key={idx}
+                              style={styles.quickAddChip}
+                              onPress={() => insertExampleTip(tip)}
+                            >
+                              <Ionicons name="add-circle-outline" size={14} color="#4A90E2" />
+                              <Text style={styles.quickAddChipText} numberOfLines={1}>
+                                {tip}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+
+                    <TextInput
+                      style={[styles.input, styles.tipsTextArea]}
+                      placeholder="• Bed made with white linens&#10;• TV on to show it works&#10;• Windows streak-free"
+                      value={editingRoom.tips}
+                      onChangeText={(text) => setEditingRoom({ ...editingRoom, tips: text })}
+                      multiline
+                      numberOfLines={6}
+                      placeholderTextColor="#999"
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={saveRoom}
+                    disabled={addingRoom}
+                  >
+                    {addingRoom ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.saveButtonText}>Save Room</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -636,7 +1013,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textTertiary,
     marginBottom: 6,
-    marginLeft: 16,
+    
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
@@ -645,18 +1022,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
-    paddingRight: 16,
+   
   },
   addButton: {
-    fontSize: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 22,
+    gap: 4,
+  },
+  addButtonText: {
+    fontSize: 13,
     color: COLORS.primary,
-    fontWeight: '400',
+    fontWeight: '600',
   },
   
   // Card
   card: {
     backgroundColor: COLORS.card,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   divider: {
@@ -830,7 +1216,8 @@ const styles = StyleSheet.create({
   },
   roomExpanded: {
     backgroundColor: COLORS.bg,
-    padding: 12,
+   
+    paddingBottom: 12,
     paddingTop: 0,
   },
   tipsBox: {
@@ -838,6 +1225,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginTop: 8,
+    width: '100%',
   },
   tipsHeader: {
     flexDirection: 'row',
@@ -867,6 +1255,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginTop: 8,
+    width: '100%',
   },
   roomActionBtn: {
     flex: 1,
@@ -944,8 +1333,35 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   
-  // Modal
+  // Modal (matching CreatePropertyScreen exactly)
   modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 20,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+  },
+  // Edit Modal (separate styles)
+  editModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
@@ -956,7 +1372,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 12,
     paddingBottom: 40,
   },
-  modalHeader: {
+  editModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -964,7 +1380,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.separator,
   },
-  modalTitle: {
+  editModalTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: COLORS.text,
@@ -1023,6 +1439,248 @@ const styles = StyleSheet.create({
   },
   typeChipTextActive: {
     color: '#FFF',
+  },
+  
+  // Unit Selector
+  modalSection: {
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  modalLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textTertiary,
+    marginBottom: 8,
+  },
+  unitSelector: {
+    maxHeight: 150,
+  },
+  unitOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    backgroundColor: COLORS.bg,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  unitOptionSelected: {
+    backgroundColor: COLORS.primary + '15',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  unitOptionText: {
+    fontSize: 16,
+    color: COLORS.text,
+  },
+  unitOptionTextSelected: {
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  
+  roomTypeList: {
+    paddingTop: 8,
+    paddingBottom: 40,
+  },
+  roomTypeOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  roomTypeLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  roomTypeIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f0f7ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  roomTypeLabel: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 2,
+  },
+  roomTypeHint: {
+    fontSize: 13,
+    color: '#999',
+    maxWidth: 220,
+  },
+  editRoomContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  roomTypeDisplay: {
+    fontSize: 16,
+    color: '#666',
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+    borderRadius: 8,
+  },
+  quickAddSection: {
+    marginBottom: 12,
+  },
+  quickAddTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  quickAddScroll: {
+    marginHorizontal: -4,
+  },
+  quickAddChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f7ff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#d0e7ff',
+    maxWidth: 200,
+  },
+  quickAddChipText: {
+    fontSize: 12,
+    color: '#4A90E2',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  saveButton: {
+    backgroundColor: '#4A90E2',
+    borderRadius: 12,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: 'bold',
+  },
+  templateList: {
+    paddingTop: 8,
+    paddingBottom: 40,
+  },
+  templateOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  templateLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  templateIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  templateInfo: {
+    flex: 1,
+  },
+  templateNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  templateLabel: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  templateHint: {
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 20,
+  },
+  defaultBadge: {
+    backgroundColor: 'rgba(52, 199, 89, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  defaultBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#34C759',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  templateDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  templateDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  templateDividerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#999',
+    marginHorizontal: 12,
+    letterSpacing: 0.5,
+  },
+  formGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  labelHint: {
+    fontSize: 13,
+    color: '#999',
+    marginTop: -4,
+    marginBottom: 12,
+  },
+  input: {
+    height: 50,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  tipsTextArea: {
+    height: 140,
+    paddingTop: 15,
+    textAlignVertical: 'top',
+    lineHeight: 22,
+  },
+  required: {
+    color: 'red',
+    marginHorizontal: 4,
   },
 });
 

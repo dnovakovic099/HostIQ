@@ -329,21 +329,22 @@ export default function RoomCaptureScreen({ route, navigation }) {
           />
         </View>
 
+        {/* Save Button */}
+        <View style={styles.saveButtonContainer}>
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSave}
+            disabled={uploading}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="checkmark" size={18} color="#FFF" />
+            <Text style={styles.saveButtonText}>Save Room</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.bottomPadding} />
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Save Button */}
-      <View style={styles.saveContainer}>
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleSave}
-          disabled={uploading}
-        >
-          <Ionicons name="checkmark-circle" size={24} color="#FFF" />
-          <Text style={styles.saveButtonText}>Save Room</Text>
-        </TouchableOpacity>
-      </View>
 
       {/* Photo Enlargement Modal */}
       <Modal
@@ -436,7 +437,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 16,
-    paddingBottom: 120,
+    paddingBottom: 100,
   },
   requirementsCard: {
     backgroundColor: '#EFF6FF',
@@ -612,41 +613,31 @@ const styles = StyleSheet.create({
   bottomPadding: {
     height: 32,
   },
-  saveContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 24,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
+  saveButtonContainer: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 16,
   },
   saveButton: {
     backgroundColor: '#34C759',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 12,
     gap: 8,
     shadowColor: '#34C759',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   saveButtonText: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
     color: '#FFF',
+    letterSpacing: 0.2,
   },
   photoViewOverlay: {
     flex: 1,

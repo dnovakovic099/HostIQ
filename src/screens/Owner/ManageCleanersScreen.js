@@ -15,9 +15,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 
 export default function ManageCleanersScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [cleaners, setCleaners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -25,6 +27,9 @@ export default function ManageCleanersScreen({ navigation }) {
   const [inviteName, setInviteName] = useState('');
   const [invitePassword, setInvitePassword] = useState('');
   const [inviting, setInviting] = useState(false);
+  
+  // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
+  const tabBarHeight = 110 + insets.bottom;
 
   useEffect(() => {
     fetchCleaners();
@@ -230,7 +235,7 @@ export default function ManageCleanersScreen({ navigation }) {
       />
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: tabBarHeight }]}
         onPress={() => setShowInviteModal(true)}
         activeOpacity={0.9}
       >
@@ -356,7 +361,7 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 180,
   },
   // Cleaner Card
   cleanerCard: {

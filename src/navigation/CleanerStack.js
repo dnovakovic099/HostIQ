@@ -46,7 +46,7 @@ export default function CleanerStack() {
       <Stack.Screen 
         name="CreateInspection" 
         component={CreateInspectionScreen}
-        options={{ headerShown: false }}
+        options={{ title: 'Create Inspection' }}
       />
       <Stack.Screen 
         name="CaptureMedia" 

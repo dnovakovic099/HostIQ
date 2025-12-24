@@ -14,6 +14,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system';
 import api from '../../api/client';
 import { API_URL } from '../../config/api';
@@ -78,11 +79,17 @@ const GRADE_COLORS = {
 
 export default function CleaningReportScreen({ route, navigation }) {
   const { inspectionId, shareToken } = route.params;
+  const insets = useSafeAreaInsets();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
+  
+  // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
+  const tabBarHeight = 110 + insets.bottom;
+  // Footer height: padding (16) + buttons (~60) + hint (~30) + tab bar padding
+  const footerHeight = 106 + tabBarHeight;
 
   useEffect(() => {
     if (shareToken) {
@@ -269,7 +276,11 @@ export default function CleaningReportScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={styles.scrollContent}
+        style={{ marginBottom: footerHeight }}
+      >
         {/* Header Card */}
         <View style={styles.headerCard}>
           <View style={styles.verifiedBadge}>
@@ -420,12 +431,10 @@ export default function CleaningReportScreen({ route, navigation }) {
             </Text>
           </View>
         </View>
-
-        <View style={styles.bottomPadding} />
       </ScrollView>
 
       {/* Action Buttons */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: tabBarHeight }]}>
         <View style={styles.footerButtons}>
           <TouchableOpacity 
             style={styles.downloadButton} 
@@ -738,8 +747,12 @@ const styles = StyleSheet.create({
   },
   // Footer
   footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 16,
-    paddingBottom: 32,
+    paddingTop: 16,
     backgroundColor: '#FFF',
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E5EA',

@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 
 const COLORS = {
@@ -32,12 +33,16 @@ const COLORS = {
 };
 
 export default function PropertiesScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [properties, setProperties] = useState([]);
   const [pmsProperties, setPmsProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const lastFetchTime = useRef(0);
+  
+  // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
+  const tabBarHeight = 110 + insets.bottom;
 
   useFocusEffect(
     useCallback(() => {
@@ -320,7 +325,7 @@ export default function PropertiesScreen({ navigation }) {
       {/* FAB */}
       {hasProperties && (
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, { bottom: tabBarHeight }]}
           onPress={() => navigation.navigate('CreateProperty')}
           activeOpacity={0.9}
         >
@@ -424,7 +429,7 @@ const styles = StyleSheet.create({
   // List
   listContent: {
     padding: 16,
-    paddingBottom: 100,
+    paddingBottom: 180,
   },
   // Card
   card: {
