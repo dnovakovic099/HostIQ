@@ -10,6 +10,7 @@ import {
   TextInput,
   Modal,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/client';
@@ -702,7 +703,10 @@ export default function PropertyDetailScreen({ route, navigation }) {
 
       {/* Edit Modal */}
       <Modal visible={editModal.visible} transparent animationType="fade">
-        <View style={styles.editModalOverlay}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.editModalOverlay}
+        >
           <View style={styles.modalCard}>
             <View style={styles.editModalHeader}>
               <TouchableOpacity onPress={() => setEditModal({ visible: false, type: null, data: null })}>
@@ -731,7 +735,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
               autoFocus
             />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Room Type Picker Modal */}
