@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/client';
 import CustomTabBar from '../components/CustomTabBar';
@@ -28,6 +28,7 @@ const Stack = createStackNavigator();
 function PropertiesStack() {
   return (
     <Stack.Navigator
+      initialRouteName="PropertiesList"
       screenOptions={{
         headerStyle: {
           backgroundColor: '#FFFFFF',
@@ -218,6 +219,28 @@ export default function MainTabs() {
             name="Properties" 
             component={PropertiesStack}
             options={{ title: 'Properties' }}
+            listeners={({ navigation }) => ({
+              focus: () => {
+                // Reset to PropertiesList when tab is focused
+                // Get the nested stack navigator
+                const state = navigation.getState();
+                const propertiesRoute = state?.routes?.find(r => r.name === 'Properties');
+                if (propertiesRoute?.state) {
+                  const stackState = propertiesRoute.state;
+                  const currentRoute = stackState.routes?.[stackState.index || 0];
+                  // If we're on CreateProperty, navigate back to PropertiesList
+                  if (currentRoute?.name === 'CreateProperty') {
+                    // Use the parent navigation to navigate within the nested stack
+                    const parentNav = navigation.getParent();
+                    if (parentNav) {
+                      parentNav.navigate('Properties', { screen: 'PropertiesList' });
+                    } else {
+                      navigation.navigate('Properties', { screen: 'PropertiesList' });
+                    }
+                  }
+                }
+              },
+            })}
           />
           <Tab.Screen 
             name="Insights" 

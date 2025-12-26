@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import api from '../../api/client';
 
@@ -43,6 +44,7 @@ const COLORS = {
 };
 
 export default function AssignCleanerScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { cleanerId, cleanerName } = route.params;
   const [properties, setProperties] = useState([]);
   const [selectedUnits, setSelectedUnits] = useState([]);
@@ -50,6 +52,9 @@ export default function AssignCleanerScreen({ route, navigation }) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
+  
+  // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
+  const tabBarHeight = 110 + insets.bottom;
 
   useEffect(() => {
     fetchProperties();
@@ -288,7 +293,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
         data={properties}
         renderItem={renderProperty}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: 100 }]}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.listHeader}>
@@ -367,7 +372,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
         }
       />
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: tabBarHeight }]}>
         <TouchableOpacity
           style={[
             styles.assignButton,
@@ -738,9 +743,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: COLORS.card,
     paddingTop: 16,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
     paddingHorizontal: 16,
     borderTopWidth: 1,
     borderTopColor: COLORS.divider,

@@ -146,13 +146,116 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
     );
   };
 
-  const handleViewInspection = (assignment) => {
+  const handleViewInspection = async (assignment) => {
     // Only show inspection if it's been completed/submitted
     if (['COMPLETED', 'SUBMITTED', 'APPROVED'].includes(assignment.status?.toUpperCase())) {
-      navigation.navigate('InspectionDetail', { 
-        inspectionId: assignment.id,
-        userRole: 'owner'
+      // Get unit_id from nested unit object if not directly available
+      const unitId = assignment.unit_id || assignment.unit?.id;
+      
+      // Debug: Log assignment structure
+      console.log('🔍 Assignment object:', {
+        id: assignment.id,
+        unit_id: assignment.unit_id,
+        unit: assignment.unit,
+        unitIdFromUnit: assignment.unit?.id,
+        status: assignment.status,
+        inspection_id: assignment.inspection_id,
+        inspection: assignment.inspection,
+        allKeys: Object.keys(assignment)
       });
+      
+      // Try to get inspection ID from assignment
+      let inspectionId = assignment.inspection_id || assignment.inspection?.id;
+      
+      // If no inspection_id on assignment, try to find it by assignment_id
+      if (!inspectionId && unitId) {
+        try {
+          // Fetch inspections for this unit and find the one linked to this assignment
+          const response = await api.get(`/owner/inspections/recent?limit=500`);
+          const inspections = response.data || [];
+          
+          console.log('🔍 Searching through inspections:', {
+            totalInspections: inspections.length,
+            assignmentId: assignment.id,
+            unitId: unitId,
+            matchingByAssignmentId: inspections.filter(i => String(i.assignment_id) === String(assignment.id)),
+            matchingByUnitId: inspections.filter(i => String(i.unit_id) === String(unitId))
+          });
+          
+          // First try to find by assignment_id (most specific)
+          let relatedInspection = inspections.find(
+            i => String(i.assignment_id) === String(assignment.id)
+          );
+          
+          // If not found, try by unit_id and status (less specific but should work)
+          if (!relatedInspection && unitId) {
+            // Get all inspections for this unit with completed status
+            const unitInspections = inspections.filter(
+              i => String(i.unit_id) === String(unitId) && 
+                   ['COMPLETE', 'APPROVED', 'SUBMITTED', 'COMPLETED'].includes(i.status?.toUpperCase())
+            );
+            
+            // Sort by created_at descending and get the most recent one
+            if (unitInspections.length > 0) {
+              unitInspections.sort((a, b) => {
+                const dateA = new Date(a.created_at || 0);
+                const dateB = new Date(b.created_at || 0);
+                return dateB - dateA; // Most recent first
+              });
+              relatedInspection = unitInspections[0];
+            }
+          }
+          
+          // Last resort: check if inspection has assignment nested object
+          if (!relatedInspection) {
+            relatedInspection = inspections.find(
+              i => String(i.assignment?.id) === String(assignment.id) &&
+                   ['COMPLETE', 'APPROVED', 'SUBMITTED', 'COMPLETED'].includes(i.status?.toUpperCase())
+            );
+          }
+          
+          inspectionId = relatedInspection?.id;
+          
+          if (relatedInspection) {
+            console.log('✅ Found inspection:', {
+              inspectionId: relatedInspection.id,
+              status: relatedInspection.status,
+              assignment_id: relatedInspection.assignment_id,
+              assignment: relatedInspection.assignment,
+              unit_id: relatedInspection.unit_id
+            });
+          } else {
+            console.log('❌ No matching inspection found', {
+              assignmentId: assignment.id,
+              unitId: unitId,
+              totalInspections: inspections.length,
+              inspectionDetails: inspections.map(i => ({
+                id: i.id,
+                assignment_id: i.assignment_id,
+                assignment: i.assignment,
+                unit_id: i.unit_id,
+                status: i.status
+              }))
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching inspection:', error);
+        }
+      } else {
+        console.log('✅ Using inspection_id from assignment:', inspectionId);
+      }
+      
+      if (inspectionId) {
+        navigation.navigate('InspectionDetail', { 
+          inspectionId: inspectionId,
+          userRole: 'owner'
+        });
+      } else {
+        Alert.alert(
+          'Inspection Not Found',
+          'The inspection report for this assignment could not be found. It may still be processing.'
+        );
+      }
     } else {
       Alert.alert(
         'No Inspection Yet',

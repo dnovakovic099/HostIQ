@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -44,17 +44,7 @@ export default function PropertiesScreen({ navigation }) {
   // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
   const tabBarHeight = 110 + insets.bottom;
 
-  useFocusEffect(
-    useCallback(() => {
-      const now = Date.now();
-      if (now - lastFetchTime.current > 30000 || lastFetchTime.current === 0) {
-        lastFetchTime.current = now;
-        fetchProperties();
-      }
-    }, [])
-  );
-
-  const fetchProperties = async () => {
+  const fetchProperties = useCallback(async () => {
     try {
       const response = await api.get('/owner/properties');
       if (response.data.manualProperties) {
@@ -70,7 +60,23 @@ export default function PropertiesScreen({ navigation }) {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
+
+  // Fetch on initial mount
+  useEffect(() => {
+    fetchProperties();
+  }, [fetchProperties]);
+
+  // Also fetch on focus (with debounce)
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      if (now - lastFetchTime.current > 30000 || lastFetchTime.current === 0) {
+        lastFetchTime.current = now;
+        fetchProperties();
+      }
+    }, [fetchProperties])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -322,23 +328,21 @@ export default function PropertiesScreen({ navigation }) {
         ) : renderEmpty}
       />
 
-      {/* FAB */}
-      {hasProperties && (
-        <TouchableOpacity
-          style={[styles.fab, { bottom: tabBarHeight }]}
-          onPress={() => navigation.navigate('CreateProperty')}
-          activeOpacity={0.9}
+      {/* FAB - Always show to allow adding properties */}
+      <TouchableOpacity
+        style={[styles.fab, { bottom: tabBarHeight }]}
+        onPress={() => navigation.navigate('CreateProperty')}
+        activeOpacity={0.9}
+      >
+        <LinearGradient
+          colors={['#60A5FA', '#3B82F6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabGradient}
         >
-          <LinearGradient
-            colors={['#60A5FA', '#3B82F6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.fabGradient}
-          >
-            <Ionicons name="add" size={28} color="#FFF" />
-          </LinearGradient>
-        </TouchableOpacity>
-      )}
+          <Ionicons name="add" size={28} color="#FFF" />
+        </LinearGradient>
+      </TouchableOpacity>
     </View>
   );
 }
