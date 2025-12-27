@@ -1,7 +1,6 @@
 // API Configuration
-// Uses Railway production server by default
-// Can be overridden with EXPO_PUBLIC_API_URL environment variable if needed
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://roomify-server-production.up.railway.app/api';
+// Uses Railway production server
+export const API_URL = 'https://roomify-server-production.up.railway.app/api';
 // export const API_URL = 'http://10.0.0.252:3001/api'; // Point to local server for testing (use machine IP for iOS)
 
 // Debug logging
