@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -46,6 +47,8 @@ export default function OwnerDashboardScreen({ navigation }) {
   const [lowRatingProperties, setLowRatingProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showSetupModal, setShowSetupModal] = useState(false);
+  const [setupType, setSetupType] = useState(null); // 'property' or 'cleaner'
   const lastFetchTime = useRef(0);
 
   useFocusEffect(
@@ -55,9 +58,22 @@ export default function OwnerDashboardScreen({ navigation }) {
       if (timeSinceLastFetch > 30000 || lastFetchTime.current === 0) {
         lastFetchTime.current = now;
         fetchDashboardData();
+      } else {
+        // Check setup status on every focus
+        checkSetupStatus(stats.properties, stats.cleaners);
       }
-    }, [])
+    }, [stats.properties, stats.cleaners])
   );
+
+  const checkSetupStatus = (propertyCount, cleanerCount) => {
+    if (propertyCount === 0) {
+      setSetupType('property');
+      setShowSetupModal(true);
+    } else if (cleanerCount === 0) {
+      setSetupType('cleaner');
+      setShowSetupModal(true);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -65,10 +81,13 @@ export default function OwnerDashboardScreen({ navigation }) {
       const inspectionsRes = await api.get('/owner/inspections/recent?limit=5');
       const propertiesRes = await api.get('/owner/properties');
 
+      const propertyCount = Number(statsRes.data.properties) || 0;
+      const cleanerCount = Number(statsRes.data.cleaners) || 0;
+
       setStats({
-        properties: Number(statsRes.data.properties) || 0,
+        properties: propertyCount,
         units: Number(statsRes.data.units) || 0,
-        cleaners: Number(statsRes.data.cleaners) || 0,
+        cleaners: cleanerCount,
         inspections_today: Number(statsRes.data.inspections_today) || 0,
       });
 
@@ -81,6 +100,9 @@ export default function OwnerDashboardScreen({ navigation }) {
       const properties = Array.isArray(propertiesRes.data) ? propertiesRes.data : [];
       const lowRated = properties.filter(prop => prop.hasLowRating);
       setLowRatingProperties(lowRated);
+
+      // Check if user needs to complete setup
+      checkSetupStatus(propertyCount, cleanerCount);
     } catch (error) {
       console.error('Dashboard error:', error);
       setStats({ properties: 0, units: 0, cleaners: 0, inspections_today: 0 });
@@ -332,6 +354,66 @@ export default function OwnerDashboardScreen({ navigation }) {
 
         <View style={styles.bottomPadding} />
       </ScrollView>
+
+      {/* Setup Modal */}
+      <Modal
+        visible={showSetupModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSetupModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconContainer}>
+              <Ionicons 
+                name={setupType === 'property' ? 'home' : 'people'} 
+                size={48} 
+                color={COLORS.primary} 
+              />
+            </View>
+            
+            <Text style={styles.modalTitle}>
+              {setupType === 'property' ? 'Add Your First Property' : 'Invite Your First Cleaner'}
+            </Text>
+            
+            <Text style={styles.modalDescription}>
+              {setupType === 'property' 
+                ? 'To get started with HostIQ, you need to add at least one property. This will allow you to assign cleaners and track inspections.'
+                : 'Great! Now invite a cleaner to your team. They\'ll be able to perform inspections and submit cleaning reports for your properties.'}
+            </Text>
+            
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setShowSetupModal(false);
+                if (setupType === 'property') {
+                  navigation.navigate('Properties', { screen: 'CreateProperty' });
+                } else {
+                  navigation.navigate('ManageCleaners');
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons 
+                name={setupType === 'property' ? 'add-circle' : 'person-add'} 
+                size={20} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.modalButtonText}>
+                {setupType === 'property' ? 'Add Property' : 'Invite Cleaner'}
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.modalLaterButton}
+              onPress={() => setShowSetupModal(false)}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.modalLaterText}>I'll do this later</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -556,5 +638,80 @@ const styles = StyleSheet.create({
   
   bottomPadding: {
     height: 32,
+  },
+  
+  // Setup Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 28,
+    width: '100%',
+    maxWidth: 340,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 10,
+      },
+    }),
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#EBF4FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: COLORS.text.primary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  modalDescription: {
+    fontSize: 15,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    width: '100%',
+    gap: 8,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  modalLaterButton: {
+    marginTop: 16,
+    paddingVertical: 8,
+  },
+  modalLaterText: {
+    fontSize: 14,
+    color: COLORS.text.tertiary,
   },
 });
