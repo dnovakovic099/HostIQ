@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/client';
-import CustomTabBar from '../components/CustomTabBar';
+import SimpleTabBar from '../components/SimpleTabBar';
 import CleanerStack from './CleanerStack';
 import OwnerStack from './OwnerStack';
 import SettingsScreen from '../screens/Common/SettingsScreen';
@@ -195,7 +195,7 @@ export default function MainTabs() {
 
   return (
     <Tab.Navigator
-      tabBar={(props) => <CustomTabBar {...props} />}
+      tabBar={(props) => <SimpleTabBar {...props} />}
       screenOptions={{
         headerShown: false,
       }}

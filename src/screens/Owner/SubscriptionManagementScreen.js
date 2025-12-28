@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 import * as RNIap from 'react-native-iap';
+import { SUBSCRIPTION_CONFIG } from '../../config/constants';
 
 // Product IDs - These must match what you configure in App Store Connect & Google Play Console
 const SUBSCRIPTION_SKUS = Platform.select({
@@ -419,7 +420,7 @@ export default function SubscriptionManagementScreen({ navigation }) {
         <View style={styles.infoTextContainer}>
           <Text style={styles.infoTitle}>How it works</Text>
           <Text style={styles.infoText}>
-            • Start with {usage?.free_image_limit || 100} free images{'\n'}
+            • Start with {usage?.free_image_limit || SUBSCRIPTION_CONFIG.FREE_IMAGE_LIMIT} free images{'\n'}
             • Subscribe to individual properties for unlimited access{'\n'}
             • Cancel anytime, no commitment
           </Text>
