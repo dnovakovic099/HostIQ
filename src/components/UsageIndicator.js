@@ -49,7 +49,7 @@ export default function UsageIndicator({ navigation, compact = false }) {
 
   if (!usage) return null;
 
-  const percentage = Math.min(100, (usage.images_processed / usage.free_image_limit) * 100);
+  const percentage = Math.min(100, (usage.images_processed / (usage.free_image_limit || 10)) * 100);
   const isNearLimit = percentage > 80;
   const isAtLimit = usage.is_limit_reached;
 
@@ -127,8 +127,8 @@ export default function UsageIndicator({ navigation, compact = false }) {
 
       {(isAtLimit || isNearLimit) && (
         <Text style={[styles.messageText, { color: getProgressColor() }]}>
-          {isAtLimit 
-            ? 'Limit reached. Upgrade to continue.' 
+          {isAtLimit
+            ? 'Limit reached. Upgrade to continue.'
             : `${usage.remaining_free_images} free images remaining`}
         </Text>
       )}

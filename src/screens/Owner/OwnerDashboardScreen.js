@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 import UsageIndicator from '../../components/UsageIndicator';
+import SetupPopup from '../../components/SetupPopup';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +59,7 @@ export default function OwnerDashboardScreen({ navigation }) {
     const [userName, setUserName] = useState('Owner');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [showSetupPopup, setShowSetupPopup] = useState(false);
     const lastFetchTime = useRef(0);
 
     useFocusEffect(
@@ -93,6 +95,11 @@ export default function OwnerDashboardScreen({ navigation }) {
             const properties = Array.isArray(propertiesRes.data) ? propertiesRes.data : [];
             const lowRated = properties.filter(prop => prop.hasLowRating);
             setLowRatingProperties(lowRated);
+
+            // Show setup popup if no properties or no cleaners
+            if (properties.length === 0 || statsRes.data.cleaners === 0) {
+                setShowSetupPopup(true);
+            }
 
             // Fetch user profile for name
             try {
@@ -295,6 +302,13 @@ export default function OwnerDashboardScreen({ navigation }) {
                     </View>
                 </View>
 
+                {/* Usage Section */}
+                <View style={styles.usageSection}>
+                    <View style={styles.usageCard}>
+                        <UsageIndicator navigation={navigation} />
+                    </View>
+                </View>
+
                 {/* Low Rating Alert */}
                 {
                     lowRatingProperties.length > 0 && (
@@ -340,9 +354,34 @@ export default function OwnerDashboardScreen({ navigation }) {
                             onPress={() => navigation.navigate('InspectionReports')}
                             style={styles.viewAllBtn}
                         >
-                            <Text style={styles.viewAllText}>View All</Text>
-
+                            <Text style={styles.viewAllText}>View All {">"}</Text>
                         </TouchableOpacity>
+                    </View>
+
+                    {/* Stats Row */}
+                    <View style={styles.statsRow}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statNumber}>{recentInspections.length}</Text>
+                            <Text style={styles.statLabel}>TOTAL</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statNumber, { color: '#3B82F6' }]}>
+                                {(recentInspections.reduce((acc, curr) => acc + (curr.cleanliness_score || 0), 0) / (recentInspections.length || 1)).toFixed(1)}
+                            </Text>
+                            <Text style={styles.statLabel}>AVG SCORE</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statNumber, { color: '#10B981' }]}>
+                                {recentInspections.filter(i => i.status === 'COMPLETE').length}
+                            </Text>
+                            <Text style={styles.statLabel}>COMPLETE</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                            <Text style={[styles.statNumber, { color: '#F59E0B' }]}>
+                                {recentInspections.filter(i => i.status === 'PROCESSING').length}
+                            </Text>
+                            <Text style={styles.statLabel}>PROCESSING</Text>
+                        </View>
                     </View>
 
                     {recentInspections.length === 0 ? (
@@ -372,76 +411,49 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     onPress={() => navigation.navigate('InspectionDetail', { inspectionId: inspection.id })}
                                     activeOpacity={0.6}
                                 >
-                                    {/* Thumbnails Row */}
-                                    {thumbnails.length > 0 && (
-                                        <View style={styles.thumbnailRow}>
-                                            {thumbnails.map((url, index) => (
-                                                <Image
-                                                    key={index}
-                                                    source={{ uri: url }}
-                                                    style={[
-                                                        styles.thumbnail,
-                                                        index === 0 && styles.thumbnailFirst,
-                                                        index === thumbnails.length - 1 && styles.thumbnailLast,
-                                                    ]}
-                                                />
-                                            ))}
-                                            {mediaCount > 3 && (
-                                                <View style={styles.morePhotos}>
-                                                    <Text style={styles.morePhotosText}>+{mediaCount - 3}</Text>
-                                                </View>
-                                            )}
-                                        </View>
-                                    )}
-
                                     <View style={styles.cardBody}>
-                                        {/* Modern Header with Left Accent */}
-                                        <View style={styles.cardContentWrapper}>
-                                           
-                                            <View style={styles.cardContent}>
-                                                {/* Top Row: Property Info + Score */}
-                                                <View style={styles.cardTopRow}>
-                                                    <View style={styles.propertyInfo}>
-                                                        <Text style={styles.propertyName} numberOfLines={1}>{propertyName}</Text>
-                                                        <Text style={styles.unitName}>{unitName}</Text>
+                                        <View style={styles.cardContent}>
+                                            {/* Top Row: Property Info + Score */}
+                                            <View style={styles.cardTopRow}>
+                                                <View style={styles.propertyInfo}>
+                                                    <Text style={styles.propertyName} numberOfLines={1}>{propertyName}</Text>
+                                                    <Text style={styles.unitName}>{unitName}</Text>
+                                                </View>
+
+                                                {score != null && score > 0 && (
+                                                    <View style={styles.scoreDisplay}>
+                                                        <Text style={styles.scoreValue}>{score.toFixed(1)}</Text>
+                                                        <Text style={styles.scoreMax}>/10</Text>
                                                     </View>
-
-                                                    {score != null && score > 0 && (
-                                                        <View style={styles.scoreContainer}>
-                                                            <Text style={styles.scoreValue}>{score.toFixed(1)}</Text>
-                                                            <Text style={styles.scoreMax}>/10</Text>
-                                                        </View>
-                                                    )}
-                                                </View>
-
-                                                {/* Meta Row */}
-                                                <View style={styles.metaRow}>
-                                                    <Text style={styles.metaText}>{cleanerName}</Text>
-                                                    <View style={styles.metaDot} />
-                                                    <Text style={styles.metaText}>{formatDate(inspection.created_at)}</Text>
-                                                    <View style={styles.metaDot} />
-                                                    <Ionicons name="camera-outline" size={12} color={COLORS.text.tertiary} />
-                                                    <Text style={styles.metaText}> {mediaCount}</Text>
-                                                </View>
-
-                                                {/* Bottom Row: Status + Delete */}
-                                                <View style={styles.cardBottomRow}>
-                                                    <View style={[styles.statusBadge, { backgroundColor: `${statusConfig.color}12` }]}>
-                                                        <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
-                                                        <Text style={[styles.statusText, { color: statusConfig.color }]}>
-                                                            {statusConfig.label}
-                                                        </Text>
-                                                    </View>
-
-                                                    <TouchableOpacity
-                                                        style={styles.deleteBtn}
-                                                        onPress={() => handleDeleteInspection(inspection.id, propertyName)}
-                                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                                    >
-                                                        <Ionicons name="trash-outline" size={18} color={COLORS.errorBin} />
-                                                    </TouchableOpacity>
-                                                </View>
+                                                )}
                                             </View>
+
+                                            {/* Meta Row */}
+                                            <View style={styles.metaRow}>
+                                                <Text style={styles.metaText}>{cleanerName}</Text>
+                                                <View style={styles.metaDot} />
+                                                <Text style={styles.metaText}>{formatDate(inspection.created_at)}</Text>
+                                                <View style={styles.metaDot} />
+                                                <Ionicons name="camera-outline" size={12} color={COLORS.text.tertiary} />
+                                                <Text style={styles.metaText}> {mediaCount} photos</Text>
+                                            </View>
+
+                                            {/* Status Row */}
+                                            <View style={styles.statusRow}>
+                                                <View style={[styles.statusDotSmall, { backgroundColor: statusConfig.color }]} />
+                                                <Text style={[styles.statusLabel, { color: statusConfig.color }]}>
+                                                    {statusConfig.label === 'Cleaning Failed' ? 'Attention' : statusConfig.label}
+                                                </Text>
+                                            </View>
+
+                                            {/* Airbnb Dispute Report Button */}
+                                            <TouchableOpacity
+                                                style={styles.disputeBtn}
+                                                onPress={() => navigation.navigate('AirbnbDisputeReport', { inspectionId: inspection.id })}
+                                            >
+                                                <Ionicons name="document-text-outline" size={16} color="#3B82F6" />
+                                                <Text style={styles.disputeBtnText}>Airbnb Dispute Report</Text>
+                                            </TouchableOpacity>
                                         </View>
                                     </View>
                                 </TouchableOpacity>
@@ -452,6 +464,19 @@ export default function OwnerDashboardScreen({ navigation }) {
 
                 <View style={styles.bottomPadding} />
             </ScrollView >
+
+            <SetupPopup
+                visible={showSetupPopup}
+                onClose={() => setShowSetupPopup(false)}
+                onAddProperty={() => {
+                    setShowSetupPopup(false);
+                    navigation.navigate('Properties', { screen: 'CreateProperty' });
+                }}
+                onAddCleaner={() => {
+                    setShowSetupPopup(false);
+                    navigation.navigate('ManageCleaners');
+                }}
+            />
         </View >
     );
 }
@@ -477,7 +502,7 @@ const styles = StyleSheet.create({
     },
     // Welcome Section
     welcomeSection: {
-        paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 20 : 50,
+        paddingTop: Platform.OS === 'ios' ? 70 : 50,
         paddingBottom: 100,
         paddingLeft: 24,
         paddingRight: 24,
@@ -551,7 +576,24 @@ const styles = StyleSheet.create({
     // Usage Section
     usageSection: {
         paddingHorizontal: 16,
-        paddingTop: 16,
+        marginTop: 50,
+    },
+    usageCard: {
+        backgroundColor: COLORS.card,
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: 'rgba(15, 23, 42, 0.05)',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 10,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     // Section
     section: {
@@ -891,27 +933,63 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 8,
     },
-    scoreContainer: {
+    statsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 25,
+        paddingHorizontal: 10,
+    },
+    statItem: {
+        alignItems: 'center',
+    },
+    statNumber: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: COLORS.text.primary,
+    },
+    statLabel: {
+        fontSize: 10,
+        color: COLORS.text.tertiary,
+        fontWeight: '700',
+        marginTop: 4,
+    },
+    scoreDisplay: {
         flexDirection: 'row',
         alignItems: 'baseline',
-        backgroundColor: COLORS.successLight,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 10,
     },
-    scoreValue: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: COLORS.success,
-        letterSpacing: -0.3,
+    statusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 8,
+        gap: 6,
     },
-    scoreMax: {
+    statusDotSmall: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+    },
+    statusLabel: {
         fontSize: 13,
-        color: COLORS.success,
         fontWeight: '600',
-        opacity: 0.7,
+    },
+    disputeBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#F1F7FF',
+        paddingVertical: 10,
+        borderRadius: 10,
+        marginTop: 15,
+        gap: 8,
+        borderWidth: 1,
+        borderColor: '#E1EFFF',
+    },
+    disputeBtnText: {
+        color: '#3B82F6',
+        fontSize: 14,
+        fontWeight: '600',
     },
     bottomPadding: {
-        height: 32,
+        height: 100,
     },
 });
