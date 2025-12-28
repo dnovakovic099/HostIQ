@@ -9,7 +9,7 @@ rm -rf .expo
 rm -rf node_modules/.cache
 
 echo "🔨 Rebuilding and reinstalling app..."
-cd /Users/darkonovakovic/software/roomify/mobile
+cd "$(dirname "$0")"
 npm run ios
 
 echo "✅ App reinstalled!"
