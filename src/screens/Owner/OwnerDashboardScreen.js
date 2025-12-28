@@ -26,7 +26,7 @@ const { width } = Dimensions.get('window');
 
 // Modern premium color palette
 const COLORS = {
-    background: '#F1F5F9',
+    background: '#F8F9FA',
     card: '#FFFFFF',
     cardBorder: 'rgba(15, 23, 42, 0.08)',
     cardShadow: 'rgba(15, 23, 42, 0.1)',
@@ -35,8 +35,8 @@ const COLORS = {
         secondary: '#64748B',
         tertiary: '#94A3B8',
     },
-    accent: '#3B82F6',
-    border: '#0c4b8fff',
+    accent: '#D4AF37',
+    border: '#D4AF37',
     accentLight: 'rgba(59, 130, 246, 0.1)',
     success: '#10B981',
     successLight: 'rgba(16, 185, 129, 0.1)',
@@ -239,25 +239,25 @@ export default function OwnerDashboardScreen({ navigation }) {
                 {/* Welcome Header with Integrated Quick Actions */}
                 <View style={styles.headerContainer}>
                     <LinearGradient
-                        colors={['#B8D4E8', '#A8C5E0', '#8BB3D6', '#6FA0CC']}
+                        colors={['#D4AF37', '#D4AF37', '#B8941F', '#B8941F']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={[styles.welcomeSection, { paddingTop: insets.top + 12 }]}
                     >
                         {/* Animated decorative elements */}
                         <View style={styles.decorativeCircle1}>
-                            <Ionicons name="home" size={100} color="rgba(66, 165, 245, 0.22)" />
+                            <Ionicons name="home" size={80} color="rgba(255, 255, 255, 0.12)" />
                         </View>
                         <View style={styles.decorativeCircle2}>
-                            <Ionicons name="business" size={70} color="rgba(66, 165, 245, 0.22)" />
+                            <Ionicons name="business" size={60} color="rgba(255, 255, 255, 0.10)" />
                         </View>
                         <View style={styles.decorativeCircle3}>
-                            <Ionicons name="bed" size={50} color="rgba(33, 150, 243, 0.20)" />
+                            <Ionicons name="bed" size={44} color="rgba(255, 255, 255, 0.08)" />
                         </View>
 
                         <View style={styles.welcomeContent}>
                             <Text style={styles.welcomeGreeting}>Hello, </Text>
-                            <Text style={styles.welcomeName}>{userName}!</Text>
+                            <Text style={styles.welcomeName}>{userName}</Text>
                         </View>
                         <Text style={styles.welcomeSubtitle}>Manage your properties with ease</Text>
                     </LinearGradient>
@@ -271,12 +271,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 activeOpacity={0.7}
                             >
                                 <LinearGradient
-                                    colors={['#A8D5E2', '#7EC8E3']}
+                                    colors={['#D4AF37', '#B8941F']}
                                     style={styles.quickActionCircle}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
-                                    <Ionicons name="home" size={22} color="#FFFFFF" />
+                                    <Ionicons name="home" size={18} color="#FFFFFF" />
                                 </LinearGradient>
                                 <Text style={styles.quickActionText}>Property</Text>
                             </TouchableOpacity>
@@ -287,12 +287,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 activeOpacity={0.7}
                             >
                                 <LinearGradient
-                                    colors={['#D4C5F9', '#B794F6']}
+                                    colors={['#F0AD4E', '#D89533']}
                                     style={styles.quickActionCircle}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
-                                    <Ionicons name="people" size={20} color="#FFFFFF" />
+                                    <Ionicons name="people" size={18} color="#FFFFFF" />
                                 </LinearGradient>
                                 <Text style={styles.quickActionText}>Team</Text>
                             </TouchableOpacity>
@@ -303,12 +303,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 activeOpacity={0.7}
                             >
                                 <LinearGradient
-                                    colors={['#FFD4C4', '#FFB8A3']}
+                                    colors={['#F0AD4E', '#D89533']}
                                     style={styles.quickActionCircle}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
-                                    <Ionicons name="card" size={20} color="#FFFFFF" />
+                                    <Ionicons name="card" size={18} color="#FFFFFF" />
                                 </LinearGradient>
                                 <Text style={styles.quickActionText}>Plans</Text>
                             </TouchableOpacity>
@@ -319,12 +319,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 activeOpacity={0.7}
                             >
                                 <LinearGradient
-                                    colors={['#C4D7FF', '#93C5FD']}
+                                    colors={['#34C759', '#30B350']}
                                     style={styles.quickActionCircle}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
-                                    <Ionicons name="analytics" size={20} color="#FFFFFF" />
+                                    <Ionicons name="analytics" size={18} color="#FFFFFF" />
                                 </LinearGradient>
                                 <Text style={styles.quickActionText}>Issues</Text>
                             </TouchableOpacity>
@@ -507,9 +507,9 @@ const styles = StyleSheet.create({
     },
     // Welcome Section
     welcomeSection: {
-        paddingBottom: 100,
-        paddingLeft: 24,
-        paddingRight: 24,
+        paddingBottom: 88,
+        paddingLeft: 20,
+        paddingRight: 20,
         position: 'relative',
         overflow: 'hidden',
         borderBottomLeftRadius: 0,
@@ -522,57 +522,59 @@ const styles = StyleSheet.create({
         alignItems: 'baseline',
         flexWrap: 'wrap',
         zIndex: 1,
-        marginBottom: 8,
+        marginBottom: 6,
     },
     welcomeGreeting: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: '400',
-        color: 'rgba(47, 47, 47, 0.95)',
+        color: '#FFFFFF',
+        letterSpacing: -0.3,
     },
     welcomeName: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: '700',
-        color: 'rgba(47, 47, 47, 0.95)',
+        color: '#FFFFFF',
+        letterSpacing: -0.3,
     },
     welcomeSubtitle: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '500',
-        color: 'rgba(90, 89, 89, 0.95)',
+        color: 'rgba(255, 255, 255, 0.85)',
         marginTop: 4,
         zIndex: 1,
     },
     decorativeCircle1: {
         position: 'absolute',
-        width: 220,
-        height: 220,
-        borderRadius: 110,
+        width: 200,
+        height: 200,
+        borderRadius: 100,
         backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        top: -60,
-        right: -50,
+        top: -50,
+        right: -40,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 0,
     },
     decorativeCircle2: {
         position: 'absolute',
-        width: 180,
-        height: 180,
-        borderRadius: 90,
+        width: 160,
+        height: 160,
+        borderRadius: 80,
         backgroundColor: 'rgba(255, 255, 255, 0.04)',
         bottom: -10,
-        left: -40,
+        left: -35,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 0,
     },
     decorativeCircle3: {
         position: 'absolute',
-        width: 120,
-        height: 120,
-        borderRadius: 60,
+        width: 110,
+        height: 110,
+        borderRadius: 55,
         backgroundColor: 'rgba(255, 255, 255, 0.03)',
-        top: 60,
-        right: 80,
+        top: 50,
+        right: 70,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 0,
@@ -585,13 +587,13 @@ const styles = StyleSheet.create({
     // Section
     section: {
         paddingHorizontal: 16,
-        marginTop: 40,
+        marginTop: 32,
     },
     sectionTitle: {
-        fontSize: 22,
-        fontWeight: '800',
+        fontSize: 20,
+        fontWeight: '700',
         color: COLORS.text.primary,
-        letterSpacing: -0.6,
+        letterSpacing: -0.4,
     },
     sectionTitleUnderline: {
         width: 60,
@@ -612,20 +614,20 @@ const styles = StyleSheet.create({
         gap: 4,
     },
     viewAllText: {
-        fontSize: 15,
+        fontSize: 14,
         color: COLORS.text.secondary,
         fontWeight: '700',
     },
     // Quick Actions Card
     quickActionsCard: {
         position: 'absolute',
-        bottom: -35,
+        bottom: -32,
         left: 16,
         right: 16,
         backgroundColor: COLORS.card,
-        borderRadius: 20,
-        paddingVertical: 18,
-        paddingHorizontal: 10,
+        borderRadius: 18,
+        paddingVertical: 16,
+        paddingHorizontal: 8,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -650,9 +652,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     quickActionCircle: {
-        width: 55,
-        height: 55,
-        borderRadius: 16,
+        width: 48,
+        height: 48,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 6,
@@ -669,7 +671,7 @@ const styles = StyleSheet.create({
         }),
     },
     quickActionText: {
-        fontSize: 11,
+        fontSize: 10,
         color: COLORS.text.primary,
         fontWeight: '700',
         textAlign: 'center',
@@ -677,7 +679,7 @@ const styles = StyleSheet.create({
     },
     // Alert
     alertCard: {
-        borderRadius: 20,
+        borderRadius: 18,
         overflow: 'hidden',
         ...Platform.select({
             ios: {
@@ -743,7 +745,7 @@ const styles = StyleSheet.create({
     emptyIconWrapper: {
         width: 64,
         height: 64,
-        borderRadius: 16,
+        borderRadius: 14,
         backgroundColor: COLORS.divider,
         justifyContent: 'center',
         alignItems: 'center',
@@ -813,7 +815,7 @@ const styles = StyleSheet.create({
     morePhotosText: {
         color: '#FFF',
         fontSize: 14,
-        fontWeight: '800',
+        fontWeight: '700',
         letterSpacing: 0.3,
     },
     cardBody: {
@@ -870,7 +872,7 @@ const styles = StyleSheet.create({
     attentionBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 10,
+        paddingHorizontal: 8,
         paddingVertical: 6,
         borderRadius: 6,
         backgroundColor: 'rgba(255, 59, 48, 0.1)',
@@ -1014,7 +1016,7 @@ const styles = StyleSheet.create({
         letterSpacing: -0.5,
     },
     statLabel: {
-        fontSize: 11,
+        fontSize: 10,
         fontWeight: '600',
         color: COLORS.text.secondary,
         marginTop: 4,

@@ -19,17 +19,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 
 const COLORS = {
-  bg: '#F8FAFC',
+  bg: '#F8F9FA',
   card: '#FFFFFF',
-  primary: '#4A90E2',
+  primary: '#D4AF37',
   pms: '#4A90E2', // HostIQ Blue for PMS badges
-  text: '#1F2937',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
-  border: '#E5E7EB',
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
+  text: '#1C1C1E',
+  textSecondary: '#6C6C70',
+  textMuted: '#AEAEB2',
+  border: '#E5E5EA',
+  success: '#34C759',
+  warning: '#FF9500',
+  error: '#DC143C',
 };
 
 export default function PropertiesScreen({ navigation }) {
@@ -156,23 +156,23 @@ export default function PropertiesScreen({ navigation }) {
         {/* Header */}
         <View style={styles.cardHeader}>
           <LinearGradient
-            colors={['#EFF6FF', '#DBEAFE']}
+            colors={['#FFF9E6', '#D4AF37']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.propertyIcon}
           >
-            <Ionicons name="home" size={20} color={COLORS.primary} />
+            <Ionicons name="home" size={18} color={COLORS.primary} />
           </LinearGradient>
           
           <View style={styles.cardHeaderContent}>
             {isPMS && (
               <LinearGradient
-                colors={['#60A5FA', '#3B82F6']}
+                colors={['#D4AF37', '#B8941F']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.pmsBadge}
               >
-                <Ionicons name="cloud" size={10} color="#FFFFFF" />
+                <Ionicons name="cloud" size={9} color="#FFFFFF" />
                 <Text style={styles.pmsBadgeText}>{item.pmsProvider}</Text>
               </LinearGradient>
             )}
@@ -207,7 +207,7 @@ export default function PropertiesScreen({ navigation }) {
 
           {/* Arrow */}
           <View style={styles.arrowButton}>
-            <Ionicons name="chevron-forward" size={20} color={COLORS.primary} />
+            <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
           </View>
         </View>
       </TouchableOpacity>
@@ -217,7 +217,7 @@ export default function PropertiesScreen({ navigation }) {
   const renderEmpty = () => (
     <View style={styles.emptyState}>
       <LinearGradient
-        colors={['#DBEAFE', '#BFDBFE']}
+        colors={['#D4AF37', '#BFDBFE']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.emptyIcon}
@@ -234,7 +234,7 @@ export default function PropertiesScreen({ navigation }) {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={['#60A5FA', '#3B82F6']}
+          colors={['#D4AF37', '#B8941F']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.emptyButtonGradient}
@@ -261,7 +261,7 @@ export default function PropertiesScreen({ navigation }) {
     <View style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#DBEAFE', '#93C5FD']}
+        colors={['#D4AF37', '#B8941F']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0.8 }}
         style={styles.headerWrapper}
@@ -270,7 +270,7 @@ export default function PropertiesScreen({ navigation }) {
           <View style={styles.headerGradient}>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
-                <Ionicons name="business" size={28} color={COLORS.primary} />
+                <Ionicons name="business" size={24} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
@@ -287,7 +287,7 @@ export default function PropertiesScreen({ navigation }) {
       {hasProperties && allProperties.length > 0 && (
         <View style={styles.searchWrapper}>
           <View style={styles.searchBar}>
-            <Ionicons name="search" size={18} color={COLORS.textMuted} />
+            <Ionicons name="search" size={16} color={COLORS.textMuted} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search properties..."
@@ -299,7 +299,7 @@ export default function PropertiesScreen({ navigation }) {
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+                <Ionicons name="close-circle" size={16} color={COLORS.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -335,12 +335,12 @@ export default function PropertiesScreen({ navigation }) {
         activeOpacity={0.9}
       >
         <LinearGradient
-          colors={['#60A5FA', '#3B82F6']}
+          colors={['#D4AF37', '#B8941F']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabGradient}
         >
-          <Ionicons name="add" size={28} color="#FFF" />
+          <Ionicons name="add" size={26} color="#FFF" />
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -375,9 +375,9 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   headerIconInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -386,16 +386,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: 0.3,
     
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: '#475569',
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.85)',
     fontWeight: '500',
   },
   // Search
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E7FF',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#B8941F',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -526,7 +526,7 @@ const styles = StyleSheet.create({
   statPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFF9E6',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 8,
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 8,
-    backgroundColor: '#EFF6FF',
+    backgroundColor: '#FFF9E6',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -555,16 +555,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 18,
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#B8941F',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#B8941F',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -629,10 +629,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 24,
-    borderRadius: 18,
+    borderRadius: 16,
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#B8941F',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -643,9 +643,9 @@ const styles = StyleSheet.create({
     }),
   },
   fabGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 18,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },

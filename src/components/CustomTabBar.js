@@ -14,13 +14,13 @@ import Svg, { Path } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TAB_BAR_HEIGHT = 60; // Reduced height
-const BALL_SIZE = 70; // Reduced ball size proportionally
+const TAB_BAR_HEIGHT = 56; // Reduced height
+const BALL_SIZE = 60; // Reduced ball size proportionally
 const BALL_RADIUS = BALL_SIZE / 2;
 
 const COLORS = {
-  background: '#7393B3', // Subtle blue - same for both background and ball
-  ballBackground: '#7393B3', // Same subtle blue
+  background: '#D4AF37', // Subtle blue - same for both background and ball
+  ballBackground: '#D4AF37', // Same subtle blue
   activeIcon: '#F6F1EA',
   inactiveIcon: '#F6F1EA',
   activeText: '#F6F1EA',
@@ -32,8 +32,8 @@ const COLORS = {
 ======================= */
 const CurvedTabBarBackground = ({ centerX }) => {
   // Adjusted for smaller tab bar
-  const dipDepth = 50;  // Reduced depth proportionally
-  const dipWidth = 60;  // Slightly reduced width
+  const dipDepth = 42;  // Reduced depth proportionally
+  const dipWidth = 56;  // Slightly reduced width
 
   return (
     <Svg
@@ -131,7 +131,7 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
             
             return (
               <View style={styles.ballContent}>
-                <Ionicons name={activeIconName} size={20} color={COLORS.activeIcon} style={{ fontWeight: 'bold' }} />
+                <Ionicons name={activeIconName} size={18} color={COLORS.activeIcon} />
                 <Text style={[styles.ballLabel, { fontWeight: 'bold' }]} numberOfLines={1}>{activeLabel}</Text>
               </View>
             );
@@ -158,7 +158,7 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
             <TouchableOpacity key={route.key} onPress={onPress} style={styles.tabItem}>
               {!isFocused && (
                 <>
-                  <Ionicons name={iconName} size={22} color={COLORS.inactiveIcon} style={{ fontWeight: 'bold' }} />
+                  <Ionicons name={iconName} size={20} color={COLORS.inactiveIcon} />
                   <Text style={[styles.label, { fontWeight: 'bold' }]}>{label}</Text>
                 </>
               )}
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   ball: {
     position: 'absolute',
     // Elevated position - moved up for better visibility
-    top: -BALL_RADIUS - 0, 
+    top: -BALL_RADIUS - 2, 
     width: BALL_SIZE,
     height: BALL_SIZE,
     borderRadius: BALL_RADIUS,
@@ -203,10 +203,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
-    elevation: 6,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
   ballContent: {
@@ -214,18 +214,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ballLabel: {
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: '600',
     color: COLORS.activeIcon,
     textAlign: 'center',
-    marginTop: 1,
+    marginTop: 2,
+    letterSpacing: -0.1,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-    paddingTop: 8, // Adjusted for smaller tab bar
+    paddingTop: 6, // Adjusted for smaller tab bar
   },
   label: {
     fontSize: 10,
