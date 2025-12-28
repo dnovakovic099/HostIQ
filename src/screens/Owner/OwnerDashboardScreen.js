@@ -24,29 +24,29 @@ import { useOnboardingStore } from '../../store/onboardingStore';
 
 const { width } = Dimensions.get('window');
 
-// Modern premium color palette
+// Luxury Ruby Color Palette - Apple-inspired refinement
 const COLORS = {
-    background: '#F1F5F9',
+    background: '#F8F9FA',
     card: '#FFFFFF',
-    cardBorder: 'rgba(15, 23, 42, 0.08)',
-    cardShadow: 'rgba(15, 23, 42, 0.1)',
+    cardBorder: 'rgba(0, 0, 0, 0.06)',
+    cardShadow: 'rgba(220, 20, 60, 0.08)',
     text: {
-        primary: '#0F172A',
-        secondary: '#64748B',
-        tertiary: '#94A3B8',
+        primary: '#1C1C1E',
+        secondary: '#6C6C70',
+        tertiary: '#AEAEB2',
     },
-    accent: '#3B82F6',
-    border: '#0c4b8fff',
-    accentLight: 'rgba(59, 130, 246, 0.1)',
-    success: '#10B981',
-    successLight: 'rgba(16, 185, 129, 0.1)',
-    warning: '#F59E0B',
-    warningLight: 'rgba(245, 158, 11, 0.1)',
-    error: '#EF4444',
-    errorBin: '#FF3B30',
-    errorLight: 'rgba(239, 68, 68, 0.1)',
-    divider: '#E2E8F0',
-    overlay: 'rgba(15, 23, 42, 0.4)',
+    accent: '#DC143C',
+    border: '#DC143C',
+    accentLight: 'rgba(220, 20, 60, 0.08)',
+    success: '#34C759',
+    successLight: 'rgba(52, 199, 89, 0.1)',
+    warning: '#FF9500',
+    warningLight: 'rgba(255, 149, 0, 0.1)',
+    error: '#DC143C',
+    errorBin: '#DC143C',
+    errorLight: 'rgba(220, 20, 60, 0.1)',
+    divider: '#E5E5EA',
+    overlay: 'rgba(0, 0, 0, 0.4)',
 };
 
 export default function OwnerDashboardScreen({ navigation }) {
@@ -239,25 +239,25 @@ export default function OwnerDashboardScreen({ navigation }) {
                 {/* Welcome Header with Integrated Quick Actions */}
                 <View style={styles.headerContainer}>
                     <LinearGradient
-                        colors={['#B8D4E8', '#A8C5E0', '#8BB3D6', '#6FA0CC']}
+                        colors={['#DC143C', '#B8102F']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={[styles.welcomeSection, { paddingTop: insets.top + 12 }]}
+                        style={[styles.welcomeSection, { paddingTop: insets.top + 16 }]}
                     >
-                        {/* Animated decorative elements */}
+                        {/* Animated decorative elements - refined sizing */}
                         <View style={styles.decorativeCircle1}>
-                            <Ionicons name="home" size={100} color="rgba(66, 165, 245, 0.22)" />
+                            <Ionicons name="home" size={80} color="rgba(255, 255, 255, 0.12)" />
                         </View>
                         <View style={styles.decorativeCircle2}>
-                            <Ionicons name="business" size={70} color="rgba(66, 165, 245, 0.22)" />
+                            <Ionicons name="business" size={60} color="rgba(255, 255, 255, 0.10)" />
                         </View>
                         <View style={styles.decorativeCircle3}>
-                            <Ionicons name="bed" size={50} color="rgba(33, 150, 243, 0.20)" />
+                            <Ionicons name="bed" size={44} color="rgba(255, 255, 255, 0.08)" />
                         </View>
 
                         <View style={styles.welcomeContent}>
                             <Text style={styles.welcomeGreeting}>Hello, </Text>
-                            <Text style={styles.welcomeName}>{userName}!</Text>
+                            <Text style={styles.welcomeName}>{userName}</Text>
                         </View>
                         <Text style={styles.welcomeSubtitle}>Manage your properties with ease</Text>
                     </LinearGradient>
@@ -271,12 +271,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 activeOpacity={0.7}
                             >
                                 <LinearGradient
-                                    colors={['#A8D5E2', '#7EC8E3']}
+                                    colors={['#DC143C', '#B8102F']}
                                     style={styles.quickActionCircle}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
-                                    <Ionicons name="home" size={22} color="#FFFFFF" />
+                                    <Ionicons name="home" size={20} color="#FFFFFF" />
                                 </LinearGradient>
                                 <Text style={styles.quickActionText}>Property</Text>
                             </TouchableOpacity>
@@ -287,12 +287,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 activeOpacity={0.7}
                             >
                                 <LinearGradient
-                                    colors={['#D4C5F9', '#B794F6']}
+                                    colors={['#FF6B9D', '#E84A7F']}
                                     style={styles.quickActionCircle}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
-                                    <Ionicons name="people" size={20} color="#FFFFFF" />
+                                    <Ionicons name="people" size={18} color="#FFFFFF" />
                                 </LinearGradient>
                                 <Text style={styles.quickActionText}>Team</Text>
                             </TouchableOpacity>
@@ -303,12 +303,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 activeOpacity={0.7}
                             >
                                 <LinearGradient
-                                    colors={['#FFD4C4', '#FFB8A3']}
+                                    colors={['#FF9500', '#FF8800']}
                                     style={styles.quickActionCircle}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
-                                    <Ionicons name="card" size={20} color="#FFFFFF" />
+                                    <Ionicons name="card" size={18} color="#FFFFFF" />
                                 </LinearGradient>
                                 <Text style={styles.quickActionText}>Plans</Text>
                             </TouchableOpacity>
@@ -319,14 +319,14 @@ export default function OwnerDashboardScreen({ navigation }) {
                                 activeOpacity={0.7}
                             >
                                 <LinearGradient
-                                    colors={['#C4D7FF', '#93C5FD']}
+                                    colors={['#34C759', '#30B350']}
                                     style={styles.quickActionCircle}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                 >
-                                    <Ionicons name="analytics" size={20} color="#FFFFFF" />
+                                    <Ionicons name="analytics" size={18} color="#FFFFFF" />
                                 </LinearGradient>
-                                <Text style={styles.quickActionText}>Issues</Text>
+                                <Text style={styles.quickActionText}>Insights</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -505,11 +505,11 @@ const styles = StyleSheet.create({
         position: 'relative',
         marginBottom: 20,
     },
-    // Welcome Section
+    // Welcome Section - Refined proportions
     welcomeSection: {
-        paddingBottom: 100,
-        paddingLeft: 24,
-        paddingRight: 24,
+        paddingBottom: 88,
+        paddingLeft: 20,
+        paddingRight: 20,
         position: 'relative',
         overflow: 'hidden',
         borderBottomLeftRadius: 0,
@@ -522,57 +522,60 @@ const styles = StyleSheet.create({
         alignItems: 'baseline',
         flexWrap: 'wrap',
         zIndex: 1,
-        marginBottom: 8,
+        marginBottom: 6,
     },
     welcomeGreeting: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: '400',
-        color: 'rgba(47, 47, 47, 0.95)',
+        color: '#FFFFFF',
+        letterSpacing: -0.3,
     },
     welcomeName: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: '700',
-        color: 'rgba(47, 47, 47, 0.95)',
+        color: '#FFFFFF',
+        letterSpacing: -0.3,
     },
     welcomeSubtitle: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '500',
-        color: 'rgba(90, 89, 89, 0.95)',
+        color: 'rgba(255, 255, 255, 0.85)',
         marginTop: 4,
         zIndex: 1,
+        letterSpacing: -0.1,
     },
     decorativeCircle1: {
         position: 'absolute',
-        width: 220,
-        height: 220,
-        borderRadius: 110,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        top: -60,
-        right: -50,
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: 'rgba(255, 255, 255, 0.06)',
+        top: -50,
+        right: -40,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 0,
     },
     decorativeCircle2: {
         position: 'absolute',
-        width: 180,
-        height: 180,
-        borderRadius: 90,
-        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        width: 160,
+        height: 160,
+        borderRadius: 80,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
         bottom: -10,
-        left: -40,
+        left: -35,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 0,
     },
     decorativeCircle3: {
         position: 'absolute',
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
-        top: 60,
-        right: 80,
+        width: 110,
+        height: 110,
+        borderRadius: 55,
+        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        top: 50,
+        right: 70,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 0,
@@ -582,16 +585,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingTop: 16,
     },
-    // Section
+    // Section - refined spacing
     section: {
         paddingHorizontal: 16,
-        marginTop: 40,
+        marginTop: 32,
     },
     sectionTitle: {
-        fontSize: 22,
-        fontWeight: '800',
+        fontSize: 20,
+        fontWeight: '700',
         color: COLORS.text.primary,
-        letterSpacing: -0.6,
+        letterSpacing: -0.4,
     },
     sectionTitleUnderline: {
         width: 60,
@@ -616,29 +619,29 @@ const styles = StyleSheet.create({
         color: COLORS.text.secondary,
         fontWeight: '700',
     },
-    // Quick Actions Card
+    // Quick Actions Card - refined proportions
     quickActionsCard: {
         position: 'absolute',
-        bottom: -35,
+        bottom: -32,
         left: 16,
         right: 16,
         backgroundColor: COLORS.card,
-        borderRadius: 20,
-        paddingVertical: 18,
-        paddingHorizontal: 10,
+        borderRadius: 18,
+        paddingVertical: 16,
+        paddingHorizontal: 8,
         ...Platform.select({
             ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.15,
-                shadowRadius: 20,
+                shadowColor: COLORS.accent,
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.10,
+                shadowRadius: 16,
             },
             android: {
-                elevation: 8,
+                elevation: 6,
             },
         }),
         borderWidth: 1,
-        borderColor: 'rgba(15, 23, 42, 0.06)',
+        borderColor: COLORS.cardBorder,
     },
     quickActions: {
         flexDirection: 'row',
@@ -650,30 +653,30 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     quickActionCircle: {
-        width: 55,
-        height: 55,
-        borderRadius: 16,
+        width: 48,
+        height: 48,
+        borderRadius: 14,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 6,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.18,
-                shadowRadius: 6,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.12,
+                shadowRadius: 4,
             },
             android: {
-                elevation: 3,
+                elevation: 2,
             },
         }),
     },
     quickActionText: {
-        fontSize: 11,
+        fontSize: 10,
         color: COLORS.text.primary,
-        fontWeight: '700',
+        fontWeight: '600',
         textAlign: 'center',
-        letterSpacing: -0.2,
+        letterSpacing: -0.1,
     },
     // Alert
     alertCard: {

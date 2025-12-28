@@ -1,126 +1,127 @@
-// HostIQ Brand Color System
-// To change the app theme, modify these color values
+// HostIQ Luxury Ruby Brand Color System
+// Inspired by Apple's design philosophy: clarity, depth, and deference
+// This ruby palette evokes sophistication, passion, and premium luxury
 
 export const colors = {
-  // Primary Brand Color - HostIQ Blue
+  // Primary Brand Color - Refined Luxury Ruby
   primary: {
-    main: '#4A90E2',        // HostIQ Blue
-    light: '#6BA3E8',       // Lighter blue for hover states
-    dark: '#3D7FD9',        // Darker blue for pressed states
-    gradient: ['#4A90E2', '#3D7FD9'],
+    main: '#DC143C',        // Vibrant crimson red
+    light: '#E84A6B',       // Lighter ruby for hover states
+    dark: '#B8102F',        // Deeper ruby for pressed states
+    gradient: ['#DC143C', '#B8102F'],
   },
-  
-  // Secondary Brand Color
+
+  // Secondary Brand Color - Complementary Accent
   secondary: {
-    main: '#34C759',        // Green (for secondary actions)
-    light: '#5DD97C',       // Lighter green
-    dark: '#2D9F4B',        // Darker green
+    main: '#FF6B9D',        // Rose pink for secondary actions
+    light: '#FF8FB3',       // Lighter pink
+    dark: '#E84A7F',        // Darker pink
   },
-  
-  // Background Colors
+
+  // Background Colors - Clean and spacious
   background: {
-    primary: '#F8F9FB',     // Gentle warm white with contrast
-    card: '#FFFFFF',        // Clean floating cards
-    secondary: '#F5F6F8',   // Slightly darker for sections
-    dark: '#0A0A0A',        // Dark mode (if needed)
+    primary: '#F8F9FA',     // Softer warm white
+    card: '#FFFFFF',        // Pure white for cards
+    secondary: '#F3F4F6',   // Subtle gray for sections
+    dark: '#000000',        // True black for dark mode
   },
-  
-  // Text Colors
+
+  // Text Colors - Apple-inspired hierarchy
   text: {
-    primary: '#1C1C1E',     // Crisp black-charcoal (Apple tone)
-    secondary: '#6E6E73',   // Light gray for subtitles
-    tertiary: '#A1A1AA',    // Light gray text
-    muted: '#A1A1AA',       // For disclaimers, tertiary text
-    inverse: '#FFFFFF',     // White text on dark backgrounds
-    link: '#4A90E2',        // Links match primary blue
+    primary: '#1C1C1E',     // Near black (Apple standard)
+    secondary: '#6C6C70',   // Medium gray
+    tertiary: '#AEAEB2',    // Light gray
+    muted: '#C7C7CC',       // Very light gray for disclaimers
+    inverse: '#FFFFFF',     // White on dark
+    link: '#DC143C',        // Links match primary ruby
   },
-  
-  // Border Colors
+
+  // Border Colors - Subtle and refined
   border: {
-    light: '#E5E5EA',       // Subtle borders
-    primary: '#D0E2FA',     // Light blue borders for outline buttons
-    accent: '#4A90E2',      // Accent borders
+    light: '#E5E5EA',       // Whisper-light borders
+    primary: '#F5C2CB',     // Light ruby tint
+    accent: '#DC143C',      // Accent borders
   },
-  
-  // Status Colors
+
+  // Status Colors - Adapted for ruby theme
   status: {
-    success: '#34C759',     // Green (Apple system)
-    warning: '#FFCC00',     // Yellow (Apple system)
-    error: '#FF3B30',       // Red (Apple system)
-    info: '#4A90E2',        // Blue (matches primary)
+    success: '#34C759',     // iOS green
+    warning: '#FF9500',     // iOS orange
+    error: '#DC143C',       // Ruby red (brand consistent)
+    info: '#0A7AFF',        // iOS blue
   },
-  
+
   // Grade Colors (for inspection results)
   grade: {
     A: '#34C759',           // Excellent - Green
-    B: '#84CC16',           // Good - Light green
-    C: '#FFCC00',           // Average - Yellow
-    D: '#F97316',           // Below average - Orange
-    F: '#FF3B30',           // Poor - Red
+    B: '#32D74B',           // Good - Light green
+    C: '#FF9500',           // Average - Orange
+    D: '#FF9F0A',           // Below average - Amber
+    F: '#DC143C',           // Poor - Ruby red
   },
-  
-  // Shadows
+
+  // Shadows - Refined depth (Apple-style subtlety)
   shadow: {
-    soft: 'rgba(0, 0, 0, 0.08)',      // Soft depth under buttons/cards
-    medium: 'rgba(0, 0, 0, 0.12)',    // Medium shadow
-    strong: 'rgba(0, 0, 0, 0.16)',    // Stronger shadow for modals
-    blue: 'rgba(74, 144, 226, 0.2)',  // Blue shadow for primary buttons
+    soft: 'rgba(0, 0, 0, 0.04)',      // Very subtle
+    medium: 'rgba(0, 0, 0, 0.08)',    // Medium depth
+    strong: 'rgba(0, 0, 0, 0.12)',    // Elevated elements
+    blue: 'rgba(220, 20, 60, 0.15)',  // Ruby shadow for primary buttons
   },
-  
+
   // Overlay Colors
   overlay: {
-    light: 'rgba(0, 0, 0, 0.3)',
-    medium: 'rgba(0, 0, 0, 0.5)',
-    dark: 'rgba(0, 0, 0, 0.7)',
+    light: 'rgba(0, 0, 0, 0.25)',
+    medium: 'rgba(0, 0, 0, 0.45)',
+    dark: 'rgba(0, 0, 0, 0.65)',
   },
-  
+
   // Input Colors
   input: {
     background: '#FFFFFF',
     border: '#E5E5EA',
-    borderFocus: '#4A90E2',
-    placeholder: '#A1A1AA',
+    borderFocus: '#DC143C',
+    placeholder: '#AEAEB2',
     text: '#1C1C1E',
   },
-  
+
   // Button Colors
   button: {
-    primary: '#4A90E2',
-    primaryHover: '#3D7FD9',
+    primary: '#DC143C',
+    primaryHover: '#B8102F',
     secondary: 'transparent',
-    disabled: '#D1D5DB',
+    disabled: '#E5E5EA',
     text: '#FFFFFF',
-    textSecondary: '#4A90E2',
+    textSecondary: '#DC143C',
   },
-  
-  // Score Colors (for cleanliness scores) - iOS native palette
+
+  // Score Colors (for cleanliness scores)
   score: {
     excellent: '#34C759',    // 9-10 - iOS Green
-    good: '#007AFF',         // 7-8.9 - iOS Blue
+    good: '#0A7AFF',         // 7-8.9 - Blue
     average: '#FF9500',      // 5-6.9 - iOS Orange
-    poor: '#FF3B30',         // 3-4.9 - iOS Red
-    critical: '#D70015',     // 0-2.9 - Darker Red
+    poor: '#DC143C',         // 3-4.9 - Ruby Red
+    critical: '#B8102F',     // 0-2.9 - Darker Ruby
   },
-  
-  // Gradients (for buttons, FABs, headers)
+
+  // Gradients - Refined and purposeful
   gradients: {
-    primary: ['#4A90E2', '#3D7FD9'],      // HostIQ Blue gradient
-    secondary: ['#34C759', '#2D9F4B'],    // Green gradient (same as success)
-    success: ['#34C759', '#2D9F4B'],      // Green gradient
-    warning: ['#FFCC00', '#FFB800'],      // Yellow gradient
-    error: ['#FF3B30', '#E52B21'],        // Red gradient
-    sunset: ['#FF6B6B', '#FF8E53'],       // Orange/Pink gradient for variety
+    primary: ['#DC143C', '#B8102F'],      // Primary ruby gradient
+    secondary: ['#FF6B9D', '#E84A7F'],    // Pink gradient
+    success: ['#34C759', '#30B350'],      // Green gradient
+    warning: ['#FF9500', '#FF8800'],      // Orange gradient
+    error: ['#DC143C', '#B8102F'],        // Ruby gradient
+    luxury: ['#DC143C', '#FF6B9D'],       // Ruby to pink (signature)
   },
-  
-  // Legacy color mappings (for older theme system compatibility)
+
+  // Legacy compatibility
   accent: {
     success: '#34C759',
-    warning: '#FFCC00',
-    error: '#FF3B30',
-    info: '#4A90E2',
+    warning: '#FF9500',
+    error: '#DC143C',
+    info: '#0A7AFF',
   },
-  
-  // Neutral colors (for borders, dividers, backgrounds)
+
+  // Neutral scale - Systematic and balanced
   neutral: {
     50: '#FAFAFA',
     100: '#F5F5F5',
@@ -137,11 +138,11 @@ export const colors = {
 
 // Helper function to get score color based on value
 export const getScoreColor = (score) => {
-  if (score >= 9) return colors.score.excellent;   // 9-10: Green
-  if (score >= 7) return colors.score.good;        // 7-8.9: Blue
-  if (score >= 5) return colors.score.average;     // 5-6.9: Orange
-  if (score >= 3) return colors.score.poor;        // 3-4.9: Red
-  return colors.score.critical;                    // 0-2.9: Dark Red
+  if (score >= 9) return colors.score.excellent;
+  if (score >= 7) return colors.score.good;
+  if (score >= 5) return colors.score.average;
+  if (score >= 3) return colors.score.poor;
+  return colors.score.critical;
 };
 
 // Helper function to get grade color

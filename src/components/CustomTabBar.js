@@ -14,26 +14,28 @@ import Svg, { Path } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TAB_BAR_HEIGHT = 60; // Reduced height
-const BALL_SIZE = 70; // Reduced ball size proportionally
+// Apple-inspired proportions: refined and balanced
+const TAB_BAR_HEIGHT = 56; // Optimized height (iOS standard is 49-56)
+const BALL_SIZE = 60;      // Proportional ball size (reduced from 70)
 const BALL_RADIUS = BALL_SIZE / 2;
 
+// Luxury Ruby color palette
 const COLORS = {
-  background: '#7393B3', // Subtle blue - same for both background and ball
-  ballBackground: '#7393B3', // Same subtle blue
-  activeIcon: '#F6F1EA',
-  inactiveIcon: '#F6F1EA',
-  activeText: '#F6F1EA',
-  inactiveText: '#F6F1EA',
+  background: '#DC143C',     // Premium vibrant ruby
+  ballBackground: '#B8102F', // Deeper ruby for active state
+  activeIcon: '#FFFFFF',
+  inactiveIcon: '#FFFFFF',
+  activeText: '#FFFFFF',
+  inactiveText: 'rgba(255, 255, 255, 0.8)',
 };
 
 /* =======================
    SVG CURVED BACKGROUND (Deep & Wide Dip)
 ======================= */
 const CurvedTabBarBackground = ({ centerX }) => {
-  // Adjusted for smaller tab bar
-  const dipDepth = 50;  // Reduced depth proportionally
-  const dipWidth = 60;  // Slightly reduced width
+  // Proportionally adjusted for refined tab bar
+  const dipDepth = 42;  // Refined depth for elegant curve
+  const dipWidth = 56;  // Balanced width
 
   return (
     <Svg
@@ -131,8 +133,8 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
             
             return (
               <View style={styles.ballContent}>
-                <Ionicons name={activeIconName} size={20} color={COLORS.activeIcon} style={{ fontWeight: 'bold' }} />
-                <Text style={[styles.ballLabel, { fontWeight: 'bold' }]} numberOfLines={1}>{activeLabel}</Text>
+                <Ionicons name={activeIconName} size={18} color={COLORS.activeIcon} />
+                <Text style={styles.ballLabel} numberOfLines={1}>{activeLabel}</Text>
               </View>
             );
           })()}
@@ -158,8 +160,8 @@ export default function CustomTabBar({ state, descriptors, navigation }) {
             <TouchableOpacity key={route.key} onPress={onPress} style={styles.tabItem}>
               {!isFocused && (
                 <>
-                  <Ionicons name={iconName} size={22} color={COLORS.inactiveIcon} style={{ fontWeight: 'bold' }} />
-                  <Text style={[styles.label, { fontWeight: 'bold' }]}>{label}</Text>
+                  <Ionicons name={iconName} size={20} color={COLORS.inactiveIcon} />
+                  <Text style={styles.label}>{label}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -194,8 +196,7 @@ const styles = StyleSheet.create({
   },
   ball: {
     position: 'absolute',
-    // Elevated position - moved up for better visibility
-    top: -BALL_RADIUS - 0, 
+    top: -BALL_RADIUS - 2, // Subtle elevation
     width: BALL_SIZE,
     height: BALL_SIZE,
     borderRadius: BALL_RADIUS,
@@ -203,34 +204,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
-    elevation: 6,
+    elevation: 4,
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
   ballContent: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   ballLabel: {
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: '600',
     color: COLORS.activeIcon,
     textAlign: 'center',
-    marginTop: 1,
+    marginTop: 2,
+    letterSpacing: -0.1,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-    paddingTop: 8, // Adjusted for smaller tab bar
+    paddingTop: 6,
   },
   label: {
     fontSize: 10,
-    marginTop: 3,
-    fontWeight: '500',
+    marginTop: 2,
+    fontWeight: '600',
     color: COLORS.inactiveText,
+    letterSpacing: -0.1,
   },
 });
