@@ -66,8 +66,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "981b4db7-ecd2-4520-8f6e-5ddcd4fd8fc1"
+        "projectId": "114be218-d7fa-47d3-80c5-b90d037184b9"
       }
-    }
+    },
+    "owner": "faizan1041"
   }
 }
