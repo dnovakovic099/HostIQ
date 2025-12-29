@@ -8,7 +8,7 @@ import api from '../api/client';
 import SimpleTabBar from '../components/SimpleTabBar';
 import CleanerStack from './CleanerStack';
 import OwnerStack from './OwnerStack';
-import SettingsScreen from '../screens/Common/SettingsScreen';
+import SettingsStack from './SettingsStack';
 import PropertiesScreen from '../screens/Owner/PropertiesScreen';
 import PropertyDetailScreen from '../screens/Owner/PropertyDetailScreen';
 import CreatePropertyScreen from '../screens/Owner/CreatePropertyScreen';
@@ -257,8 +257,8 @@ export default function MainTabs() {
 
       <Tab.Screen 
         name="Settings" 
-        component={SettingsScreen}
-        options={{ headerShown: true }}
+        component={SettingsStack}
+        options={{ headerShown: false }}
       />
     </Tab.Navigator>
   );

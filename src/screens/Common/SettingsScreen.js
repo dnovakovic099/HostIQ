@@ -239,13 +239,13 @@ export default function SettingsScreen({ navigation }) {
           <SettingsItem
             icon="document-text-outline"
             title="Terms of Service"
-            onPress={() => Alert.alert('Terms of Service', 'Terms will be displayed here')}
+            onPress={() => navigation.navigate('TermsOfService')}
           />
           <View style={styles.divider} />
           <SettingsItem
             icon="shield-checkmark-outline"
             title="Privacy Policy"
-            onPress={() => Alert.alert('Privacy Policy', 'Privacy policy will be displayed here')}
+            onPress={() => navigation.navigate('PrivacyPolicy')}
           />
         </View>
       </View>
