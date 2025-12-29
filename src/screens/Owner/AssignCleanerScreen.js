@@ -54,7 +54,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
   const [assigning, setAssigning] = useState(false);
   
   // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
-  const tabBarHeight = 110 + insets.bottom;
+  const tabBarHeight = 15;
 
   useEffect(() => {
     fetchProperties();

@@ -25,7 +25,7 @@ export default function CreatePropertyScreen({ navigation }) {
   const [address, setAddress] = useState('');
   
   // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
-  const tabBarHeight = 110 + insets.bottom;
+  const tabBarHeight = 15;
 
   // Rooms
   const [rooms, setRooms] = useState([]);
@@ -1048,12 +1048,12 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
+    paddingTop: 10,
     bottom: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
-    padding: 16,
-    paddingTop: 16,
+    paddingHorizontal: 10,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e0e0e0',

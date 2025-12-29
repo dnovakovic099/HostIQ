@@ -42,7 +42,7 @@ export default function PropertiesScreen({ navigation }) {
   const lastFetchTime = useRef(0);
   
   // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
-  const tabBarHeight = 110 + insets.bottom;
+  const tabBarHeight = 20;
 
   const fetchProperties = useCallback(async () => {
     try {

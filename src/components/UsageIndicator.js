@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../api/client';
+import { SUBSCRIPTION_CONFIG } from '../config/constants';
 
 // iOS system colors
 const COLORS = {
@@ -49,7 +50,9 @@ export default function UsageIndicator({ navigation, compact = false }) {
 
   if (!usage) return null;
 
-  const percentage = Math.min(100, (usage.images_processed / usage.free_image_limit) * 100);
+  // Use default limit of 10, or cap at 10 if API returns higher value
+  const freeImageLimit = Math.min(usage.free_image_limit || SUBSCRIPTION_CONFIG.FREE_IMAGE_LIMIT, SUBSCRIPTION_CONFIG.FREE_IMAGE_LIMIT);
+  const percentage = Math.min(100, (usage.images_processed / freeImageLimit) * 100);
   const isNearLimit = percentage > 80;
   const isAtLimit = usage.is_limit_reached;
 
@@ -107,7 +110,7 @@ export default function UsageIndicator({ navigation, compact = false }) {
         <View style={styles.textContainer}>
           <Text style={styles.title}>Free Image Usage</Text>
           <Text style={styles.subtitle}>
-            {usage.images_processed} / {usage.free_image_limit} used
+            {usage.images_processed} / {freeImageLimit} used
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={20} color="#C6C6C8" />

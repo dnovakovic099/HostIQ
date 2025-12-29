@@ -29,7 +29,7 @@ export default function ManageCleanersScreen({ navigation }) {
   const [inviting, setInviting] = useState(false);
   
   // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
-  const tabBarHeight = 110 + insets.bottom;
+  const tabBarHeight = 15;
 
   useEffect(() => {
     fetchCleaners();
@@ -88,9 +88,15 @@ export default function ManageCleanersScreen({ navigation }) {
   };
 
   const handleRemoveCleaner = (cleaner) => {
+    // Check if cleaner has active assignments
+    const hasAssignments = (cleaner._count?.assignments || 0) > 0;
+    const warningMessage = hasAssignments 
+      ? `This cleaner has ${cleaner._count?.assignments} active assignment${cleaner._count?.assignments > 1 ? 's' : ''}. You must cancel all assignments before removing them.`
+      : `Are you sure you want to remove ${cleaner.name}?`;
+
     Alert.alert(
       'Remove Cleaner',
-      `Are you sure you want to remove ${cleaner.name}?`,
+      warningMessage,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -102,7 +108,9 @@ export default function ManageCleanersScreen({ navigation }) {
               Alert.alert('Success', 'Cleaner removed');
               fetchCleaners();
             } catch (error) {
-              Alert.alert('Error', 'Failed to remove cleaner');
+              console.error('Remove cleaner error:', error);
+              const errorMessage = error.response?.data?.error || 'Failed to remove cleaner';
+              Alert.alert('Cannot Remove Cleaner', errorMessage);
             }
           },
         },

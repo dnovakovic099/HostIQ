@@ -239,7 +239,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                 {/* Welcome Header with Integrated Quick Actions */}
                 <View style={styles.headerContainer}>
                     <LinearGradient
-                        colors={['#B8D4E8', '#A8C5E0', '#8BB3D6', '#6FA0CC']}
+                        colors={['#3A5F9F', '#2E4F8F', '#1E3F7F', '#0F2F6F']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={[styles.welcomeSection, { paddingTop: insets.top + 12 }]}
@@ -265,69 +265,79 @@ export default function OwnerDashboardScreen({ navigation }) {
                     {/* Quick Actions Card - Floating above header */}
                     <View style={styles.quickActionsCard}>
                         <View style={styles.quickActions}>
-                            <TouchableOpacity
-                                style={styles.quickActionBtn}
-                                onPress={() => navigation.navigate('Properties', { screen: 'CreateProperty' })}
-                                activeOpacity={0.7}
-                            >
-                                <LinearGradient
-                                    colors={['#A8D5E2', '#7EC8E3']}
-                                    style={styles.quickActionCircle}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
+                            {/* Free Image Usage Indicator */}
+                            <View style={styles.usageIndicatorInCard}>
+                                <UsageIndicator navigation={navigation} />
+                            </View>
+                            
+                            {/* Divider */}
+                            <View style={styles.quickActionsDivider} />
+                            
+                            <View style={styles.quickActionsRow}>
+                                <TouchableOpacity
+                                    style={styles.quickActionBtn}
+                                    onPress={() => navigation.navigate('Properties', { screen: 'CreateProperty' })}
+                                    activeOpacity={0.7}
                                 >
-                                    <Ionicons name="home" size={22} color="#FFFFFF" />
-                                </LinearGradient>
-                                <Text style={styles.quickActionText}>Property</Text>
-                            </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={['#7EC8E3', '#5BB5D9']}
+                                        style={styles.quickActionCircle}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                    >
+                                        <Ionicons name="home" size={22} color="#FFFFFF" />
+                                    </LinearGradient>
+                                    <Text style={styles.quickActionText}>Property</Text>
+                                </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={styles.quickActionBtn}
-                                onPress={() => navigation.navigate('ManageCleaners')}
-                                activeOpacity={0.7}
-                            >
-                                <LinearGradient
-                                    colors={['#D4C5F9', '#B794F6']}
-                                    style={styles.quickActionCircle}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
+                                <TouchableOpacity
+                                    style={styles.quickActionBtn}
+                                    onPress={() => navigation.navigate('ManageCleaners')}
+                                    activeOpacity={0.7}
                                 >
-                                    <Ionicons name="people" size={20} color="#FFFFFF" />
-                                </LinearGradient>
-                                <Text style={styles.quickActionText}>Team</Text>
-                            </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={['#6FA0CC', '#5A8FBD']}
+                                        style={styles.quickActionCircle}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                    >
+                                        <Ionicons name="people" size={20} color="#FFFFFF" />
+                                    </LinearGradient>
+                                    <Text style={styles.quickActionText}>Team</Text>
+                                </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={styles.quickActionBtn}
-                                onPress={() => navigation.navigate('SubscriptionManagement')}
-                                activeOpacity={0.7}
-                            >
-                                <LinearGradient
-                                    colors={['#FFD4C4', '#FFB8A3']}
-                                    style={styles.quickActionCircle}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
+                                <TouchableOpacity
+                                    style={styles.quickActionBtn}
+                                    onPress={() => navigation.navigate('SubscriptionManagement')}
+                                    activeOpacity={0.7}
                                 >
-                                    <Ionicons name="card" size={20} color="#FFFFFF" />
-                                </LinearGradient>
-                                <Text style={styles.quickActionText}>Plans</Text>
-                            </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={['#93C5FD', '#7BB3F5']}
+                                        style={styles.quickActionCircle}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                    >
+                                        <Ionicons name="card" size={20} color="#FFFFFF" />
+                                    </LinearGradient>
+                                    <Text style={styles.quickActionText}>Plans</Text>
+                                </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={styles.quickActionBtn}
-                                onPress={() => navigation.navigate('Insights')}
-                                activeOpacity={0.7}
-                            >
-                                <LinearGradient
-                                    colors={['#C4D7FF', '#93C5FD']}
-                                    style={styles.quickActionCircle}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
+                                <TouchableOpacity
+                                    style={styles.quickActionBtn}
+                                    onPress={() => navigation.navigate('Insights')}
+                                    activeOpacity={0.7}
                                 >
-                                    <Ionicons name="analytics" size={20} color="#FFFFFF" />
-                                </LinearGradient>
-                                <Text style={styles.quickActionText}>Issues</Text>
-                            </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={['#8BB3D6', '#7AA3C6']}
+                                        style={styles.quickActionCircle}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                    >
+                                        <Ionicons name="analytics" size={20} color="#FFFFFF" />
+                                    </LinearGradient>
+                                    <Text style={styles.quickActionText}>Issues</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
                 </View>
@@ -503,15 +513,15 @@ const styles = StyleSheet.create({
     // Header Container
     headerContainer: {
         position: 'relative',
-        marginBottom: 20,
+        marginBottom: 30,
     },
     // Welcome Section
     welcomeSection: {
-        paddingBottom: 100,
+        paddingBottom: 200,
         paddingLeft: 24,
         paddingRight: 24,
         position: 'relative',
-        overflow: 'hidden',
+        overflow: 'visible',
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
         marginHorizontal: 0,
@@ -521,25 +531,26 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'baseline',
         flexWrap: 'wrap',
-        zIndex: 1,
+        zIndex: 20,
+        marginTop: 12,
         marginBottom: 8,
     },
     welcomeGreeting: {
         fontSize: 28,
         fontWeight: '400',
-        color: 'rgba(47, 47, 47, 0.95)',
+        color: '#FFFFFF',
     },
     welcomeName: {
         fontSize: 28,
         fontWeight: '700',
-        color: 'rgba(47, 47, 47, 0.95)',
+        color: '#FFFFFF',
     },
     welcomeSubtitle: {
         fontSize: 15,
         fontWeight: '500',
-        color: 'rgba(90, 89, 89, 0.95)',
+        color: '#FFFFFF',
         marginTop: 4,
-        zIndex: 1,
+        zIndex: 20,
     },
     decorativeCircle1: {
         position: 'absolute',
@@ -576,11 +587,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 0,
-    },
-    // Usage Section
-    usageSection: {
-        paddingHorizontal: 16,
-        paddingTop: 16,
     },
     // Section
     section: {
@@ -619,13 +625,14 @@ const styles = StyleSheet.create({
     // Quick Actions Card
     quickActionsCard: {
         position: 'absolute',
-        bottom: -35,
+        bottom: -45,
         left: 16,
         right: 16,
         backgroundColor: COLORS.card,
         borderRadius: 20,
         paddingVertical: 18,
         paddingHorizontal: 10,
+        zIndex: 10,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -641,9 +648,22 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(15, 23, 42, 0.06)',
     },
     quickActions: {
+        gap: 0,
+    },
+    quickActionsRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
+    },
+    quickActionsDivider: {
+        height: 1,
+        backgroundColor: COLORS.divider,
+        marginVertical: 16,
+        marginHorizontal: -10,
+    },
+    usageIndicatorInCard: {
+        marginHorizontal: -10,
+        marginTop: -18,
     },
     quickActionBtn: {
         alignItems: 'center',

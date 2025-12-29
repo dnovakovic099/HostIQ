@@ -77,6 +77,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const [selectedValuableItem, setSelectedValuableItem] = useState(null); // For photo taking
   const [valuableItemNotes, setValuableItemNotes] = useState('');
   const [showValuableItemModal, setShowValuableItemModal] = useState(false);
+  const [collapsedRooms, setCollapsedRooms] = useState(new Set());
   
   // Listen for updates from RoomCaptureScreen
   React.useEffect(() => {
@@ -618,7 +619,9 @@ export default function CaptureMediaScreen({ route, navigation }) {
       >
         <SafeAreaView>
           <View style={styles.headerGradient}>
-           
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#4A90E2" />
+            </TouchableOpacity>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
                 <Ionicons name="camera" size={28} color="#4A90E2" />
@@ -885,35 +888,40 @@ export default function CaptureMediaScreen({ route, navigation }) {
           </View>
         )}
 
-        {/* Submit Button */}
-        {photos.length > 0 && (
-          <View style={styles.submitContainer}>
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                uploading && styles.submitButtonDisabled,
-              ]}
-              onPress={handleSubmitInspection}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <>
-                  <ActivityIndicator color="#FFF" size="small" style={{ marginRight: 8 }} />
-                  <Text style={styles.submitButtonText}>
-                    Uploading {uploadProgress.current}/{uploadProgress.total}...
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={24} color="#FFF" />
-                  <Text style={styles.submitButtonText}>
-                    Submit Inspection ({photos.length} photos)
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* Submit Button - Always visible */}
+        <View style={styles.submitContainer}>
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              (uploading || photos.length === 0) && styles.submitButtonDisabled,
+            ]}
+            onPress={handleSubmitInspection}
+            disabled={uploading || photos.length === 0}
+          >
+            {uploading ? (
+              <>
+                <ActivityIndicator color="#FFF" size="small" style={{ marginRight: 8 }} />
+                <Text style={styles.submitButtonText}>
+                  Uploading {uploadProgress.current}/{uploadProgress.total}...
+                </Text>
+              </>
+            ) : photos.length === 0 ? (
+              <>
+                <Ionicons name="camera-outline" size={24} color="#FFF" />
+                <Text style={styles.submitButtonText}>
+                  Start by taking photos for each room
+                </Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={24} color="#FFF" />
+                <Text style={styles.submitButtonText}>
+                  Submit Inspection ({photos.length} photos)
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.bottomPadding} />
       </ScrollView>
