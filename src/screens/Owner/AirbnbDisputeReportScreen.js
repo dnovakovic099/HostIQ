@@ -17,6 +17,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../api/client';
+import { API_URL } from '../../config/api';
+import * as SecureStore from 'expo-secure-store';
+import axios from 'axios';
 
 // Try to import native modules - they may not be available in all environments
 let Print = null;
@@ -46,6 +49,181 @@ const COLORS = {
   separator: '#E5E5EA',
 };
 
+// Base64 encoder for React Native (polyfill for btoa)
+const base64Encode = (str) => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  let output = '';
+  for (let i = 0; i < str.length; i += 3) {
+    const a = str.charCodeAt(i);
+    const b = i + 1 < str.length ? str.charCodeAt(i + 1) : 0;
+    const c = i + 2 < str.length ? str.charCodeAt(i + 2) : 0;
+    const bitmap = (a << 16) | (b << 8) | c;
+    output += chars.charAt((bitmap >> 18) & 63);
+    output += chars.charAt((bitmap >> 12) & 63);
+    output += i + 1 < str.length ? chars.charAt((bitmap >> 6) & 63) : '=';
+    output += i + 2 < str.length ? chars.charAt(bitmap & 63) : '=';
+  }
+  return output;
+};
+
+// Synchronous version for PDF generation (doesn't include auth token)
+const fixImageUrlSync = (url) => {
+  if (!url) return url;
+  
+  const originalUrl = String(url).trim();
+  url = originalUrl;
+  
+  const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
+  
+  let fixedUrl;
+  
+  if (isFullUrl) {
+    const productionDomain = 'roomify-server-production.up.railway.app';
+    const baseUrl = API_URL.replace('/api', '');
+    const isProductionUrl = url.includes(productionDomain);
+    
+    if (isProductionUrl) {
+      if (url.startsWith('http://')) {
+        url = url.replace('http://', 'https://');
+      }
+      
+      if (!baseUrl.includes('roomify-server-production')) {
+        const path = url.replace(`https://${productionDomain}`, '').replace(`http://${productionDomain}`, '');
+        fixedUrl = baseUrl + path;
+      } else {
+        fixedUrl = url;
+      }
+    } else {
+      if (url.startsWith('http://')) {
+        fixedUrl = url.replace('http://', 'https://');
+      } else {
+        fixedUrl = url;
+      }
+    }
+  } else {
+    const baseUrl = API_URL.replace('/api', '');
+    const path = url.startsWith('/') ? url : '/' + url;
+    fixedUrl = baseUrl + path;
+  }
+  
+  return fixedUrl;
+};
+
+// Async version with auth token for React Native Image component
+const fixImageUrl = async (url) => {
+  if (!url) return url;
+  
+  // Ensure it's a string and trim whitespace
+  const originalUrl = String(url).trim();
+  url = originalUrl;
+  
+  // Check if it's already a full URL
+  const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
+  
+  let fixedUrl;
+  
+  if (isFullUrl) {
+    // Backend returned a full URL
+    const productionDomain = 'roomify-server-production.up.railway.app';
+    const baseUrl = API_URL.replace('/api', '');
+    
+    // Check if URL contains production domain (handle both http and https)
+    const isProductionUrl = url.includes(productionDomain);
+    
+    if (isProductionUrl) {
+      // Convert HTTP to HTTPS for production URLs (Railway supports HTTPS)
+      if (url.startsWith('http://')) {
+        url = url.replace('http://', 'https://');
+      }
+      
+      // If we're using local API, replace production URL with local base
+      if (!baseUrl.includes('roomify-server-production')) {
+        // Extract the path from the production URL and use local base
+        const path = url.replace(`https://${productionDomain}`, '').replace(`http://${productionDomain}`, '');
+        fixedUrl = baseUrl + path;
+      } else {
+        // Using production API, use HTTPS version
+        fixedUrl = url;
+      }
+    } else {
+      // Not a production URL, convert HTTP to HTTPS for security
+      if (url.startsWith('http://')) {
+        fixedUrl = url.replace('http://', 'https://');
+      } else {
+        fixedUrl = url;
+      }
+    }
+  } else {
+    // It's a relative path (starts with /), construct full URL
+    const baseUrl = API_URL.replace('/api', '');
+    const path = url.startsWith('/') ? url : '/' + url;
+    fixedUrl = baseUrl + path;
+  }
+  
+  // Try to append auth token as query parameter for image access
+  try {
+    const token = await SecureStore.getItemAsync('accessToken');
+    if (token && fixedUrl) {
+      const separator = fixedUrl.includes('?') ? '&' : '?';
+      fixedUrl = `${fixedUrl}${separator}token=${encodeURIComponent(token)}`;
+    }
+  } catch (error) {
+    console.log('Could not append auth token to image URL:', error);
+  }
+  
+  // Debug logging
+  if (originalUrl !== fixedUrl) {
+    console.log('🖼️  Image URL fixed:', {
+      original: originalUrl,
+      fixed: fixedUrl.replace(/token=[^&]+/, 'token=***'), // Hide token in logs
+    });
+  }
+  
+  return fixedUrl;
+};
+
+// Component to handle image loading (simplified like other screens)
+// NOTE: This requires the backend to serve static files from /uploads/ folder.
+// If images fail to load with 404 errors, the backend needs to configure static file serving.
+const AuthenticatedImage = ({ media, index, inspection, onError }) => {
+  const [imageError, setImageError] = useState(false);
+  const imageKey = media.id || index;
+  
+  // Use the same approach as InspectionDetailScreen - just fix the URL and use Image component
+  // The backend must serve static files from the uploads directory for this to work
+  const imageUrl = fixImageUrlSync(media.url);
+
+  if (imageError) {
+    return (
+      <View style={styles.photoPlaceholder}>
+        <Ionicons name="image-outline" size={32} color={COLORS.text.tertiary} />
+        <Text style={styles.photoPlaceholderText}>Image unavailable</Text>
+      </View>
+    );
+  }
+
+  return (
+    <Image 
+      source={{ uri: imageUrl }} 
+      style={styles.photo} 
+      resizeMode="cover"
+      onLoad={() => {
+        console.log(`✅ Image ${index + 1} loaded successfully from: ${imageUrl}`);
+      }}
+      onError={(error) => {
+        console.error(`❌ Failed to load image ${index + 1}:`, {
+          url: imageUrl,
+          originalUrl: media.url,
+          error: error.nativeEvent?.error || error.nativeEvent,
+          note: 'Backend must serve static files from /uploads/ folder'
+        });
+        setImageError(true);
+        if (onError) onError(imageKey);
+      }}
+    />
+  );
+};
+
 export default function AirbnbDisputeReportScreen({ route, navigation }) {
   const { inspectionId } = route?.params || {};
   const [inspection, setInspection] = useState(null);
@@ -54,6 +232,7 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
   const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [recipientEmail, setRecipientEmail] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [imageErrors, setImageErrors] = useState({});
 
   useEffect(() => {
     if (inspectionId) {
@@ -178,16 +357,19 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
           <h2>Timestamped Photo Evidence</h2>
           <p class="disclaimer">All photos include embedded timestamps and metadata for verification.</p>
           <div class="photos-grid">
-            ${allMedia.map((media, index) => `
+            ${allMedia.map((media, index) => {
+              const imageUrl = fixImageUrlSync(media.url);
+              return `
               <div class="photo-item">
-                <img src="${media.url}" alt="Photo ${index + 1}" />
+                <img src="${imageUrl}" alt="Photo ${index + 1}" />
                 <div class="photo-info">
                   <strong>Photo #${index + 1}</strong>
                   ${media.room_name ? `<br/><span>${media.room_name}</span>` : ''}
                   <br/><small>${formatTimestamp(media.created_at || inspection.created_at)}</small>
                 </div>
               </div>
-            `).join('')}
+            `;
+            }).join('')}
           </div>
         </div>
       `;
@@ -754,20 +936,29 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
               All photos include embedded timestamps and metadata for verification.
             </Text>
             
-            {allMedia.map((media, index) => (
-              <View key={media.id || index} style={styles.photoItem}>
-                <Image source={{ uri: media.url }} style={styles.photo} resizeMode="cover" />
-                <View style={styles.photoInfo}>
-                  <Text style={styles.photoNumber}>Photo #{index + 1}</Text>
-                  {media.room_name && (
-                    <Text style={styles.photoRoom}>{media.room_name}</Text>
-                  )}
-                  <Text style={styles.photoTimestamp}>
-                    {formatTimestamp(media.created_at || inspection.created_at)}
-                  </Text>
+            {allMedia.map((media, index) => {
+              const imageKey = media.id || index;
+              
+              return (
+                <View key={imageKey} style={styles.photoItem}>
+                  <AuthenticatedImage 
+                    media={media}
+                    index={index}
+                    inspection={inspection}
+                    onError={(key) => setImageErrors(prev => ({ ...prev, [key]: true }))}
+                  />
+                  <View style={styles.photoInfo}>
+                    <Text style={styles.photoNumber}>Photo #{index + 1}</Text>
+                    {media.room_name && (
+                      <Text style={styles.photoRoom}>{media.room_name}</Text>
+                    )}
+                    <Text style={styles.photoTimestamp}>
+                      {formatTimestamp(media.created_at || inspection.created_at)}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
@@ -1152,6 +1343,18 @@ const styles = StyleSheet.create({
   photo: {
     width: 100,
     height: 80,
+  },
+  photoPlaceholder: {
+    width: 100,
+    height: 80,
+    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photoPlaceholderText: {
+    fontSize: 10,
+    color: COLORS.text.tertiary,
+    marginTop: 4,
   },
   photoInfo: {
     flex: 1,
