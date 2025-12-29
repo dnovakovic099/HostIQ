@@ -73,19 +73,22 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    height: 50,
+    minHeight: 50,
     backgroundColor: COLORS.background,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 20,
-    paddingBottom: 6,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   label: {
     fontSize: 10,
     marginTop: 2,
     fontWeight: '500',
+    lineHeight: 12,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
 });

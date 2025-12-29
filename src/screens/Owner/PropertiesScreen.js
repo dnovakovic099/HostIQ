@@ -264,9 +264,25 @@ export default function PropertiesScreen({ navigation }) {
         colors={['#DBEAFE', '#93C5FD']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0.8 }}
-        style={styles.headerWrapper}
+        style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
       >
-        <SafeAreaView>
+        {Platform.OS === 'ios' ? (
+          <SafeAreaView>
+            <View style={styles.headerGradient}>
+              <View style={styles.headerIconWrapper}>
+                <View style={styles.headerIconInner}>
+                  <Ionicons name="business" size={28} color={COLORS.primary} />
+                </View>
+              </View>
+              <View style={styles.headerTextWrapper}>
+                <Text style={styles.headerTitle}>My Properties</Text>
+                <Text style={styles.headerSubtitle}>
+                  {allProperties.length} {allProperties.length === 1 ? 'property' : 'properties'}
+                </Text>
+              </View>
+            </View>
+          </SafeAreaView>
+        ) : (
           <View style={styles.headerGradient}>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
@@ -280,7 +296,7 @@ export default function PropertiesScreen({ navigation }) {
               </Text>
             </View>
           </View>
-        </SafeAreaView>
+        )}
       </LinearGradient>
 
       {/* Search */}
