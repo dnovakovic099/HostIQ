@@ -312,77 +312,86 @@ export default function CreatePropertyScreen({ navigation }) {
   );
 
   // Step 2: Add Rooms
-  const renderAddRooms = () => (
-    <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false}>
-      <View style={styles.stepHeader}>
-        <Text style={styles.stepTitle}>Add Rooms</Text>
-        <Text style={styles.stepSubtitle}>
-          Define rooms and inspection tips for each area
-        </Text>
-      </View>
-
-      {rooms.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="home-outline" size={64} color="#ccc" />
-          <Text style={styles.emptyText}>No rooms added yet</Text>
-          <Text style={styles.emptyHint}>
-            Tap "Add Room" below to get started
+  const renderAddRooms = () => {
+    // Calculate bottom padding: footer height (52px button + 10px padding) + tabBarHeight + button height (54px) + extra spacing (20px)
+    const bottomPadding = 52 + 10 + tabBarHeight + 54 + 20;
+    
+    return (
+      <ScrollView 
+        style={styles.stepContent} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
+      >
+        <View style={styles.stepHeader}>
+          <Text style={styles.stepTitle}>Add Rooms</Text>
+          <Text style={styles.stepSubtitle}>
+            Define rooms and inspection tips for each area
           </Text>
         </View>
-      ) : (
-        <View style={styles.roomsList}>
-          {rooms.map((room, index) => (
-            <View key={room.id} style={styles.roomSummaryCard}>
-              <View style={styles.roomSummaryHeader}>
-                <View style={styles.roomSummaryLeft}>
-                  <View style={styles.roomSummaryIconContainer}>
-                    <Ionicons
-                      name={getRoomIcon(room.room_type)}
-                      size={24}
-                      color="#4A90E2"
-                    />
-                  </View>
-                  <View style={styles.roomSummaryInfo}>
-                    <Text style={styles.roomSummaryName}>{room.name}</Text>
-                    <Text style={styles.roomSummaryType}>
-                      {getRoomLabel(room.room_type)}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.roomSummaryActions}>
-                  <TouchableOpacity
-                    onPress={() => setEditingRoom(room)}
-                    style={styles.iconButton}
-                  >
-                    <Ionicons name="create-outline" size={22} color="#4A90E2" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => deleteRoom(room.id)}
-                    style={styles.iconButton}
-                  >
-                    <Ionicons name="trash-outline" size={22} color="#F44336" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-              {room.tips && (
-                <Text style={styles.roomSummaryTips} numberOfLines={2}>
-                  {room.tips}
-                </Text>
-              )}
-            </View>
-          ))}
-        </View>
-      )}
 
-      <TouchableOpacity
-        style={styles.addRoomButton}
-        onPress={() => setShowRoomPicker(true)}
-      >
-        <Ionicons name="add-circle" size={24} color="#fff" />
-        <Text style={styles.addRoomButtonText}>Add Room</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
+        {rooms.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="home-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>No rooms added yet</Text>
+            <Text style={styles.emptyHint}>
+              Tap "Add Room" below to get started
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.roomsList}>
+            {rooms.map((room, index) => (
+              <View key={room.id} style={styles.roomSummaryCard}>
+                <View style={styles.roomSummaryHeader}>
+                  <View style={styles.roomSummaryLeft}>
+                    <View style={styles.roomSummaryIconContainer}>
+                      <Ionicons
+                        name={getRoomIcon(room.room_type)}
+                        size={24}
+                        color="#4A90E2"
+                      />
+                    </View>
+                    <View style={styles.roomSummaryInfo}>
+                      <Text style={styles.roomSummaryName}>{room.name}</Text>
+                      <Text style={styles.roomSummaryType}>
+                        {getRoomLabel(room.room_type)}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.roomSummaryActions}>
+                    <TouchableOpacity
+                      onPress={() => setEditingRoom(room)}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="create-outline" size={22} color="#4A90E2" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => deleteRoom(room.id)}
+                      style={styles.iconButton}
+                    >
+                      <Ionicons name="trash-outline" size={22} color="#F44336" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {room.tips && (
+                  <Text style={styles.roomSummaryTips} numberOfLines={2}>
+                    {room.tips}
+                  </Text>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        <TouchableOpacity
+          style={styles.addRoomButton}
+          onPress={() => setShowRoomPicker(true)}
+        >
+          <Ionicons name="add-circle" size={24} color="#fff" />
+          <Text style={styles.addRoomButtonText}>Add Room</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    );
+  };
 
   // Step 3: Review
   const renderReview = () => (

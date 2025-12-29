@@ -21,8 +21,8 @@ import api from '../../api/client';
 const COLORS = {
   bg: '#F8FAFC',
   card: '#FFFFFF',
-  primary: '#4A90E2',
-  pms: '#4A90E2', // HostIQ Blue for PMS badges
+  primary: '#548EDD', // HostIQ Brand Color
+  pms: '#548EDD', // HostIQ Blue for PMS badges
   text: '#1F2937',
   textSecondary: '#6B7280',
   textMuted: '#9CA3AF',
@@ -167,7 +167,7 @@ export default function PropertiesScreen({ navigation }) {
           <View style={styles.cardHeaderContent}>
             {isPMS && (
               <LinearGradient
-                colors={['#60A5FA', '#3B82F6']}
+                colors={['#548EDD', '#4A7FD4']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.pmsBadge}
@@ -234,7 +234,7 @@ export default function PropertiesScreen({ navigation }) {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={['#60A5FA', '#3B82F6']}
+          colors={['#548EDD', '#4A7FD4']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.emptyButtonGradient}
@@ -261,7 +261,7 @@ export default function PropertiesScreen({ navigation }) {
     <View style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#3A5F9F', '#2E4F8F', '#1E3F7F', '#0F2F6F']}
+        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
@@ -286,7 +286,7 @@ export default function PropertiesScreen({ navigation }) {
           <View style={styles.headerGradient}>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
-                <Ionicons name="business" size={28} color={COLORS.primary} />
+                <Ionicons name="business" size={28} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
@@ -351,7 +351,7 @@ export default function PropertiesScreen({ navigation }) {
         activeOpacity={0.9}
       >
         <LinearGradient
-          colors={['#60A5FA', '#3B82F6']}
+          colors={['#548EDD', '#4A7FD4']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabGradient}
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E7FF',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#548EDD',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#548EDD',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#548EDD',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#548EDD',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,

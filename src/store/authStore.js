@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import api from '../api/client';
 import biometricAuth from '../services/biometricAuth';
+import { useOnboardingStore } from './onboardingStore';
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -227,6 +228,11 @@ export const useAuthStore = create((set, get) => ({
       });
       const { accessToken, refreshToken, user } = response.data;
       await get().setTokens(accessToken, refreshToken, user);
+      
+      // Reset onboarding state for new users so they see the welcome modal
+      const onboardingStore = useOnboardingStore.getState();
+      await onboardingStore.resetOnboarding();
+      
       return { success: true };
     } catch (error) {
       console.error('Register error:', error);

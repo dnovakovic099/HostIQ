@@ -23,11 +23,19 @@ export const useOnboardingStore = create((set, get) => ({
     }
   },
 
-  // Mark onboarding as seen
+  // Mark onboarding as seen (only if user has properties, otherwise it will show again)
   markOnboardingSeen: async () => {
     try {
-      await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
-      set({ hasSeenOnboarding: true });
+      const state = get();
+      // Only mark as seen if user has properties, otherwise it will show again next time
+      if (state.hasProperties) {
+        await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+        set({ hasSeenOnboarding: true });
+      } else {
+        // Don't persist dismissal if no properties - clear any existing seen flag
+        await AsyncStorage.removeItem(ONBOARDING_KEY);
+        set({ hasSeenOnboarding: false });
+      }
     } catch (error) {
       console.error('Error saving onboarding state:', error);
     }
@@ -41,10 +49,10 @@ export const useOnboardingStore = create((set, get) => ({
     });
   },
 
-  // Check if should show onboarding
+  // Check if should show onboarding (always show when no properties, regardless of previous dismissal)
   shouldShowOnboarding: () => {
     const state = get();
-    return !state.hasSeenOnboarding && (!state.hasProperties || !state.hasCleaners);
+    return !state.hasProperties;
   },
 
   // Reset onboarding (for testing/debugging)

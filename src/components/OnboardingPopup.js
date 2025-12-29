@@ -21,7 +21,7 @@ const OnboardingPopup = ({
       <View style={styles.overlay}>
         <View style={styles.card}>
           <LinearGradient
-            colors={['#B8D4E8', '#A8C5E0']}
+            colors={['#548EDD', '#4A7FD4']}
             style={styles.header}
           >
             <Ionicons name="hand-right" size={32} color="#FFF" />
@@ -34,7 +34,7 @@ const OnboardingPopup = ({
             {!hasProperties && (
               <TouchableOpacity style={styles.actionItem} onPress={onAddProperty}>
                 <View style={styles.checkContainer}>
-                  <Ionicons name="square-outline" size={24} color="#4A90E2" />
+                  <Ionicons name="square-outline" size={24} color="#548EDD" />
                 </View>
                 <Text style={styles.actionText}>Add your first property</Text>
                 <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
@@ -44,7 +44,7 @@ const OnboardingPopup = ({
             {!hasCleaners && (
               <TouchableOpacity style={styles.actionItem} onPress={onAddCleaner}>
                 <View style={styles.checkContainer}>
-                  <Ionicons name="square-outline" size={24} color="#4A90E2" />
+                  <Ionicons name="square-outline" size={24} color="#548EDD" />
                 </View>
                 <Text style={styles.actionText}>Invite your cleaning team</Text>
                 <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
@@ -64,7 +64,7 @@ const OnboardingPopup = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(84, 142, 221, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },

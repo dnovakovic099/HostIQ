@@ -97,8 +97,19 @@ export default function OwnerDashboardScreen({ navigation }) {
             );
             setRecentInspections(validInspections);
 
-            const properties = Array.isArray(propertiesRes.data) ? propertiesRes.data : [];
-            const lowRated = properties.filter(prop => prop.hasLowRating);
+            // Check properties structure - can be array or object with manualProperties/pmsProperties
+            let allProperties = [];
+            if (propertiesRes.data.manualProperties || propertiesRes.data.pmsProperties) {
+                // New structure with manualProperties and pmsProperties
+                const manualProps = Array.isArray(propertiesRes.data.manualProperties) ? propertiesRes.data.manualProperties : [];
+                const pmsProps = Array.isArray(propertiesRes.data.pmsProperties) ? propertiesRes.data.pmsProperties : [];
+                allProperties = [...manualProps, ...pmsProps];
+            } else if (Array.isArray(propertiesRes.data)) {
+                // Legacy structure - direct array
+                allProperties = propertiesRes.data;
+            }
+            
+            const lowRated = allProperties.filter(prop => prop.hasLowRating);
             setLowRatingProperties(lowRated);
 
             // Fetch user profile for name
@@ -112,8 +123,10 @@ export default function OwnerDashboardScreen({ navigation }) {
             }
 
             // Check onboarding after loading stats
+            // Count actual properties from the response
+            const totalProperties = allProperties.length;
             await loadOnboardingState();
-            updateCounts(statsRes.data.properties, statsRes.data.cleaners);
+            updateCounts(totalProperties, statsRes.data.cleaners);
             if (shouldShowOnboarding()) {
                 setShowOnboarding(true);
             }
@@ -122,6 +135,12 @@ export default function OwnerDashboardScreen({ navigation }) {
             setStats({ properties: 0, units: 0, cleaners: 0, inspections_today: 0 });
             setRecentInspections([]);
             setLowRatingProperties([]);
+            // On error, still check onboarding (might be first time user)
+            await loadOnboardingState();
+            updateCounts(0, 0);
+            if (shouldShowOnboarding()) {
+                setShowOnboarding(true);
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -239,7 +258,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                 {/* Welcome Header with Integrated Quick Actions */}
                 <View style={styles.headerContainer}>
                     <LinearGradient
-                        colors={['#3A5F9F', '#2E4F8F', '#1E3F7F', '#0F2F6F']}
+                        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={[styles.welcomeSection, { paddingTop: insets.top + 12 }]}
