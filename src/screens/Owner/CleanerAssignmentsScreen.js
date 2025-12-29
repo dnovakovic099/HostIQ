@@ -359,9 +359,9 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Header */}
       <LinearGradient
-        colors={['#DBEAFE', '#93C5FD']}
+        colors={['#3A5F9F', '#2E4F8F', '#1E3F7F', '#0F2F6F']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0.8 }}
+        end={{ x: 1, y: 1 }}
         style={styles.headerWrapper}
       >
         <SafeAreaView>
@@ -370,7 +370,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
               style={styles.backButton}
               onPress={() => navigation.goBack()}
             >
-              <Ionicons name="arrow-back" size={24} color="#1F2937" />
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
             
             <View style={styles.headerTextWrapper}>
@@ -455,14 +455,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: 0.3,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: '#FFFFFF',
     fontWeight: '500',
+    opacity: 0.9,
   },
   list: {
     padding: 16,

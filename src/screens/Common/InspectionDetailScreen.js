@@ -572,7 +572,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
                     return (
                       <TouchableOpacity
                         key={roomId}
-                        style={[styles.roomTab, isSelected && styles.roomTabSelected]}
+                        style={[
+                          styles.roomTab, 
+                          isSelected && styles.roomTabSelected
+                        ]}
                         onPress={() => setSelectedRoomId(roomId)}
                       >
                         <Ionicons
@@ -1363,6 +1366,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     paddingVertical: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   roomTab: {
     flexDirection: 'row',
@@ -1375,6 +1380,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+    minWidth: 140,
   },
   roomTabSelected: {
     backgroundColor: '#3B82F6',

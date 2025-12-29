@@ -261,9 +261,9 @@ export default function PropertiesScreen({ navigation }) {
     <View style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#DBEAFE', '#93C5FD']}
+        colors={['#3A5F9F', '#2E4F8F', '#1E3F7F', '#0F2F6F']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0.8 }}
+        end={{ x: 1, y: 1 }}
         style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
       >
         {Platform.OS === 'ios' ? (
@@ -271,7 +271,7 @@ export default function PropertiesScreen({ navigation }) {
             <View style={styles.headerGradient}>
               <View style={styles.headerIconWrapper}>
                 <View style={styles.headerIconInner}>
-                  <Ionicons name="business" size={28} color={COLORS.primary} />
+                  <Ionicons name="business" size={28} color="#FFFFFF" />
                 </View>
               </View>
               <View style={styles.headerTextWrapper}>
@@ -404,15 +404,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: 0.3,
     
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: '#FFFFFF',
     fontWeight: '500',
+    opacity: 0.9,
   },
   // Search
   searchWrapper: {

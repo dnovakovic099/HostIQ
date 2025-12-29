@@ -24,6 +24,32 @@ client.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     console.log('📤 API Request:', config.method.toUpperCase(), config.url);
+    
+    // Log request payload/data
+    if (config.data) {
+      try {
+        const requestData = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
+        const dataString = JSON.stringify(requestData, null, 2);
+        if (dataString.length > 2000) {
+          console.log('📤 Request Payload (truncated):', dataString.substring(0, 2000) + '...');
+        } else {
+          console.log('📤 Request Payload:', dataString);
+        }
+      } catch (error) {
+        console.log('📤 Request Payload: [Unable to stringify]', typeof config.data);
+      }
+    }
+    
+    // Log query parameters for GET requests
+    if (config.params && Object.keys(config.params).length > 0) {
+      try {
+        const paramsString = JSON.stringify(config.params, null, 2);
+        console.log('📤 Request Params:', paramsString);
+      } catch (error) {
+        console.log('📤 Request Params: [Unable to stringify]', typeof config.params);
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -35,6 +61,20 @@ client.interceptors.request.use(
 client.interceptors.response.use(
   (response) => {
     console.log('📥 API Response:', response.config.method.toUpperCase(), response.config.url, '→', response.status);
+    
+    // Log response data (truncate if too large for readability)
+    try {
+      const responseData = response.data;
+      const dataString = JSON.stringify(responseData, null, 2);
+      if (dataString.length > 2000) {
+        console.log('📦 Response Data (truncated):', dataString.substring(0, 2000) + '...');
+      } else {
+        console.log('📦 Response Data:', dataString);
+      }
+    } catch (error) {
+      console.log('📦 Response Data: [Unable to stringify]', typeof response.data);
+    }
+    
     return response;
   },
   async (error) => {
