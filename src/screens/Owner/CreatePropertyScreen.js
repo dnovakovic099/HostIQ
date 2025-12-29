@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 import { ROOM_SUGGESTIONS, getRoomSuggestionByType } from '../../config/roomSuggestions';
 
@@ -38,6 +39,22 @@ export default function CreatePropertyScreen({ navigation }) {
 
   // Loading
   const [loading, setLoading] = useState(false);
+
+  // Reset form when screen is focused (for adding new property)
+  useFocusEffect(
+    useCallback(() => {
+      // Reset form state when screen comes into focus
+      setStep(1);
+      setPropertyName('');
+      setAddress('');
+      setRooms([]);
+      setEditingRoom(null);
+      setShowRoomPicker(false);
+      setShowTemplatePicker(false);
+      setSelectedRoomType(null);
+      setTemplates([]);
+    }, [])
+  );
 
   const addRoomFromType = async (roomType) => {
     setSelectedRoomType(roomType);
@@ -192,7 +209,19 @@ export default function CreatePropertyScreen({ navigation }) {
       Alert.alert('Success', 'Property created successfully!', [
         {
           text: 'OK',
-          onPress: () => navigation.goBack(),
+          onPress: () => {
+            // Navigate to Properties tab
+            const parentNav = navigation.getParent();
+            if (parentNav) {
+              parentNav.navigate('Properties', { screen: 'PropertiesList' });
+            } else {
+              // Fallback: go back and then navigate
+              navigation.goBack();
+              setTimeout(() => {
+                navigation.navigate('Properties');
+              }, 100);
+            }
+          },
         },
       ]);
     } catch (error) {

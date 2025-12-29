@@ -148,35 +148,67 @@ export default function CleaningReportScreen({ route, navigation }) {
   };
 
   const handleShare = async () => {
-    if (!report) return;
+    if (!report) {
+      Alert.alert('Error', 'Report data is not available');
+      return;
+    }
+    
+    if (!report.share_token) {
+      Alert.alert('Error', 'Share link is not available. Please wait for the report to finish generating.');
+      return;
+    }
     
     const shareUrl = `https://hostiq.app/report/${report.share_token}`;
     
     try {
-      await Share.share({
+      const result = await Share.share({
         title: `Cleaning Report - ${report.property_name}`,
         message: `🏠 Property Cleaning Verification\n\n${report.property_name}${report.unit_name ? ` - ${report.unit_name}` : ''}\n📅 ${report.formatted_date}\n👤 Cleaned by: ${report.cleaner_name}\n${report.cleanliness_score ? `✨ Score: ${report.cleanliness_score.toFixed(1)}/10` : ''}\n📸 ${report.photo_count} timestamped photos\n\nView full report: ${shareUrl}`,
         url: shareUrl
       });
+      
+      if (result.action === Share.sharedAction) {
+        console.log('Share successful');
+      } else if (result.action === Share.dismissedAction) {
+        console.log('Share dismissed');
+      }
     } catch (error) {
       console.error('Share error:', error);
+      Alert.alert('Error', 'Failed to share report. Please try again.');
     }
   };
 
   const handleDownloadPdf = async () => {
-    if (!report) return;
+    if (!report) {
+      Alert.alert('Error', 'Report data is not available');
+      return;
+    }
+    
+    if (!report.id) {
+      Alert.alert('Error', 'Report ID is missing. Please wait for the report to finish generating.');
+      return;
+    }
     
     setDownloadingPdf(true);
     
     try {
       const token = await SecureStore.getItemAsync('accessToken');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
       const pdfUrl = `${API_URL}/reports/${report.id}/pdf`;
+      console.log('📥 Downloading PDF from:', pdfUrl);
       
       // Create a safe filename
-      const safePropertyName = report.property_name.replace(/[^a-z0-9]/gi, '_');
-      const dateStr = new Date(report.cleaning_date).toISOString().split('T')[0];
+      const safePropertyName = (report.property_name || 'Property').replace(/[^a-z0-9]/gi, '_');
+      const dateStr = report.cleaning_date 
+        ? new Date(report.cleaning_date).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0];
       const fileName = `Cleaning_Report_${safePropertyName}_${dateStr}.pdf`;
       const fileUri = FileSystem.documentDirectory + fileName;
+      
+      console.log('💾 Saving PDF to:', fileUri);
       
       // Download the PDF
       const downloadResult = await FileSystem.downloadAsync(
@@ -189,18 +221,23 @@ export default function CleaningReportScreen({ route, navigation }) {
         }
       );
       
+      console.log('📥 Download result:', downloadResult.status, downloadResult.uri);
+      
       if (downloadResult.status !== 200) {
-        throw new Error('Failed to download PDF');
+        throw new Error(`Failed to download PDF. Status: ${downloadResult.status}`);
       }
       
       // Check if expo-sharing is available
       if (Sharing && await Sharing.isAvailableAsync()) {
+        console.log('📤 Sharing PDF using expo-sharing');
         await Sharing.shareAsync(downloadResult.uri, {
           mimeType: 'application/pdf',
           dialogTitle: 'Save or Share Cleaning Report PDF',
           UTI: 'com.adobe.pdf',
         });
+        console.log('✅ PDF shared successfully');
       } else {
+        console.log('📤 Using fallback share method');
         // Fallback: Use React Native Share with file path info
         Alert.alert(
           'PDF Ready',
@@ -226,9 +263,10 @@ export default function CleaningReportScreen({ route, navigation }) {
       }
     } catch (error) {
       console.error('PDF download error:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown error';
       Alert.alert(
         'Download Failed',
-        'Unable to download PDF report. Please try again.',
+        `Unable to download PDF report: ${errorMessage}\n\nPlease try again.`,
         [{ text: 'OK' }]
       );
     } finally {

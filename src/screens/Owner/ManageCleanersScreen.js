@@ -160,11 +160,11 @@ export default function ManageCleanersScreen({ navigation }) {
               style={styles.statPill}
               onPress={navigateToAssignments}
             >
-              <Ionicons name="calendar-outline" size={14} color="#4A90E2" />
+              <Ionicons name="calendar-outline" size={14} color="#548EDD" />
               <Text style={styles.cleanerStats}>
                 {item._count?.assignments || 0} {(item._count?.assignments || 0) === 1 ? 'assignment' : 'assignments'}
               </Text>
-              <Ionicons name="arrow-forward" size={14} color="#4A90E2" />
+              <Ionicons name="arrow-forward" size={14} color="#548EDD" />
             </TouchableOpacity>
           </View>
         </View>
@@ -177,7 +177,7 @@ export default function ManageCleanersScreen({ navigation }) {
           }}
         >
           <View style={styles.assignButtonContent}>
-            <Ionicons name="add-circle-outline" size={20} color="#4A90E2" />
+            <Ionicons name="add-circle-outline" size={20} color="#548EDD" />
             <Text style={styles.assignButtonText}>Assign New</Text>
           </View>
         </TouchableOpacity>
@@ -188,7 +188,7 @@ export default function ManageCleanersScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#548EDD" />
       </View>
     );
   }
@@ -197,12 +197,28 @@ export default function ManageCleanersScreen({ navigation }) {
     <View style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#3A5F9F', '#2E4F8F', '#1E3F7F', '#0F2F6F']}
+        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
+        style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
       >
-        <SafeAreaView>
+        {Platform.OS === 'ios' ? (
+          <SafeAreaView>
+            <View style={styles.headerGradient}>
+              <View style={styles.headerIconWrapper}>
+                <View style={styles.headerIconInner}>
+                  <Ionicons name="people" size={28} color="#FFFFFF" />
+                </View>
+              </View>
+              <View style={styles.headerTextWrapper}>
+                <Text style={styles.headerTitle}>My Cleaners</Text>
+                <Text style={styles.headerSubtitle}>
+                  {cleaners.length} {cleaners.length === 1 ? 'cleaner' : 'cleaners'}
+                </Text>
+              </View>
+            </View>
+          </SafeAreaView>
+        ) : (
           <View style={styles.headerGradient}>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
@@ -216,7 +232,7 @@ export default function ManageCleanersScreen({ navigation }) {
               </Text>
             </View>
           </View>
-        </SafeAreaView>
+        )}
       </LinearGradient>
 
       <FlatList
@@ -227,12 +243,12 @@ export default function ManageCleanersScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.empty}>
             <LinearGradient
-              colors={['#DBEAFE', '#93C5FD']}
+              colors={['#DBEAFE', '#BFDBFE']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.emptyIcon}
             >
-              <Ionicons name="people-outline" size={48} color="#4A90E2" />
+              <Ionicons name="people-outline" size={48} color="#548EDD" />
             </LinearGradient>
             <Text style={styles.emptyText}>No cleaners yet</Text>
             <Text style={styles.emptySubtext}>
@@ -248,7 +264,7 @@ export default function ManageCleanersScreen({ navigation }) {
         activeOpacity={0.9}
       >
         <LinearGradient
-          colors={['#60A5FA', '#3B82F6']}
+          colors={['#548EDD', '#4A7FD4']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabGradient}
@@ -383,7 +399,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E7FF',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#548EDD',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -417,7 +433,7 @@ const styles = StyleSheet.create({
   cleanerAvatarText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#4A90E2',
+    color: '#548EDD',
   },
   cleanerInfo: {
     flex: 1,
@@ -466,7 +482,7 @@ const styles = StyleSheet.create({
   assignButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#4A90E2',
+    color: '#548EDD',
   },
   // Empty State
   empty: {
@@ -484,7 +500,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#548EDD',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
@@ -514,7 +530,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#548EDD',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -566,7 +582,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 50,
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#548EDD',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',

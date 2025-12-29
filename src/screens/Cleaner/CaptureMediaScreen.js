@@ -46,22 +46,27 @@ export default function CaptureMediaScreen({ route, navigation }) {
   // Get propertyId from route params or assignment
   const propertyId = routePropertyId || assignment?.unit?.property?.id;
   
-  console.log('🎬 CaptureMediaScreen received params:', {
-    inspectionId,
-    propertyName,
-    unitName,
-    roomsCount: rooms.length,
-    hasRooms: rooms.length > 0,
-    isRejected,
-    failedRoomIds,
-    existingMediaCount: existingMedia.length
-  });
-  
   const [inspection, setInspection] = useState(inspectionId ? { id: inspectionId } : null);
+  
+  // Log params only once when component mounts
+  React.useEffect(() => {
+    console.log('🎬 CaptureMediaScreen received params:', {
+      inspectionId,
+      propertyName,
+      unitName,
+      roomsCount: rooms.length,
+      hasRooms: rooms.length > 0,
+      isRejected,
+      failedRoomIds,
+      existingMediaCount: existingMedia.length
+    });
+  }, []); // Empty dependency array - only log once on mount
   
   // Debug: Log when inspection ID changes
   React.useEffect(() => {
-    console.log('📋 Inspection ID state:', inspection?.id);
+    if (inspection?.id) {
+      console.log('📋 Inspection ID state:', inspection?.id);
+    }
   }, [inspection]);
   const [photos, setPhotos] = useState([]); // { id, uri, roomId, roomName }
   const [isLoadingExisting, setIsLoadingExisting] = useState(isEditing && existingMedia.length > 0);
