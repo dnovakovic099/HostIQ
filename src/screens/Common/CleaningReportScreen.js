@@ -153,22 +153,55 @@ export default function CleaningReportScreen({ route, navigation }) {
       return;
     }
     
-    if (!report.share_token) {
+    // Use share_url from API response (backend provides the correct Railway domain)
+    // Fallback to share_token for backwards compatibility if share_url is not available
+    let shareUrl = report.share_url;
+    
+    if (!shareUrl && report.share_token) {
+      // Fallback: construct URL from share_token (should not happen if backend is updated)
+      console.warn('share_url not found in API response, using share_token fallback');
+      const shareToken = String(report.share_token).trim();
+      if (shareToken && shareToken.length > 0) {
+        // Use API_URL base to construct URL (removes hardcoded hostiq.app)
+        const baseUrl = API_URL.replace('/api', '');
+        shareUrl = `${baseUrl}/report/${shareToken}`;
+      }
+    }
+    
+    if (!shareUrl) {
       Alert.alert('Error', 'Share link is not available. Please wait for the report to finish generating.');
       return;
     }
     
-    const shareUrl = `https://hostiq.app/report/${report.share_token}`;
+    // Validate URL format
+    try {
+      new URL(shareUrl);
+    } catch (error) {
+      console.error('Invalid share URL:', shareUrl, error);
+      Alert.alert('Error', 'Invalid share link format. Please try again.');
+      return;
+    }
+    
+    // Build share message with URL included
+    const shareMessage = `🏠 Property Cleaning Verification\n\n${report.property_name}${report.unit_name ? ` - ${report.unit_name}` : ''}\n📅 ${report.formatted_date}\n👤 Cleaned by: ${report.cleaner_name}\n${report.cleanliness_score ? `✨ Score: ${report.cleanliness_score.toFixed(1)}/10` : ''}\n📸 ${report.photo_count} timestamped photos\n\nView full report: ${shareUrl}`;
     
     try {
-      const result = await Share.share({
-        title: `Cleaning Report - ${report.property_name}`,
-        message: `🏠 Property Cleaning Verification\n\n${report.property_name}${report.unit_name ? ` - ${report.unit_name}` : ''}\n📅 ${report.formatted_date}\n👤 Cleaned by: ${report.cleaner_name}\n${report.cleanliness_score ? `✨ Score: ${report.cleanliness_score.toFixed(1)}/10` : ''}\n📸 ${report.photo_count} timestamped photos\n\nView full report: ${shareUrl}`,
-        url: shareUrl
-      });
+      // On iOS, include URL in message for better compatibility
+      // On Android, url parameter works better
+      const shareOptions = Platform.OS === 'ios' 
+        ? {
+            message: shareMessage,
+          }
+        : {
+            title: `Cleaning Report - ${report.property_name}`,
+            message: shareMessage,
+            url: shareUrl,
+          };
+      
+      const result = await Share.share(shareOptions);
       
       if (result.action === Share.sharedAction) {
-        console.log('Share successful');
+        console.log('Share successful:', shareUrl);
       } else if (result.action === Share.dismissedAction) {
         console.log('Share dismissed');
       }

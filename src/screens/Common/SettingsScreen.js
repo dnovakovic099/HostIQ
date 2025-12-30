@@ -95,7 +95,7 @@ export default function SettingsScreen({ navigation }) {
   );
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.profile}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
@@ -278,6 +278,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    paddingTop: 50,
   },
   profile: {
     backgroundColor: '#fff',

@@ -241,18 +241,31 @@ export const useAuthStore = create((set, get) => ({
           throw new Error(`Failed to initiate Google Sign-In: ${immediateError?.message || 'Unknown error'}. Make sure REVERSED_CLIENT_ID is in Info.plist.`);
         }
         
-        // Timeout after 30 seconds - modal should appear immediately if configured correctly
-        // If it takes longer, likely a configuration issue
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => {
-            console.error('❌ Google Sign-In timeout - modal may not have appeared');
+        // Timeout after 60 seconds - modal should appear immediately if configured correctly
+        // Store timeout ID so we can clear it if sign-in succeeds
+        let timeoutId;
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            // Don't log here - will be logged in catch block if timeout actually wins
             const reversedClientId = getReversedClientIdForInfoPlist();
             reject(new Error(`Google Sign-In timeout. The sign-in modal did not appear. This usually means:\n\n1. The app needs to be rebuilt after Info.plist changes\n2. REVERSED_CLIENT_ID in Info.plist: ${reversedClientId || 'NOT FOUND'}\n3. Make sure you've run: cd ios && pod install && cd ..\n4. Rebuild the app completely (not just reload)\n\nIf Info.plist is correct, try:\n- Clean build folder\n- Delete derived data\n- Rebuild app`));
-          }, 30000)
-        );
+          }, 60000);
+        });
         
-        userInfo = await Promise.race([signInPromise, timeoutPromise]);
-        console.log('✅ Google Sign-In successful, userInfo:', userInfo ? 'received' : 'null');
+        try {
+          userInfo = await Promise.race([signInPromise, timeoutPromise]);
+          // Clear timeout if sign-in succeeded (prevents timeout from firing and causing unhandled rejection)
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+          console.log('✅ Google Sign-In successful, userInfo:', userInfo ? 'received' : 'null');
+        } catch (error) {
+          // Clear timeout on error
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+          throw error;
+        }
       } catch (signInError) {
         console.error('❌ Google Sign-In error:', signInError);
         console.error('Error type:', typeof signInError);

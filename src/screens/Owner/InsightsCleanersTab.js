@@ -65,6 +65,7 @@ export default function InsightsCleanersTab({ navigation }) {
       // Calculate stats for each cleaner from actual inspections
       // Only count COMPLETE inspections (not PROCESSING, FAILED, or REJECTED)
       const cleanersWithStats = cleanersList.map(cleaner => {
+        const assignmentsCount = cleaner._count?.assignments ?? cleaner.assignments?.length ?? 0;
         const cleanerInspections = allInspections.filter(i => {
           // Must be by this cleaner
           if (i.creator?.id !== cleaner.id) return false;
@@ -94,6 +95,7 @@ export default function InsightsCleanersTab({ navigation }) {
           failedCount,
           passRate,
           recentInspections,
+          assignmentsCount,
           avgScore: cleanerInspections.length > 0
             ? Math.round(
                 cleanerInspections.reduce((sum, i) => sum + (i.cleanliness_score || 0), 0) / 
@@ -108,6 +110,10 @@ export default function InsightsCleanersTab({ navigation }) {
       // Calculate summary
       const totalCleaners = cleanersWithStats.length;
       const totalInspections = cleanersWithStats.reduce((sum, c) => sum + c.totalInspections, 0);
+      const totalAssignments = cleanersWithStats.reduce(
+        (sum, c) => sum + (c.assignmentsCount || 0),
+        0
+      );
       const avgPassRate = totalCleaners > 0
         ? Math.round(cleanersWithStats.reduce((sum, c) => sum + c.passRate, 0) / totalCleaners)
         : 0;
@@ -115,6 +121,7 @@ export default function InsightsCleanersTab({ navigation }) {
       setSummary({
         totalCleaners,
         totalInspections,
+        totalAssignments,
         avgPassRate
       });
     } catch (error) {
@@ -234,12 +241,19 @@ export default function InsightsCleanersTab({ navigation }) {
             <Text style={styles.summaryStatValue}>{summary.totalInspections || 0}</Text>
             <Text style={styles.summaryStatLabel}>Inspections</Text>
           </View>
+          <View style={styles.summaryStatDivider} />
+          <View style={styles.summaryStatItem}>
+            <Text style={styles.summaryStatValue}>{summary.totalAssignments || 0}</Text>
+            <Text style={styles.summaryStatLabel}>Assignments</Text>
+          </View>
         </View>
       </View>
     );
   };
 
   const renderCleanerCard = ({ item }) => {
+    const assignmentCount = item.assignmentsCount ?? item._count?.assignments ?? (item.assignments?.length ?? 0);
+
     return (
       <TouchableOpacity 
         style={styles.cleanerCard}
@@ -262,6 +276,15 @@ export default function InsightsCleanersTab({ navigation }) {
               <Text style={styles.avgScoreLabel}>avg</Text>
             </View>
           )}
+        </View>
+
+        <View style={styles.assignmentsRow}>
+          <View style={styles.assignmentPill}>
+            <Ionicons name="calendar-outline" size={14} color={COLORS.accent} />
+            <Text style={styles.assignmentText}>
+              {assignmentCount} {assignmentCount === 1 ? 'assignment' : 'assignments'}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.statsGrid}>
@@ -611,6 +634,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 2,
+  },
+  assignmentsRow: {
+    marginBottom: 12,
+  },
+  assignmentPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.accentSoft,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  assignmentText: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.accent,
   },
   trendBadge: {
     width: 32,

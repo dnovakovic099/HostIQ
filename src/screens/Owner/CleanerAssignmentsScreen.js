@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,23 +13,21 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 
 export default function CleanerAssignmentsScreen({ route, navigation }) {
   const { cleanerId, cleanerName, assignments: passedAssignments } = route.params;
   const [assignments, setAssignments] = useState(passedAssignments || []);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    // Use passed assignments directly from navigation params
-    if (passedAssignments) {
-      setAssignments(passedAssignments);
+  const fetchCleanerAssignments = useCallback(async (isInitialLoad = false) => {
+    if (isInitialLoad) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
     }
-  }, [passedAssignments]);
-
-  const fetchCleanerAssignments = async () => {
-    setRefreshing(true);
     
     try {
       const response = await api.get('/owner/cleaners');
@@ -37,14 +35,24 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
       
       if (cleaner?.assignments) {
         setAssignments(cleaner.assignments);
+      } else {
+        setAssignments([]);
       }
     } catch (error) {
       console.error('Error fetching cleaner assignments:', error);
       Alert.alert('Error', 'Failed to load assignments');
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [cleanerId]);
+
+  // Fetch assignments when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchCleanerAssignments(true);
+    }, [fetchCleanerAssignments])
+  );
 
   const getStatusColor = (status) => {
     const upperStatus = status?.toUpperCase();
@@ -127,7 +135,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
             try {
               await api.delete(`/owner/assignments/${assignment.id}`);
               Alert.alert('Success', 'Assignment cancelled successfully');
-              fetchCleanerAssignments();
+              fetchCleanerAssignments(false);
             } catch (error) {
               console.error('Error deleting assignment:', error);
               
@@ -391,7 +399,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={fetchCleanerAssignments}
+            onRefresh={() => fetchCleanerAssignments(false)}
             tintColor="#4A90E2"
             colors={['#4A90E2']}
           />
