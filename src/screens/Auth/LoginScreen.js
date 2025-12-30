@@ -35,8 +35,20 @@ export default function LoginScreen({ navigation }) {
   const [biometricType, setBiometricType] = useState('');
   const [showBiometric, setShowBiometric] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const { login, biometricLogin, biometricEnabled } = useAuthStore();
+  const { login, biometricLogin, signInWithGoogle, biometricEnabled } = useAuthStore();
   const autoLoginAttempted = useRef(false);
+  
+  // Check if Google Sign-In is configured
+  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+  const isGoogleSignInConfigured = googleClientId && 
+    googleClientId !== 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 LoginScreen - Google Sign-In Configuration Check:');
+    console.log('   EXPO_PUBLIC_GOOGLE_CLIENT_ID:', googleClientId ? `${googleClientId.substring(0, 20)}...` : 'NOT SET');
+    console.log('   isGoogleSignInConfigured:', isGoogleSignInConfigured);
+  }, []);
 
   useEffect(() => {
     loadSavedCredentials();
@@ -104,6 +116,25 @@ export default function LoginScreen({ navigation }) {
 
     if (!result.success) {
       Alert.alert('Biometric Login Failed', result.error || 'Please try again');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      const result = await signInWithGoogle();
+      setLoading(false);
+
+      if (!result.success) {
+        // Don't show alert if user cancelled
+        if (result.error !== 'Sign in was cancelled') {
+          Alert.alert('Google Sign-In Failed', result.error || 'Please try again');
+        }
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Google Sign-In handler error:', error);
+      Alert.alert('Error', error.message || 'An unexpected error occurred. Please check your Google Sign-In configuration.');
     }
   };
 
@@ -218,6 +249,32 @@ export default function LoginScreen({ navigation }) {
                     <Text style={styles.loginButtonText}>Log in</Text>
                   )}
                 </LinearGradient>
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Google Sign-In Button */}
+              <TouchableOpacity
+                style={styles.googleButtonWrapper}
+                onPress={handleGoogleSignIn}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                <View style={styles.googleButton}>
+                  {loading ? (
+                    <ActivityIndicator color="#4285F4" />
+                  ) : (
+                    <>
+                      <Ionicons name="logo-google" size={20} color="#4285F4" style={styles.googleIcon} />
+                      <Text style={styles.googleButtonText}>Sign in with Google</Text>
+                    </>
+                  )}
+                </View>
               </TouchableOpacity>
 
               {/* Sign Up Link */}
@@ -371,6 +428,44 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(148, 163, 184, 0.3)',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  googleButtonWrapper: {
+    marginBottom: 14,
+  },
+  googleButton: {
+    height: 56,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+  },
+  googleIcon: {
+    marginRight: 12,
+  },
+  googleButtonText: {
+    color: '#1E293B',
+    fontSize: 16,
+    fontWeight: '600',
     letterSpacing: 0.2,
   },
   demoBox: {

@@ -30,12 +30,21 @@
 				<string>com.hostiq.app</string>
 			</array>
 		</dict>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.1084030815170-cnkfs277vgvc4m5l1jfma1onpt9cphm5</string>
-			</array>
-		</dict>
+		<!-- 
+			Google Sign-In requires REVERSED_CLIENT_ID in CFBundleURLSchemes
+			To add it:
+			1. Get your iOS Client ID from Google Cloud Console (e.g., "123456789-abcdefgh.apps.googleusercontent.com")
+			2. Reverse it: "com.googleusercontent.apps.123456789-abcdefgh"
+			3. Add a new dict entry below with your REVERSED_CLIENT_ID
+			4. Example structure:
+			<dict>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>com.googleusercontent.apps.123456789-abcdefgh</string>
+				</array>
+			</dict>
+			The app logs your REVERSED_CLIENT_ID when it starts - check console output
+		-->
 	</array>
 	<key>CFBundleVersion</key>
 	<string>3</string>

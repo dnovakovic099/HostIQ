@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -29,7 +29,19 @@ export default function RegisterScreen({ navigation }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('CLEANER');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuthStore();
+  const { register, signInWithGoogle } = useAuthStore();
+  
+  // Check if Google Sign-In is configured
+  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+  const isGoogleSignInConfigured = googleClientId && 
+    googleClientId !== 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 RegisterScreen - Google Sign-In Configuration Check:');
+    console.log('   EXPO_PUBLIC_GOOGLE_CLIENT_ID:', googleClientId ? `${googleClientId.substring(0, 20)}...` : 'NOT SET');
+    console.log('   isGoogleSignInConfigured:', isGoogleSignInConfigured);
+  }, []);
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
@@ -53,6 +65,34 @@ export default function RegisterScreen({ navigation }) {
 
     if (!result.success) {
       Alert.alert('Registration Failed', result.error);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setLoading(true);
+      const result = await signInWithGoogle(role);
+      setLoading(false);
+
+      if (!result.success) {
+        // Don't show alert if user cancelled
+        if (result.error !== 'Sign in was cancelled') {
+          // Check if error requires role selection
+          if (result.error === 'requiresRoleSelection' || result.error?.includes('role selection') || result.error?.includes('role is required')) {
+            Alert.alert(
+              'Role Selection Required',
+              'Please select whether you are a Cleaner or Owner before signing up with Google.',
+              [{ text: 'OK' }]
+            );
+          } else {
+            Alert.alert('Google Sign-In Failed', result.error || 'Please try again');
+          }
+        }
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Google Sign-In handler error:', error);
+      Alert.alert('Error', error.message || 'An unexpected error occurred. Please check your Google Sign-In configuration.');
     }
   };
 
@@ -93,6 +133,98 @@ export default function RegisterScreen({ navigation }) {
               />
               <Text style={styles.title}>Create your account</Text>
               <Text style={styles.subtitle}>Join HostIQ to get started</Text>
+            </View>
+
+            {/* Role Selection for Google Sign-In */}
+            <View style={styles.googleRoleSection}>
+              <Text style={styles.label}>I am a:</Text>
+              <View style={styles.roleContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    role === 'CLEANER' && styles.roleButtonActive,
+                  ]}
+                  onPress={() => setRole('CLEANER')}
+                  activeOpacity={0.85}
+                >
+                  {role === 'CLEANER' ? (
+                    <View style={styles.roleButtonContent}>
+                      <Ionicons
+                        name="person-outline"
+                        size={20}
+                        color="#3B82F6"
+                      />
+                      <Text style={styles.roleButtonTextActive}>Cleaner</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.roleButtonContent}>
+                      <Ionicons
+                        name="person-outline"
+                        size={20}
+                        color="#94A3B8"
+                      />
+                      <Text style={styles.roleButtonText}>Cleaner</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.roleButton,
+                    role === 'OWNER' && styles.roleButtonActive,
+                  ]}
+                  onPress={() => setRole('OWNER')}
+                  activeOpacity={0.85}
+                >
+                  {role === 'OWNER' ? (
+                    <View style={styles.roleButtonContent}>
+                      <Ionicons
+                        name="business-outline"
+                        size={20}
+                        color="#3B82F6"
+                      />
+                      <Text style={styles.roleButtonTextActive}>Owner</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.roleButtonContent}>
+                      <Ionicons
+                        name="business-outline"
+                        size={20}
+                        color="#94A3B8"
+                      />
+                      <Text style={styles.roleButtonText}>Owner</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Google Sign-In Button */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.googleButtonWrapper}
+                onPress={handleGoogleSignIn}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                <View style={styles.googleButton}>
+                  {loading ? (
+                    <ActivityIndicator color="#4285F4" />
+                  ) : (
+                    <>
+                      <Ionicons name="logo-google" size={20} color="#4285F4" style={styles.googleIcon} />
+                      <Text style={styles.googleButtonText}>Sign up with Google</Text>
+                    </>
+                  )}
+                </View>
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.dividerContainer}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.dividerLine} />
+              </View>
             </View>
 
             {/* Form */}
@@ -296,8 +428,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '400',
   },
+  googleRoleSection: {
+    width: '100%',
+    marginBottom: 24,
+  },
   form: {
     width: '100%',
+    marginTop: 24,
     marginBottom: 24,
   },
   input: {
@@ -398,6 +535,45 @@ const styles = StyleSheet.create({
   loginLinkBold: {
     color: '#60A5FA',
     fontWeight: '600',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(148, 163, 184, 0.3)',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  googleButtonWrapper: {
+    marginBottom: 16,
+  },
+  googleButton: {
+    height: 56,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(148, 163, 184, 0.2)',
+  },
+  googleIcon: {
+    marginRight: 12,
+  },
+  googleButtonText: {
+    color: '#1E293B',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
 });
 

@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useAuthStore } from './src/store/authStore';
 import { StyleSheet } from 'react-native';
+import './src/config/googleAuth'; // Initialize Google Sign-In
 
 export default function App() {
   const { loadToken } = useAuthStore();
