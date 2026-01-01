@@ -128,7 +128,15 @@ export default function LoginScreen({ navigation }) {
       if (!result.success) {
         // Don't show alert if user cancelled
         if (result.error !== 'Sign in was cancelled') {
-          Alert.alert('Google Sign-In Failed', result.error || 'Please try again');
+          // Handle account doesn't exist case
+          if (result.error === 'requiresRoleSelection' ||
+              result.error?.toLowerCase().includes('role selection') ||
+              result.error?.toLowerCase().includes('role is required') ||
+              result.error?.toLowerCase().includes('role required')) {
+            Alert.alert('Google Sign-In Failed', 'the account with this email does not exist');
+          } else {
+            Alert.alert('Google Sign-In Failed', result.error || 'Please try again');
+          }
         }
       }
     } catch (error) {

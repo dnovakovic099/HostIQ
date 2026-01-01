@@ -20,6 +20,7 @@ export default function SimpleTabBar({ state, descriptors, navigation }) {
       Properties: focused ? 'business' : 'business-outline',
       Insights: focused ? 'bar-chart' : 'bar-chart-outline',
       Pricing: focused ? 'pricetag' : 'pricetag-outline',
+      Subscription: focused ? 'card' : 'card-outline',
       Settings: focused ? 'settings' : 'settings-outline',
     };
     return icons[routeName] || 'help-circle-outline';

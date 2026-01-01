@@ -172,7 +172,8 @@ export default function SubscriptionManagementScreen({ navigation }) {
       console.log(`🛒 Starting IAP subscription for property ${propertyId}...`);
 
       // Get available subscriptions from the store
-      const products = await RNIap.getSubscriptions(SUBSCRIPTION_SKUS);
+      // react-native-iap v12+ requires { skus: [...] } format
+      const products = await RNIap.getSubscriptions({ skus: SUBSCRIPTION_SKUS });
       console.log('📦 Available products:', products);
 
       if (!products || products.length === 0) {

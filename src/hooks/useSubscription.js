@@ -114,7 +114,8 @@ export const useSubscription = () => {
     error,
     purchaseSubscription,
     refreshSubscriptionStatus,
-    isActive: subscriptionStatus?.subscription?.is_active || false,
+    // Handle both flat format (is_active) and nested format (subscription.is_active)
+    isActive: subscriptionStatus?.is_active || subscriptionStatus?.subscription?.is_active || false,
   };
 };
 
