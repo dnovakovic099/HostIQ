@@ -63,6 +63,12 @@
         {
           "photosPermission": "Allow HostIQ to access your photos to select inspection media."
         }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.1084030815170-cnkfs277vgvc4m5l1jfma1onpt9cphm5"
+        }
       ]
     ],
     "extra": {

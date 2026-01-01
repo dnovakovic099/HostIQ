@@ -30,6 +30,12 @@
           <string>com.hostiq.app</string>
         </array>
       </dict>
+      <dict>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>exp+roomify</string>
+        </array>
+      </dict>
     </array>
     <key>CFBundleVersion</key>
     <string>35</string>
