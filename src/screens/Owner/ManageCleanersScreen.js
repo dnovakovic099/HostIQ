@@ -45,7 +45,11 @@ export default function ManageCleanersScreen({ navigation }) {
 
   const fetchCleaners = async () => {
     try {
-      const response = await api.get('/owner/cleaners');
+      // Try to fetch cleaners with assignments included
+      // If the API supports it, assignments will be included; otherwise it will just return cleaners
+      const response = await api.get('/owner/cleaners', {
+        params: { include: 'assignments' }
+      });
       setCleaners(response.data);
     } catch (error) {
       console.error('Error fetching cleaners:', error);

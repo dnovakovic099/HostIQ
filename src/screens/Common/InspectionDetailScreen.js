@@ -11,8 +11,12 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 import { API_URL } from '../../config/api';
 import colors, { getScoreColor } from '../../theme/colors';
@@ -65,6 +69,7 @@ const fixImageUrl = (url) => {
 };
 
 export default function InspectionDetailScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { inspectionId, userRole } = route?.params || {};
   const [inspection, setInspection] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -487,6 +492,54 @@ export default function InspectionDetailScreen({ route, navigation }) {
         </View>
       ) : (status === 'COMPLETE' || status === 'FAILED' || status === 'REJECTED') && cleanlinessScore !== null && cleanlinessScore !== undefined ? (
         <>
+          {/* Header Gradient */}
+          <LinearGradient
+            colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+          >
+            {Platform.OS === 'ios' ? (
+              <SafeAreaView>
+                <View style={styles.headerGradient}>
+                  <TouchableOpacity
+                    style={styles.headerBackButton}
+                    onPress={() => navigation.goBack()}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                  <View style={styles.headerIconWrapper}>
+                    <View style={styles.headerIconInner}>
+                      <Ionicons name="document-text" size={28} color="#FFFFFF" />
+                    </View>
+                  </View>
+                  <View style={styles.headerTextWrapper}>
+                    <Text style={styles.headerTitle}>Inspection Details</Text>
+                  </View>
+                </View>
+              </SafeAreaView>
+            ) : (
+              <View style={styles.headerGradient}>
+                <TouchableOpacity
+                  style={styles.headerBackButton}
+                  onPress={() => navigation.goBack()}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <View style={styles.headerIconWrapper}>
+                  <View style={styles.headerIconInner}>
+                    <Ionicons name="document-text" size={28} color="#FFFFFF" />
+                  </View>
+                </View>
+                <View style={styles.headerTextWrapper}>
+                  <Text style={styles.headerTitle}>Inspection Details</Text>
+                </View>
+              </View>
+            )}
+          </LinearGradient>
+
           {/* COMPACT HEADER DESIGN */}
           <View style={styles.compactHeader}>
             {/* Compact Info Card */}
@@ -1056,6 +1109,43 @@ const styles = StyleSheet.create({
   compactHeader: {
     backgroundColor: '#F8FAFC',
     paddingBottom: 8,
+  },
+  // Header Gradient
+  headerWrapper: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
+  },
+  headerBackButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  headerIconWrapper: {
+    marginRight: 14,
+  },
+  headerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 0.3,
   },
   headerInfoCard: {
     backgroundColor: '#FFFFFF',

@@ -30,22 +30,24 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
     }
     
     try {
-      const response = await api.get('/owner/cleaners');
-      const cleaner = response.data.find(c => String(c.id) === String(cleanerId));
+      const response = await api.get('/owner/assignments', {
+        params: { cleaner_id: cleanerId }
+      });
       
-      if (cleaner?.assignments) {
-        setAssignments(cleaner.assignments);
+      if (response.data && Array.isArray(response.data)) {
+        setAssignments(response.data);
       } else {
         setAssignments([]);
       }
     } catch (error) {
       console.error('Error fetching cleaner assignments:', error);
       Alert.alert('Error', 'Failed to load assignments');
+      setAssignments(passedAssignments || []);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [cleanerId]);
+  }, [cleanerId, passedAssignments]);
 
   // Fetch assignments when screen comes into focus
   useFocusEffect(
@@ -134,8 +136,9 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
           onPress: async () => {
             try {
               await api.delete(`/owner/assignments/${assignment.id}`);
+              // Remove the assignment from local state
+              setAssignments(prev => prev.filter(a => String(a.id) !== String(assignment.id)));
               Alert.alert('Success', 'Assignment cancelled successfully');
-              fetchCleanerAssignments(false);
             } catch (error) {
               console.error('Error deleting assignment:', error);
               
@@ -367,7 +370,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Header */}
       <LinearGradient
-        colors={['#3A5F9F', '#2E4F8F', '#1E3F7F', '#0F2F6F']}
+        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.headerWrapper}

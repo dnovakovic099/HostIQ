@@ -11,13 +11,15 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
-  Animated
+  Animated,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import client from '../../api/client';
+import { useSubscription } from '../../hooks/useSubscription';
 
 const { width } = Dimensions.get('window');
 
@@ -234,6 +236,17 @@ const AILoadingScreen = () => {
 };
 
 export default function PricingScreen() {
+  // Subscription hook
+  const {
+    isInitialized: subscriptionInitialized,
+    isLoading: subscriptionLoading,
+    product,
+    subscriptionStatus,
+    purchaseSubscription,
+    refreshSubscriptionStatus,
+    isActive: hasActiveSubscription,
+  } = useSubscription();
+
   // Subscription state
   const [hasSubscription, setHasSubscription] = useState(null); // null = loading, true/false = checked
   const [checkingSubscription, setCheckingSubscription] = useState(true);
@@ -262,16 +275,28 @@ export default function PricingScreen() {
   useEffect(() => {
     const checkSubscription = async () => {
       try {
-        // TODO: Replace with actual subscription check API
-        // For now, check if user has pricing_subscription feature enabled
-        const response = await client.get('/user/subscription');
-        const hasPricing = response.data?.features?.includes('pricing') || 
-                          response.data?.plan === 'pro' ||
-                          response.data?.plan === 'premium';
-        setHasSubscription(hasPricing);
+        // Use subscription status from hook if available
+        if (hasActiveSubscription) {
+          setHasSubscription(true);
+        } else if (subscriptionStatus) {
+          // Check subscription status from API
+          const isActive = subscriptionStatus?.subscription?.is_active || false;
+          setHasSubscription(isActive);
+        } else {
+          // Fallback: Check legacy subscription API
+          try {
+            const response = await client.get('/user/subscription');
+            const hasPricing = response.data?.features?.includes('pricing') || 
+                              response.data?.plan === 'pro' ||
+                              response.data?.plan === 'premium';
+            setHasSubscription(hasPricing);
+          } catch (error) {
+            console.log('Subscription check not available, showing upsell');
+            setHasSubscription(false);
+          }
+        }
       } catch (error) {
-        // Default to showing upsell screen (no subscription)
-        console.log('Subscription check not available, showing upsell');
+        console.log('Subscription check error:', error);
         setHasSubscription(false);
       } finally {
         setCheckingSubscription(false);
@@ -279,28 +304,70 @@ export default function PricingScreen() {
     };
 
     checkSubscription();
-  }, []);
+  }, [hasActiveSubscription, subscriptionStatus]);
 
-  const handleSubscribe = () => {
-    // TODO: Implement subscription flow
-    // For now, just show an alert or open a subscription URL
-    Alert.alert(
-      'Start Free Trial',
-      'This will open the subscription page. Would you like to continue?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Continue', 
-          onPress: () => {
-            // Option 1: Open web subscription page
-            // Linking.openURL('https://your-app.com/subscribe');
-            
-            // Option 2: For testing, just enable the feature
-            setHasSubscription(true);
-          }
-        }
-      ]
-    );
+  const handleSubscribe = async () => {
+    if (Platform.OS !== 'ios') {
+      Alert.alert(
+        'Unavailable',
+        'iOS subscription purchases are only available on iOS devices.'
+      );
+      return;
+    }
+
+    if (!subscriptionInitialized) {
+      Alert.alert(
+        'Unavailable',
+        'In-app purchases are not available on this device. Please ensure you are using a physical iOS device or a simulator with proper entitlements.'
+      );
+      return;
+    }
+
+    try {
+      // Show confirmation with product price if available
+      const priceText = product?.localizedPrice 
+        ? ` for ${product.localizedPrice}/month`
+        : '';
+      
+      Alert.alert(
+        'Subscribe to Property Subscription',
+        `Start your monthly subscription${priceText}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Subscribe',
+            onPress: async () => {
+              try {
+                const result = await purchaseSubscription();
+                
+                if (result) {
+                  // Purchase was initiated successfully
+                  // The purchaseUpdatedListener will handle verification
+                  // Refresh subscription status after a short delay
+                  setTimeout(async () => {
+                    await refreshSubscriptionStatus();
+                    setHasSubscription(true);
+                    Alert.alert(
+                      'Success!',
+                      'Your subscription has been activated successfully.'
+                    );
+                  }, 2000);
+                }
+              } catch (error) {
+                console.error('Purchase error:', error);
+                // Error is already handled in the hook/service
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Subscribe error:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to start subscription purchase. Please try again.'
+      );
+    }
   };
   
   // Refetch properties when screen comes into focus

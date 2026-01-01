@@ -35,18 +35,25 @@ try {
 }
 
 const COLORS = {
-  background: '#F2F2F7',
+  background: '#F8F9FA',
   card: '#FFFFFF',
-  primary: '#007AFF',
+  primary: '#548EDD',
+  primaryLight: '#E3F2FF',
+  primaryDark: '#4A7FD4',
   text: {
-    primary: '#000000',
-    secondary: '#3C3C43',
+    primary: '#1D1D1F',
+    secondary: '#48484A',
     tertiary: '#8E8E93',
   },
   success: '#34C759',
+  successLight: '#E8F9ED',
   warning: '#FF9500',
+  warningLight: '#FFF4E6',
   error: '#FF3B30',
+  errorLight: '#FFEBE9',
   separator: '#E5E5EA',
+  shadow: 'rgba(0, 0, 0, 0.08)',
+  overlay: 'rgba(0, 0, 0, 0.4)',
 };
 
 // Base64 encoder for React Native (polyfill for btoa)
@@ -171,7 +178,7 @@ const fixImageUrl = async (url) => {
     console.log('Could not append auth token to image URL:', error);
   }
   
-  // Debug logging
+  // Debug loggingThe
   if (originalUrl !== fixedUrl) {
     console.log('🖼️  Image URL fixed:', {
       original: originalUrl,
@@ -335,7 +342,7 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
                   </span>
                 </div>
                 <div class="room-status ${room.guest_ready ? 'ready' : 'not-ready'}">
-                  ${room.guest_ready ? '✓ Guest Ready' : '✗ Needs Attention'}
+                  ${room.guest_ready ? '✓ Guest Ready' : 'Needs Attention'}
                 </div>
                 <div class="room-photos">${roomMedia.length} photos documented</div>
                 ${roomIssues.length > 0 ? `
@@ -593,7 +600,7 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
               <div class="summary-label">Grade</div>
             </div>
             <div class="summary-item">
-              <div class="summary-value" style="color: ${isReady ? '#34C759' : '#FF3B30'}">${isReady ? '✓' : '✗'}</div>
+              <div class="summary-value" style="color: ${isReady ? '#34C759' : '#FF3B30'}">${isReady ? '✓' : '—'}</div>
               <div class="summary-label">${isReady ? 'Ready' : 'Not Ready'}</div>
             </div>
             <div class="summary-item">
@@ -795,53 +802,68 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
+        {/* Badge */}
+        <View style={styles.badgeContainer}>
           <View style={styles.headerBadge}>
-            <Ionicons name="shield-checkmark" size={20} color={COLORS.primary} />
+            <View style={styles.iconWithShadow}>
+              <Ionicons name="shield-checkmark" size={14} color={COLORS.primary} />
+            </View>
             <Text style={styles.headerBadgeText}>Official Documentation</Text>
           </View>
-          <Text style={styles.headerTitle}>Airbnb Dispute Report</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={styles.generatedText}>
             Generated {formatDateTime(new Date())}
           </Text>
         </View>
 
         {/* Property Card */}
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>PROPERTY</Text>
-          <Text style={styles.propertyName}>{propertyName}</Text>
-          {address && <Text style={styles.propertyAddress}>{address}</Text>}
-          {unitName && <Text style={styles.propertyUnit}>{unitName}</Text>}
+          <View style={styles.cardLabelRow}>
+            <Ionicons name="home" size={16} color={COLORS.primary} />
+            <Text style={styles.cardLabel}>PROPERTY INFORMATION</Text>
+          </View>
+          <View style={styles.propertySection}>
+            <Text style={styles.propertyName}>{propertyName}</Text>
+            {address && (
+              <View style={styles.propertyDetailRow}>
+                <View style={styles.iconWithShadow}>
+                  <Ionicons name="location-outline" size={16} color={COLORS.text.secondary} />
+                </View>
+                <Text style={styles.propertyAddress}>{address}</Text>
+              </View>
+            )}
+            {unitName && (
+              <View style={styles.propertyDetailRow}>
+                <View style={styles.iconWithShadow}>
+                  <Ionicons name="layers-outline" size={16} color={COLORS.text.tertiary} />
+                </View>
+                <Text style={styles.propertyUnit}>{unitName}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Inspection Summary Card */}
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>INSPECTION SUMMARY</Text>
-          
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryValue}>{formatDateTime(inspection.created_at)}</Text>
-              <Text style={styles.summaryLabel}>Date & Time</Text>
-            </View>
+          <View style={styles.cardLabelRow}>
+            <Ionicons name="clipboard" size={16} color={COLORS.primary} />
+            <Text style={styles.cardLabel}>INSPECTION SUMMARY</Text>
           </View>
           
-          <View style={styles.divider} />
-          
-          <View style={styles.summaryGrid}>
-            <View style={styles.summaryGridItem}>
-              <Text style={[styles.summaryGridValue, { color: COLORS.primary }]}>
-                {score?.toFixed(1) || '—'}
-              </Text>
-              <Text style={styles.summaryGridLabel}>Score</Text>
+          {/* Key Metrics Row */}
+          <View style={styles.summaryMetricsRow}>
+            <View style={styles.summaryMetricBox}>
+              <Text style={styles.summaryMetricValue}>{score?.toFixed(1) || '—'}</Text>
+              <Text style={styles.summaryMetricLabel}>Score</Text>
             </View>
-            <View style={styles.summaryGridItem}>
-              <Text style={styles.summaryGridValue}>{grade || '—'}</Text>
-              <Text style={styles.summaryGridLabel}>Grade</Text>
+            <View style={styles.summaryMetricDivider} />
+            <View style={styles.summaryMetricBox}>
+              <Text style={styles.summaryMetricValue}>{grade || '—'}</Text>
+              <Text style={styles.summaryMetricLabel}>Grade</Text>
             </View>
-            <View style={styles.summaryGridItem}>
-              <View style={[styles.statusIndicator, { 
-                backgroundColor: isReady ? '#E8F9ED' : '#FFEBE9' 
+            <View style={styles.summaryMetricDivider} />
+            <View style={styles.summaryMetricBox}>
+              <View style={[styles.summaryStatusIcon, { 
+                backgroundColor: isReady ? COLORS.successLight : COLORS.errorLight 
               }]}>
                 <Ionicons 
                   name={isReady ? 'checkmark-circle' : 'close-circle'} 
@@ -849,79 +871,140 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
                   color={isReady ? COLORS.success : COLORS.error} 
                 />
               </View>
-              <Text style={styles.summaryGridLabel}>{isReady ? 'Ready' : 'Not Ready'}</Text>
+              <Text style={[styles.summaryMetricLabel, {
+                color: isReady ? COLORS.success : COLORS.error,
+                marginTop: 4,
+                fontWeight: '700'
+              }]}>
+                {isReady ? 'Ready' : 'Not Ready'}
+              </Text>
             </View>
-            <View style={styles.summaryGridItem}>
-              <Text style={styles.summaryGridValue}>{allMedia.length}</Text>
-              <Text style={styles.summaryGridLabel}>Photos</Text>
+            <View style={styles.summaryMetricDivider} />
+            <View style={styles.summaryMetricBox}>
+              <Text style={styles.summaryMetricValue}>{allMedia.length}</Text>
+              <Text style={styles.summaryMetricLabel}>Photos</Text>
             </View>
           </View>
           
-          <View style={styles.divider} />
+          <View style={styles.summaryDivider} />
           
-          <View style={styles.inspectorRow}>
-            <Ionicons name="person-circle-outline" size={20} color={COLORS.text.tertiary} />
-            <Text style={styles.inspectorText}>Inspected by {cleanerName}</Text>
+          {/* Details Section */}
+          <View style={styles.summaryDetails}>
+            <View style={styles.summaryDetailItem}>
+              <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
+              <View style={styles.summaryDetailContent}>
+                <Text style={styles.summaryDetailLabel}>Inspection Date</Text>
+                <Text style={styles.summaryDetailValue}>{formatDateTime(inspection.created_at)}</Text>
+              </View>
+            </View>
+            <View style={styles.summaryDetailItem}>
+              <Ionicons name="person-outline" size={16} color={COLORS.primary} />
+              <View style={styles.summaryDetailContent}>
+                <Text style={styles.summaryDetailLabel}>Inspected By</Text>
+                <Text style={styles.summaryDetailValue}>{cleanerName}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
         {/* Issues Card */}
         {issues.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>DOCUMENTED ISSUES</Text>
-            {issues.map((issue, index) => (
-              <View key={index} style={styles.issueRow}>
-                <View style={styles.issueBullet}>
-                  <Text style={styles.issueBulletText}>{index + 1}</Text>
-                </View>
-                <Text style={styles.issueText}>{issue}</Text>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardLabelRow}>
+                <Ionicons name="alert-circle" size={16} color={COLORS.primary} />
+                <Text style={styles.cardLabel}>DOCUMENTED ISSUES</Text>
               </View>
-            ))}
+              <View style={styles.issueCountBadge}>
+                <Text style={styles.issueCountText}>{issues.length}</Text>
+              </View>
+            </View>
+            <View style={styles.issuesList}>
+              {issues.map((issue, index) => (
+                <View key={index} style={styles.issueItem}>
+                  <View style={styles.issueIndicator}>
+                    <View style={styles.issueDot} />
+                  </View>
+                  <View style={styles.issueContent}>
+                    <Text style={styles.issueNumberLabel}>Issue {index + 1}</Text>
+                    <Text style={styles.issueText}>{issue}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
         {/* Room Breakdown */}
         {Object.keys(roomResults).length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>ROOM-BY-ROOM ANALYSIS</Text>
+            <View style={styles.cardLabelRow}>
+              <Ionicons name="grid" size={16} color={COLORS.primary} />
+              <Text style={styles.cardLabel}>ROOM-BY-ROOM ANALYSIS</Text>
+            </View>
             {Object.entries(roomResults).map(([roomId, room], index) => {
               const roomMedia = allMedia.filter(m => m.room_id === roomId);
               const roomIssues = room.cleanliness_reasons || [];
               
               return (
-                <View key={roomId} style={[styles.roomSection, index > 0 && styles.roomSectionBorder]}>
-                  <View style={styles.roomHeader}>
-                    <Text style={styles.roomName}>{room.room_name}</Text>
-                    <View style={styles.roomScoreBadge}>
-                      <Text style={[styles.roomScore, { 
-                        color: room.cleanliness_score >= 7 ? COLORS.success : 
-                               room.cleanliness_score >= 5 ? COLORS.warning : COLORS.error 
-                      }]}>
-                        {room.cleanliness_score}/10
-                      </Text>
-                    </View>
+                <View key={roomId} style={[styles.roomCard, index > 0 && styles.roomCardSpacing]}>
+                  <View style={styles.roomIndicator}>
+                    <View style={styles.roomDot} />
                   </View>
-                  
-                  <View style={styles.roomMeta}>
-                    <View style={[styles.roomStatusBadge, {
-                      backgroundColor: room.guest_ready ? '#E8F9ED' : '#FFEBE9'
-                    }]}>
-                      <Text style={[styles.roomStatusText, {
-                        color: room.guest_ready ? COLORS.success : COLORS.error
+                  <View style={styles.roomContent}>
+                    <View style={styles.roomHeader}>
+                      <View>
+                        <Text style={styles.roomNameLabel}>Room {index + 1}</Text>
+                        <Text style={styles.roomName}>{room.room_name}</Text>
+                      </View>
+                      <View style={[styles.roomScoreBadge, {
+                        backgroundColor: room.cleanliness_score >= 7 ? COLORS.successLight : 
+                                         room.cleanliness_score >= 5 ? COLORS.warningLight : COLORS.errorLight
                       }]}>
-                        {room.guest_ready ? '✓ Guest Ready' : '✗ Needs Attention'}
-                      </Text>
+                        <Text style={[styles.roomScore, { 
+                          color: room.cleanliness_score >= 7 ? COLORS.success : 
+                                 room.cleanliness_score >= 5 ? COLORS.warning : COLORS.error 
+                        }]}>
+                          {room.cleanliness_score}/10
+                        </Text>
+                      </View>
                     </View>
-                    <Text style={styles.roomPhotoCount}>{roomMedia.length} photos</Text>
+                    
+                    <View style={styles.roomDetails}>
+                      <View style={[styles.roomStatusBadge, {
+                        backgroundColor: room.guest_ready ? COLORS.successLight : COLORS.errorLight
+                      }]}>
+                        <Ionicons 
+                          name={room.guest_ready ? 'checkmark-circle' : 'alert-circle'} 
+                          size={14} 
+                          color={room.guest_ready ? COLORS.success : COLORS.error} 
+                        />
+                        <Text style={[styles.roomStatusText, {
+                          color: room.guest_ready ? COLORS.success : COLORS.error
+                        }]}>
+                          {room.guest_ready ? 'Guest Ready' : 'Needs Attention'}
+                        </Text>
+                      </View>
+                      <View style={styles.roomPhotoCountContainer}>
+                        <View style={styles.iconWithShadow}>
+                          <Ionicons name="camera-outline" size={14} color={COLORS.text.tertiary} />
+                        </View>
+                        <Text style={styles.roomPhotoCount}>{roomMedia.length} photos</Text>
+                      </View>
+                    </View>
+                    
+                    {roomIssues.length > 0 && (
+                      <View style={styles.roomIssuesContainer}>
+                        <Text style={styles.roomIssuesLabel}>Issues Found:</Text>
+                        {roomIssues.map((issue, i) => (
+                          <View key={i} style={styles.roomIssueItem}>
+                            <View style={styles.roomIssueDot} />
+                            <Text style={styles.roomIssueText}>{issue}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
                   </View>
-                  
-                  {roomIssues.length > 0 && (
-                    <View style={styles.roomIssues}>
-                      {roomIssues.map((issue, i) => (
-                        <Text key={i} style={styles.roomIssueText}>• {issue}</Text>
-                      ))}
-                    </View>
-                  )}
                 </View>
               );
             })}
@@ -931,7 +1014,10 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
         {/* Photo Evidence */}
         {allMedia.length > 0 && (
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>TIMESTAMPED PHOTO EVIDENCE</Text>
+            <View style={styles.cardLabelRow}>
+              <Ionicons name="images" size={16} color={COLORS.primary} />
+              <Text style={styles.cardLabel}>TIMESTAMPED PHOTO EVIDENCE</Text>
+            </View>
             <Text style={styles.photoDisclaimer}>
               All photos include embedded timestamps and metadata for verification.
             </Text>
@@ -941,20 +1027,35 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
               
               return (
                 <View key={imageKey} style={styles.photoItem}>
-                  <AuthenticatedImage 
-                    media={media}
-                    index={index}
-                    inspection={inspection}
-                    onError={(key) => setImageErrors(prev => ({ ...prev, [key]: true }))}
-                  />
+                  <View style={styles.photoImageContainer}>
+                    <AuthenticatedImage 
+                      media={media}
+                      index={index}
+                      inspection={inspection}
+                      onError={(key) => setImageErrors(prev => ({ ...prev, [key]: true }))}
+                    />
+                    <View style={styles.photoIndexBadge}>
+                      <Text style={styles.photoIndexText}>#{index + 1}</Text>
+                    </View>
+                  </View>
                   <View style={styles.photoInfo}>
-                    <Text style={styles.photoNumber}>Photo #{index + 1}</Text>
-                    {media.room_name && (
-                      <Text style={styles.photoRoom}>{media.room_name}</Text>
-                    )}
-                    <Text style={styles.photoTimestamp}>
-                      {formatTimestamp(media.created_at || inspection.created_at)}
-                    </Text>
+                    <View style={styles.photoHeader}>
+                      <Text style={styles.photoNumber}>Photo #{index + 1}</Text>
+                      {media.room_name && (
+                        <View style={styles.photoRoomBadge}>
+                          <Ionicons name="location" size={12} color={COLORS.text.secondary} />
+                          <Text style={styles.photoRoom}>{media.room_name}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.photoMetadata}>
+                      <View style={styles.photoTimestampContainer}>
+                        <Ionicons name="time-outline" size={13} color={COLORS.text.tertiary} />
+                        <Text style={styles.photoTimestamp}>
+                          {formatTimestamp(media.created_at || inspection.created_at)}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
               );
@@ -1096,7 +1197,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   content: {
-    paddingBottom: 120,
+    paddingBottom: 100,
   },
   loadingContainer: {
     flex: 1,
@@ -1107,40 +1208,62 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: COLORS.text.tertiary,
+    fontWeight: '500',
   },
   
-  // Header
-  header: {
-    backgroundColor: COLORS.card,
-    padding: 20,
+  // Icon Shadow
+  iconWithShadow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(0, 0, 0, 0.1)',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  
+  // Badge
+  badgeContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 12,
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.separator,
   },
   headerBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EBF4FF',
+    backgroundColor: COLORS.card,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-    marginBottom: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    gap: 8,
+    marginBottom: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.shadow,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   headerBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.primary,
-  },
-  headerTitle: {
-    fontSize: 24,
+    fontSize: 11,
     fontWeight: '700',
-    color: COLORS.text.primary,
-    marginBottom: 4,
+    color: COLORS.text.secondary,
+    letterSpacing: 0.3,
   },
-  headerSubtitle: {
-    fontSize: 13,
+  generatedText: {
+    fontSize: 12,
     color: COLORS.text.tertiary,
+    fontWeight: '500',
   },
   
   // Card
@@ -1148,201 +1271,376 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     marginHorizontal: 16,
     marginTop: 16,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 10,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
+        shadowColor: COLORS.shadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 1,
+        shadowRadius: 6,
       },
       android: {
         elevation: 2,
       },
     }),
   },
+  cardLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
   cardLabel: {
     fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.text.tertiary,
-    letterSpacing: 0.5,
-    marginBottom: 12,
+    fontWeight: '700',
+    color: COLORS.primary,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   
   // Property
+  propertySection: {
+    marginTop: 4,
+  },
   propertyName: {
     fontSize: 20,
     fontWeight: '700',
     color: COLORS.text.primary,
+    letterSpacing: -0.3,
+    marginBottom: 12,
+    lineHeight: 26,
+  },
+  propertyDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
   },
   propertyAddress: {
     fontSize: 15,
     color: COLORS.text.secondary,
-    marginTop: 4,
+    fontWeight: '500',
+    lineHeight: 20,
+    flex: 1,
   },
   propertyUnit: {
     fontSize: 14,
     color: COLORS.text.tertiary,
-    marginTop: 2,
+    fontWeight: '500',
+    flex: 1,
   },
   
   // Summary
-  summaryRow: {
-    marginBottom: 12,
-  },
-  summaryItem: {},
-  summaryValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-  },
-  summaryLabel: {
-    fontSize: 12,
-    color: COLORS.text.tertiary,
-    marginTop: 2,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: COLORS.separator,
-    marginVertical: 12,
-  },
-  summaryGrid: {
+  summaryMetricsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  summaryGridItem: {
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  summaryMetricBox: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  summaryGridValue: {
+  summaryMetricValue: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
     color: COLORS.text.primary,
+    letterSpacing: -0.5,
+    marginBottom: 4,
   },
-  summaryGridLabel: {
+  summaryMetricLabel: {
     fontSize: 11,
     color: COLORS.text.tertiary,
-    marginTop: 4,
+    fontWeight: '600',
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
-  statusIndicator: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  summaryMetricDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: COLORS.separator,
+    opacity: 0.6,
+    marginHorizontal: 4,
+  },
+  summaryStatusIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 4,
   },
-  inspectorRow: {
+  summaryDivider: {
+    height: 1,
+    backgroundColor: COLORS.separator,
+    marginVertical: 16,
+    opacity: 0.6,
+  },
+  summaryDetails: {
+    gap: 12,
+  },
+  summaryDetailItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: 12,
   },
-  inspectorText: {
+  summaryDetailContent: {
+    flex: 1,
+  },
+  summaryDetailLabel: {
+    fontSize: 12,
+    color: COLORS.text.tertiary,
+    fontWeight: '600',
+    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  summaryDetailValue: {
     fontSize: 14,
-    color: COLORS.text.secondary,
+    color: COLORS.text.primary,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.separator,
+    marginVertical: 12,
+    opacity: 0.6,
   },
   
   // Issues
-  issueRow: {
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-    gap: 10,
-  },
-  issueBullet: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FFEBE9',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 12,
   },
-  issueBulletText: {
-    fontSize: 11,
+  issueCountBadge: {
+    backgroundColor: COLORS.errorLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  issueCountText: {
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.error,
   },
-  issueText: {
+  issuesList: {
+    marginTop: 4,
+  },
+  issueItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    borderLeftWidth: 1.5,
+    borderLeftColor: COLORS.primary,
+  },
+  issueIndicator: {
+    paddingTop: 2,
+  },
+  issueDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+  },
+  issueContent: {
     flex: 1,
+  },
+  issueNumberLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.text.tertiary,
+    letterSpacing: 0.3,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  issueText: {
     fontSize: 14,
     color: COLORS.text.primary,
     lineHeight: 20,
+    fontWeight: '500',
   },
   
   // Room Section
-  roomSection: {
+  roomCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    borderLeftWidth: 1.5,
+    borderLeftColor: COLORS.primary,
     paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    gap: 12,
   },
-  roomSectionBorder: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.separator,
+  roomCardSpacing: {
+    marginTop: 0,
+  },
+  roomIndicator: {
+    paddingTop: 2,
+  },
+  roomDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+  },
+  roomContent: {
+    flex: 1,
   },
   roomHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+  roomNameLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.text.tertiary,
+    letterSpacing: 0.3,
+    marginBottom: 4,
+    textTransform: 'uppercase',
   },
   roomName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.text.primary,
+    letterSpacing: -0.2,
   },
   roomScoreBadge: {
-    backgroundColor: '#F5F5F7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    minWidth: 60,
+    alignItems: 'center',
   },
   roomScore: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
   },
-  roomMeta: {
+  roomDetails: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
     gap: 12,
+    marginBottom: 10,
+    flexWrap: 'wrap',
   },
   roomStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
   },
   roomStatusText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.1,
+  },
+  roomPhotoCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   roomPhotoCount: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.text.tertiary,
+    fontWeight: '500',
   },
-  roomIssues: {
-    marginTop: 10,
-    paddingLeft: 8,
+  roomIssuesContainer: {
+    marginTop: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(229, 229, 234, 0.8)',
+  },
+  roomIssuesLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.text.secondary,
+    marginBottom: 8,
+    letterSpacing: 0.2,
+  },
+  roomIssueItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+    gap: 8,
+  },
+  roomIssueDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.text.tertiary,
+    marginTop: 6,
   },
   roomIssueText: {
+    flex: 1,
     fontSize: 13,
     color: COLORS.text.secondary,
     lineHeight: 20,
+    fontWeight: '500',
   },
   
   // Photos
   photoDisclaimer: {
     fontSize: 12,
-    color: COLORS.text.tertiary,
+    color: COLORS.text.secondary,
     marginBottom: 16,
-    fontStyle: 'italic',
+    fontWeight: '500',
+    lineHeight: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
   },
   photoItem: {
     flexDirection: 'row',
     marginBottom: 12,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: '#F5F5F7',
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.shadow,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  photoImageContainer: {
+    position: 'relative',
   },
   photo: {
     width: 100,
     height: 80,
+    backgroundColor: COLORS.background,
   },
   photoPlaceholder: {
     width: 100,
@@ -1352,46 +1650,89 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   photoPlaceholderText: {
-    fontSize: 10,
+    fontSize: 9,
     color: COLORS.text.tertiary,
-    marginTop: 4,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  photoIndexBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  photoIndexText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   photoInfo: {
     flex: 1,
-    padding: 10,
-    justifyContent: 'center',
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  photoHeader: {
+    marginBottom: 8,
   },
   photoNumber: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.text.primary,
+    marginBottom: 6,
+    letterSpacing: -0.2,
+  },
+  photoRoomBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.background,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
   },
   photoRoom: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.text.secondary,
-    marginTop: 2,
+    fontWeight: '600',
+  },
+  photoMetadata: {
+    marginTop: 'auto',
+  },
+  photoTimestampContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   photoTimestamp: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.text.tertiary,
-    marginTop: 4,
+    fontWeight: '500',
   },
   
   // Footer
   footer: {
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
+    marginTop: 4,
   },
   footerText: {
     fontSize: 12,
-    color: COLORS.text.tertiary,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 18,
+    fontWeight: '500',
+    maxWidth: '90%',
   },
   footerNote: {
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.text.tertiary,
     marginTop: 8,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   
   // Bottom Bar
@@ -1401,25 +1742,38 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: COLORS.card,
-    padding: 16,
-    paddingBottom: 32,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    padding: 12,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+    borderTopWidth: 1,
     borderTopColor: COLORS.separator,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.shadow,
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   generatingOverlay: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 8,
+    paddingVertical: 6,
   },
   generatingText: {
     fontSize: 13,
     color: COLORS.text.secondary,
+    fontWeight: '600',
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
   },
   actionButton: {
     flex: 1,
@@ -1427,46 +1781,75 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.shadow,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   shareTextButton: {
-    backgroundColor: '#F5F5F7',
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.separator,
   },
   shareTextButtonText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.primary,
+    letterSpacing: 0.1,
   },
   sharePdfButton: {
-    backgroundColor: '#EBF4FF',
+    backgroundColor: COLORS.primaryLight,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
   },
   sharePdfButtonText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.primary,
+    letterSpacing: 0.1,
   },
   emailButton: {
     backgroundColor: COLORS.primary,
   },
   emailButtonText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: 0.1,
   },
   
   // Email Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'flex-end',
   },
   emailModalContent: {
     backgroundColor: COLORS.card,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.shadow,
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 1,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   emailModalHeader: {
     flexDirection: 'row',
@@ -1475,67 +1858,89 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   emailModalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: COLORS.text.primary,
+    letterSpacing: -0.2,
   },
   emailModalClose: {
     padding: 4,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
   },
   emailModalSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.text.secondary,
-    marginBottom: 20,
-    lineHeight: 20,
+    marginBottom: 16,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   emailInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.background,
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: 8,
+    paddingHorizontal: 12,
     paddingVertical: 4,
-    gap: 12,
-    marginBottom: 24,
+    gap: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.separator,
   },
   emailInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.text.primary,
-    paddingVertical: 14,
+    paddingVertical: 10,
+    fontWeight: '500',
   },
   emailModalButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
   },
   emailCancelButton: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.separator,
   },
   emailCancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: COLORS.text.secondary,
+    letterSpacing: 0.1,
   },
   emailSendButton: {
     flex: 2,
     backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   emailSendButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   emailSendButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#FFFFFF',
+    letterSpacing: 0.1,
   },
 });

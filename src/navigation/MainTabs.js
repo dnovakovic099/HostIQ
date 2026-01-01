@@ -125,7 +125,7 @@ function InsightsStack() {
       <Stack.Screen 
         name="InspectionDetail" 
         component={InspectionDetailScreen}
-        options={{ title: 'Inspection Details' }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

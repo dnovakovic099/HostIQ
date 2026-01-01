@@ -73,7 +73,7 @@ export default function CleanerStack() {
       <Stack.Screen 
         name="InspectionDetail" 
         component={InspectionDetailScreen}
-        options={{ title: 'Inspection Details' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="CleanerReports" 
