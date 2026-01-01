@@ -17,6 +17,7 @@ import CleanerAssignmentsScreen from '../screens/Owner/CleanerAssignmentsScreen'
 import InspectionReportsScreen from '../screens/Owner/InspectionReportsScreen';
 import ListingOptimizationScreen from '../screens/Owner/ListingOptimizationScreen';
 import SubscriptionManagementScreen from '../screens/Owner/SubscriptionManagementScreen';
+import SubscriptionScreen from '../screens/Owner/SubscriptionScreen';
 import PMSSettingsScreen from '../screens/Owner/PMSSettingsScreen';
 import IssuesScreen from '../screens/Owner/IssuesScreen';
 import RoomTemplatesScreen from '../screens/Owner/RoomTemplatesScreen';
@@ -221,6 +222,11 @@ export default function OwnerStack() {
         name="SubscriptionManagement" 
         component={SubscriptionManagementScreen}
         options={{ title: 'Subscriptions' }}
+      />
+      <Stack.Screen 
+        name="Subscription" 
+        component={SubscriptionScreen}
+        options={{ title: 'Choose Subscription' }}
       />
       <Stack.Screen 
         name="PMSSettings" 

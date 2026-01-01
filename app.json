@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hostiq.app",
+      "bundleIdentifier": "com.41labsllc.hostiq",
       "buildNumber": "35",
       "deploymentTarget": "13.4",
       "infoPlist": {
@@ -40,7 +40,7 @@
           "backgroundColor": "#0A1628"
         }
       },
-      "package": "com.hostiq.app",
+      "package": "com.41labsllc.hostiq",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",

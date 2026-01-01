@@ -20,6 +20,7 @@ import PayCleanerScreen from '../screens/Owner/PayCleanerScreen';
 import PaymentHistoryScreen from '../screens/Common/PaymentHistoryScreen';
 import InventoryScreen from '../screens/Owner/InventoryScreen';
 import ValuableItemsScreen from '../screens/Owner/ValuableItemsScreen';
+import SubscriptionScreen from '../screens/Owner/SubscriptionScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -164,6 +165,39 @@ function PricingStack() {
   );
 }
 
+// Subscription Stack
+function SubscriptionStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#FFFFFF',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 0.5 },
+          shadowOpacity: 0.1,
+          shadowRadius: 0,
+          elevation: 1,
+          borderBottomWidth: 0.5,
+          borderBottomColor: '#E5E5EA',
+        },
+        headerTintColor: '#4A90E2',
+        headerTitleStyle: {
+          fontWeight: '600',
+          fontSize: 17,
+          color: '#1D1D1F',
+        },
+        headerBackTitleVisible: false,
+      }}
+    >
+      <Stack.Screen 
+        name="SubscriptionList" 
+        component={SubscriptionScreen}
+        options={{ title: 'Subscriptions', headerShown: false }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 export default function MainTabs() {
   const { user } = useAuthStore();
   const isCleaner = user?.role === 'CLEANER';
@@ -251,6 +285,11 @@ export default function MainTabs() {
             name="Pricing" 
             component={PricingStack}
             options={{ title: 'Pricing' }}
+          />
+          <Tab.Screen 
+            name="Subscription" 
+            component={SubscriptionStack}
+            options={{ title: 'Subscription' }}
           />
         </>
       )}

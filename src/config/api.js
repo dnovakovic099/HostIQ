@@ -49,6 +49,7 @@ export const API_ENDPOINTS = {
   USAGE: '/billing/usage',
   
   // Subscriptions
+  SUBSCRIPTION_PRODUCTS: '/subscriptions/products',
   SUBSCRIPTION_VERIFY: '/subscriptions/verify',
   SUBSCRIPTION_STATUS: '/subscriptions/status',
 };

@@ -58,7 +58,6 @@ target 'HostIQ' do
   )
 
   post_install do |installer|
-    deployment_target = podfile_properties['ios.deploymentTarget'] || '13.4'
     react_native_post_install(
       installer,
       config[:reactNativePath],
@@ -74,12 +73,6 @@ target 'HostIQ' do
         resource_bundle_target.build_configurations.each do |config|
           config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
-      end
-    end
-
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = deployment_target
       end
     end
   end
