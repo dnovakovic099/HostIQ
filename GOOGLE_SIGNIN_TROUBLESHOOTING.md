@@ -245,3 +245,4 @@ Check these resources:
 - Backend API docs: `GOOGLE_OAUTH_API_DOCUMENTATION.md`
 - Frontend implementation: `FRONTEND_GOOGLE_AUTH_IMPLEMENTATION.md`
 
+
