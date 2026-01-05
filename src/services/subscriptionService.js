@@ -105,6 +105,7 @@ class SubscriptionService {
 
     try {
       // react-native-iap v12+ requires { skus: [...] } format
+      // Works for both iOS and Android
       const products = await RNIap.getSubscriptions({ skus: [PRODUCT_ID] });
       return products || [];
     } catch (error) {
@@ -141,16 +142,52 @@ class SubscriptionService {
       console.log('📦 Product details:', {
         productId: productId,
         title: product.title,
-        price: product.localizedPrice
+        price: product.localizedPrice,
+        subscriptionOfferDetails: product.subscriptionOfferDetails?.length || 0
       });
 
-      // Request the subscription purchase
-      // react-native-iap v12+ requires object format: { sku: productId }
-      // The purchaseUpdatedListener will handle the receipt verification
-      console.log('🔄 Calling RNIap.requestSubscription with:', { sku: productId });
-      await RNIap.requestSubscription({
-        sku: productId,
-      });
+      // For Android with offers, use requestSubscription with subscriptionOffers
+      if (Platform.OS === 'android' && product.subscriptionOfferDetails && product.subscriptionOfferDetails.length > 0) {
+        // Find the offer with the free-trial offer ID, or use the first available
+        let selectedOffer = product.subscriptionOfferDetails.find(
+          offer => offer.offerId === 'free-trial'
+        );
+
+        // Fallback to first offer if free-trial not found
+        if (!selectedOffer) {
+          selectedOffer = product.subscriptionOfferDetails[0];
+        }
+
+        console.log('📋 Using subscription offer:', {
+          offerToken: selectedOffer.offerToken,
+          basePlanId: selectedOffer.basePlanId,
+          offerId: selectedOffer.offerId,
+          pricingPhases: selectedOffer.pricingPhases?.length || 0
+        });
+
+        // Construct subscription offers array with proper structure
+        const subscriptionOffers = [{
+          sku: productId,
+          offerToken: selectedOffer.offerToken,
+        }];
+
+        console.log('🔄 Calling RNIap.requestSubscription with offers (Android):', {
+          sku: productId,
+          subscriptionOffers: subscriptionOffers
+        });
+
+        // Use requestSubscription with subscriptionOffers for Android (v12 format)
+        await RNIap.requestSubscription({
+          sku: productId,
+          subscriptionOffers: subscriptionOffers,
+        });
+      } else {
+        // For iOS or Android without offers, use simple requestSubscription
+        console.log('🔄 Calling RNIap.requestSubscription with:', { sku: productId });
+        await RNIap.requestSubscription({
+          sku: productId,
+        });
+      }
 
       console.log('✅ Purchase request sent successfully');
       return product;
@@ -174,41 +211,58 @@ class SubscriptionService {
   }
 
   async getReceiptData() {
-    if (Platform.OS !== 'ios') {
-      throw new Error('Receipt data retrieval is only available on iOS');
-    }
+    if (Platform.OS === 'ios') {
+      try {
+        // Get the App Store receipt
+        // Note: When using StoreKit Configuration for testing, receipts are test receipts
+        // The backend should handle these correctly (may need sandbox validation)
+        console.log('📄 Fetching receipt data from device...');
+        const receiptData = await RNIap.getReceiptIOS();
+        
+        if (!receiptData) {
+          throw new Error('Receipt data not available');
+        }
 
-    try {
-      // Get the App Store receipt
-      // Note: When using StoreKit Configuration for testing, receipts are test receipts
-      // The backend should handle these correctly (may need sandbox validation)
-      console.log('📄 Fetching receipt data from device...');
-      const receiptData = await RNIap.getReceiptIOS();
-      
-      if (!receiptData) {
-        throw new Error('Receipt data not available');
+        // Receipt data from react-native-iap is already base64 encoded
+        console.log('✅ Receipt data retrieved, length:', receiptData.length);
+        return receiptData;
+      } catch (error) {
+        console.error('❌ Error getting receipt data:', error);
+        console.error('Error details:', {
+          message: error?.message,
+          code: error?.code
+        });
+        throw error;
       }
-
-      // Receipt data from react-native-iap is already base64 encoded
-      console.log('✅ Receipt data retrieved, length:', receiptData.length);
-      return receiptData;
-    } catch (error) {
-      console.error('❌ Error getting receipt data:', error);
-      console.error('Error details:', {
-        message: error?.message,
-        code: error?.code
-      });
-      throw error;
+    } else if (Platform.OS === 'android') {
+      // For Android, we don't need to get receipt data separately
+      // The purchase object contains the purchaseToken which is used for verification
+      throw new Error('Android receipts are handled via purchase token in purchase object');
+    } else {
+      throw new Error('Platform not supported');
     }
   }
 
-  async verifyReceipt(receiptData) {
+  async verifyReceipt(receiptData, purchaseToken = null, platform = null, androidPurchaseData = null) {
     try {
       console.log('🔄 Verifying receipt with backend...');
       
-      const response = await api.post(API_ENDPOINTS.SUBSCRIPTION_VERIFY, {
-        receiptData,
-      });
+      const payload = {
+        platform: platform || Platform.OS,
+      };
+
+      if (Platform.OS === 'ios') {
+        payload.receiptData = receiptData;
+      } else if (Platform.OS === 'android') {
+        payload.purchaseToken = purchaseToken;
+        payload.packageName = 'com.hostiq.app';
+        if (androidPurchaseData) {
+          payload.productId = androidPurchaseData.productId;
+          payload.orderId = androidPurchaseData.orderId;
+        }
+      }
+      
+      const response = await api.post(API_ENDPOINTS.SUBSCRIPTION_VERIFY, payload);
 
       // Handle response format: { success: true, subscription: {...} }
       if (response.data?.success && response.data.subscription) {
@@ -259,7 +313,8 @@ class SubscriptionService {
       }
 
       // Get receipt data from the purchase or refresh receipt
-      let receiptData;
+      let receiptData = null;
+      let purchaseToken = null;
       
       if (Platform.OS === 'ios') {
         // For iOS, try multiple methods to get receipt data
@@ -290,13 +345,31 @@ class SubscriptionService {
 
         console.log('📄 Receipt data length:', receiptData?.length || 0);
         console.log('📄 Receipt data preview:', receiptData?.substring(0, 100) + '...');
+      } else if (Platform.OS === 'android') {
+        // For Android, use purchase token from the purchase object
+        purchaseToken = purchase.purchaseToken;
+        if (!purchaseToken) {
+          throw new Error('Purchase token not available in purchase object');
+        }
+        console.log('📄 Android purchase token retrieved');
+        console.log('📄 Purchase token preview:', purchaseToken?.substring(0, 50) + '...');
+        console.log('📄 Product ID:', purchase.productId);
+        console.log('📄 Order ID:', purchase.orderId);
       } else {
-        // For Android, use purchase token
-        throw new Error('Android purchases not implemented in this service');
+        throw new Error('Platform not supported');
       }
 
       // Verify receipt with backend
-      const verificationResult = await this.verifyReceipt(receiptData);
+      // For Android, pass the purchase object data along with token
+      const verificationResult = await this.verifyReceipt(
+        receiptData, 
+        purchaseToken, 
+        Platform.OS,
+        Platform.OS === 'android' ? {
+          productId: purchase.productId,
+          orderId: purchase.orderId,
+        } : null
+      );
 
       // Finish the transaction - ensure purchase object is valid
       // Note: transactionId might be '0' for StoreKit Configuration testing
@@ -482,6 +555,28 @@ class SubscriptionService {
       return products;
     } catch (error) {
       console.error('❌ Error fetching subscription products from backend:', error);
+      
+      // If 404, return fallback product data from pricing page
+      if (error.response?.status === 404) {
+        console.warn('⚠️ Backend endpoint not found, using fallback product data');
+        return [{
+          product_id: 'property_subscription_monthly',
+          name: 'Pricing Pro',
+          description: 'AI-powered pricing recommendations and market analysis',
+          duration: 'monthly',
+          duration_months: 1,
+          features: [
+            'Real-Time Market Analysis',
+            'AI Price Recommendations',
+            'Availability-Based Pricing',
+            'Visibility Insights'
+          ],
+          platform: Platform.OS,
+          price: '$29',
+          currency: 'USD'
+        }];
+      }
+      
       throw error;
     }
   }
@@ -508,25 +603,26 @@ class SubscriptionService {
       const productIds = configProducts.map(p => p.product_id);
       console.log('📦 Product IDs to fetch from StoreKit:', productIds);
 
-      // Step 3: Fetch subscription products from Apple StoreKit
-      // IMPORTANT: Use getSubscriptions() for subscription products, not getProducts()
-      console.log('🍎 Fetching subscription products from Apple StoreKit...');
+      // Step 3: Fetch subscription products from store (iOS StoreKit or Android Google Play)
+      const storeName = Platform.OS === 'ios' ? 'Apple StoreKit' : 'Google Play';
+      console.log(`🛒 Fetching subscription products from ${storeName}...`);
       console.log('📋 Requesting product IDs:', JSON.stringify(productIds));
       console.log('📋 Product IDs count:', productIds.length);
       
-      let appleProducts = [];
+      let storeProducts = [];
       
       try {
         // For subscriptions, use getSubscriptions() with object containing skus array
         // react-native-iap v12+ requires { skus: [...] } format
+        // Works for both iOS and Android
         console.log('🔄 Calling RNIap.getSubscriptions with:', { skus: productIds });
-        appleProducts = await RNIap.getSubscriptions({ skus: productIds });
+        storeProducts = await RNIap.getSubscriptions({ skus: productIds });
         
-        console.log(`✅ StoreKit returned ${appleProducts?.length || 0} products`);
+        console.log(`✅ ${storeName} returned ${storeProducts?.length || 0} products`);
         
-        if (appleProducts && appleProducts.length > 0) {
+        if (storeProducts && storeProducts.length > 0) {
           console.log('📦 Products found:');
-          appleProducts.forEach((product, index) => {
+          storeProducts.forEach((product, index) => {
             console.log(`  [${index + 1}] ${product.productId}:`, {
               title: product.title,
               price: product.localizedPrice,
@@ -535,63 +631,81 @@ class SubscriptionService {
             });
           });
         } else {
-          console.warn('⚠️ StoreKit returned empty array - no products found');
-          console.warn('   This usually means:');
-          console.warn('   1. Product IDs don\'t match StoreKit Configuration file');
-          console.warn('   2. App is not running with StoreKit Configuration enabled');
-          console.warn('   3. StoreKit Configuration file not properly loaded');
-          console.warn('   4. Running through Expo Go (StoreKit only works in native builds)');
+          console.warn(`⚠️ ${storeName} returned empty array - no products found`);
+          if (Platform.OS === 'ios') {
+            console.warn('   This usually means:');
+            console.warn('   1. Product IDs don\'t match StoreKit Configuration file');
+            console.warn('   2. App is not running with StoreKit Configuration enabled');
+            console.warn('   3. StoreKit Configuration file not properly loaded');
+            console.warn('   4. Running through Expo Go (StoreKit only works in native builds)');
+          } else {
+            console.warn('   This usually means:');
+            console.warn('   1. Product IDs don\'t match Google Play Console');
+            console.warn('   2. Products not published in Google Play Console');
+            console.warn('   3. App not signed with correct keystore');
+            console.warn('   4. Running in debug mode without proper setup');
+          }
         }
-      } catch (storeKitError) {
-        console.error('❌ StoreKit error fetching subscriptions:', storeKitError);
-        console.error('Error type:', typeof storeKitError);
-        console.error('Error code:', storeKitError?.code);
-        console.error('Error message:', storeKitError?.message);
-        console.error('Error name:', storeKitError?.name);
+      } catch (storeError) {
+        console.error(`❌ ${storeName} error fetching subscriptions:`, storeError);
+        console.error('Error type:', typeof storeError);
+        console.error('Error code:', storeError?.code);
+        console.error('Error message:', storeError?.message);
+        console.error('Error name:', storeError?.name);
         console.error('Requested product IDs:', JSON.stringify(productIds));
         
         // Detailed error handling
-        if (storeKitError.code === 'E_ITEM_NOT_AVAILABLE' || 
-            storeKitError.message?.includes('not available') ||
-            storeKitError.message?.includes('not found')) {
+        if (storeError.code === 'E_ITEM_NOT_AVAILABLE' || 
+            storeError.message?.includes('not available') ||
+            storeError.message?.includes('not found')) {
           console.error('');
           console.error('═══════════════════════════════════════════════════════');
-          console.error('⚠️ PRODUCTS NOT FOUND IN STOREKIT');
+          console.error(`⚠️ PRODUCTS NOT FOUND IN ${storeName.toUpperCase()}`);
           console.error('═══════════════════════════════════════════════════════');
           console.error('Requested IDs:', productIds);
           console.error('Expected ID:  property_subscription_monthly');
-          console.error('');
-          console.error('TROUBLESHOOTING STEPS:');
-          console.error('1. ✅ Verify Xcode Scheme has StoreKit Configuration:');
-          console.error('   Product > Scheme > Edit Scheme > Run > Options');
-          console.error('   StoreKit Configuration: Products.storekit');
-          console.error('');
-          console.error('2. ✅ Verify product ID matches exactly (case-sensitive):');
-          console.error('   Requested:', productIds[0]);
-          console.error('   StoreKit file:', 'property_subscription_monthly');
-          console.error('   Match:', productIds[0] === 'property_subscription_monthly');
-          console.error('');
-          console.error('3. ✅ Ensure app is running from Xcode (not Expo Go)');
-          console.error('   StoreKit Configuration only works in native builds');
-          console.error('');
-          console.error('4. ✅ Check StoreKit Configuration file exists:');
-          console.error('   ios/Products.storekit');
-          console.error('');
-          console.error('5. ✅ Try cleaning build folder:');
-          console.error('   Product > Clean Build Folder (Shift+Cmd+K)');
-          console.error('   Then rebuild and run from Xcode');
+          if (Platform.OS === 'ios') {
+            console.error('');
+            console.error('TROUBLESHOOTING STEPS:');
+            console.error('1. ✅ Verify Xcode Scheme has StoreKit Configuration:');
+            console.error('   Product > Scheme > Edit Scheme > Run > Options');
+            console.error('   StoreKit Configuration: Products.storekit');
+            console.error('');
+            console.error('2. ✅ Verify product ID matches exactly (case-sensitive):');
+            console.error('   Requested:', productIds[0]);
+            console.error('   StoreKit file:', 'property_subscription_monthly');
+            console.error('   Match:', productIds[0] === 'property_subscription_monthly');
+            console.error('');
+            console.error('3. ✅ Ensure app is running from Xcode (not Expo Go)');
+            console.error('   StoreKit Configuration only works in native builds');
+            console.error('');
+            console.error('4. ✅ Check StoreKit Configuration file exists:');
+            console.error('   ios/Products.storekit');
+            console.error('');
+            console.error('5. ✅ Try cleaning build folder:');
+            console.error('   Product > Clean Build Folder (Shift+Cmd+K)');
+            console.error('   Then rebuild and run from Xcode');
+          } else {
+            console.error('');
+            console.error('TROUBLESHOOTING STEPS:');
+            console.error('1. ✅ Verify product ID matches exactly in Google Play Console');
+            console.error('2. ✅ Ensure products are published (not just draft)');
+            console.error('3. ✅ Check app is signed with correct keystore');
+            console.error('4. ✅ Verify Google Play Billing is enabled in app');
+          }
           console.error('═══════════════════════════════════════════════════════');
-        } else if (storeKitError.code === 'E_SERVICE_ERROR' || 
-                   storeKitError.message?.includes('connection')) {
-          console.error('⚠️ StoreKit connection error - IAP may not be available');
+        } else if (storeError.code === 'E_SERVICE_ERROR' || 
+                   storeError.message?.includes('connection')) {
+          console.error(`⚠️ ${storeName} connection error - IAP may not be available`);
           console.error('   This can happen if running in Expo Go or simulator without proper setup');
         }
         
-        throw storeKitError;
+        throw storeError;
       }
 
-      if (!appleProducts || appleProducts.length === 0) {
-        console.warn('⚠️ No products found in App Store');
+      if (!storeProducts || storeProducts.length === 0) {
+        const storeName = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
+        console.warn(`⚠️ No products found in ${storeName}`);
         // Return config without pricing
         return configProducts.map(config => ({
           ...config,
@@ -605,14 +719,15 @@ class SubscriptionService {
         }));
       }
 
-      // Step 4: Combine backend config with Apple pricing
+      // Step 4: Combine backend config with store pricing (iOS or Android)
       const combinedProducts = configProducts.map(config => {
-        const appleProduct = appleProducts.find(
+        const storeProduct = storeProducts.find(
           p => p.productId === config.product_id
         );
 
-        if (!appleProduct) {
-          console.warn(`⚠️ Product ${config.product_id} not found in App Store`);
+        if (!storeProduct) {
+          const storeName = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
+          console.warn(`⚠️ Product ${config.product_id} not found in ${storeName}`);
           return {
             ...config,
             price: 'Price unavailable',
@@ -627,12 +742,12 @@ class SubscriptionService {
 
         return {
           ...config,
-          price: appleProduct.localizedPrice || appleProduct.price || '',
-          currency: appleProduct.currency || '',
-          localizedPrice: appleProduct.localizedPrice || '',
-          title: appleProduct.title || config.name,
-          subscriptionPeriodUnit: appleProduct.subscriptionPeriodUnit || '',
-          subscriptionPeriodNumber: appleProduct.subscriptionPeriodNumber || 0,
+          price: storeProduct.localizedPrice || storeProduct.price || '',
+          currency: storeProduct.currency || '',
+          localizedPrice: storeProduct.localizedPrice || '',
+          title: storeProduct.title || config.name,
+          subscriptionPeriodUnit: storeProduct.subscriptionPeriodUnit || '',
+          subscriptionPeriodNumber: storeProduct.subscriptionPeriodNumber || 0,
           isAvailable: true
         };
       });
@@ -656,20 +771,70 @@ class SubscriptionService {
 
       console.log(`🛒 Initiating purchase for ${productId}...`);
 
-      // Request purchase from StoreKit
-      // react-native-iap v12+ requires object format: { sku: productId }
-      // Note: requestSubscription doesn't return a purchase object directly
-      // The purchaseUpdatedListener will receive the purchase event
-      await RNIap.requestSubscription({
-        sku: productId,
+      // Get product info to check for subscription offers (Android)
+      const products = await this.getAvailableProducts();
+      const product = products?.find(p => p.productId === productId);
+
+      if (!product) {
+        throw new Error('Product not found in store');
+      }
+
+      console.log('📦 Product details:', {
+        productId: product.productId,
+        title: product.title,
+        hasOffers: !!product.subscriptionOfferDetails?.length,
+        offerCount: product.subscriptionOfferDetails?.length || 0
       });
+
+      // For Android with offers, use requestSubscription with subscriptionOffers
+      if (Platform.OS === 'android' && product.subscriptionOfferDetails && product.subscriptionOfferDetails.length > 0) {
+        // Find the offer with the free-trial offer ID, or use the first available
+        let selectedOffer = product.subscriptionOfferDetails.find(
+          offer => offer.offerId === 'free-trial'
+        );
+
+        // Fallback to first offer if free-trial not found
+        if (!selectedOffer) {
+          selectedOffer = product.subscriptionOfferDetails[0];
+        }
+
+        console.log('📋 Using subscription offer:', {
+          offerToken: selectedOffer.offerToken,
+          basePlanId: selectedOffer.basePlanId,
+          offerId: selectedOffer.offerId,
+          pricingPhases: selectedOffer.pricingPhases?.length || 0
+        });
+
+        // Construct subscription offers array with proper structure
+        const subscriptionOffers = [{
+          sku: productId,
+          offerToken: selectedOffer.offerToken,
+        }];
+
+        console.log('🔄 Calling RNIap.requestSubscription with offers (Android):', {
+          sku: productId,
+          subscriptionOffers: subscriptionOffers
+        });
+
+        // Use requestSubscription with subscriptionOffers for Android (v12 format)
+        await RNIap.requestSubscription({
+          sku: productId,
+          subscriptionOffers: subscriptionOffers,
+        });
+      } else {
+        // For iOS or Android without offers, use simple requestSubscription
+        console.log('🔄 Calling RNIap.requestSubscription with:', { sku: productId });
+        await RNIap.requestSubscription({
+          sku: productId,
+        });
+      }
 
       console.log('✅ Purchase request sent - waiting for purchase update...');
 
       // Verify receipt with backend (handled by purchaseUpdatedListener)
       // The purchaseUpdatedListener will handle verification automatically
 
-      return purchase;
+      return product;
     } catch (error) {
       console.error('❌ Purchase error:', error);
       console.error('Error type:', typeof error);

@@ -17,11 +17,6 @@ export default function SubscriptionButton({ onPurchaseComplete, style, textStyl
   } = useSubscription();
 
   const handlePress = async () => {
-    if (Platform.OS !== 'ios') {
-      alert('iOS subscriptions are only available on iOS devices');
-      return;
-    }
-
     if (!isInitialized) {
       alert('In-app purchases are not available on this device');
       return;

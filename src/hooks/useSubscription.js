@@ -67,11 +67,6 @@ export const useSubscription = () => {
       return null;
     }
 
-    if (Platform.OS !== 'ios') {
-      Alert.alert('Error', 'iOS subscription purchases are only available on iOS devices');
-      return null;
-    }
-
     setIsLoading(true);
     setError(null);
 

@@ -307,18 +307,10 @@ export default function PricingScreen() {
   }, [hasActiveSubscription, subscriptionStatus]);
 
   const handleSubscribe = async () => {
-    if (Platform.OS !== 'ios') {
-      Alert.alert(
-        'Unavailable',
-        'iOS subscription purchases are only available on iOS devices.'
-      );
-      return;
-    }
-
     if (!subscriptionInitialized) {
       Alert.alert(
         'Unavailable',
-        'In-app purchases are not available on this device. Please ensure you are using a physical iOS device or a simulator with proper entitlements.'
+        'In-app purchases are not available on this device. Please ensure you are using a physical device with proper setup.'
       );
       return;
     }
@@ -327,15 +319,17 @@ export default function PricingScreen() {
       // Show confirmation with product price if available
       const priceText = product?.localizedPrice 
         ? ` for ${product.localizedPrice}/month`
-        : '';
+        : ' for $29/month';
+      
+      const platformText = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
       
       Alert.alert(
-        'Subscribe to Property Subscription',
-        `Start your monthly subscription${priceText}?`,
+        'Subscribe to Pricing Pro',
+        `Start your 7-day free trial${priceText}?\n\nAfter the trial, your subscription will automatically renew through ${platformText}.`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: 'Subscribe',
+            text: 'Start Free Trial',
             onPress: async () => {
               try {
                 const result = await purchaseSubscription();
@@ -349,7 +343,7 @@ export default function PricingScreen() {
                     setHasSubscription(true);
                     Alert.alert(
                       'Success!',
-                      'Your subscription has been activated successfully.'
+                      'Your 7-day free trial has started. Your subscription will activate after the trial period.'
                     );
                   }, 2000);
                 }

@@ -81,21 +81,21 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "0.99",
+          "displayPrice" : "29.00",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "B813096F",
           "introductoryOffer" : {
-            "displayPrice" : "0.99",
+            "displayPrice" : "0.00",
             "internalID" : "F8CD1E3D",
             "numberOfPeriods" : 1,
-            "paymentMode" : "payAsYouGo",
-            "subscriptionPeriod" : "P1M"
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P7D"
           },
           "localizations" : [
             {
-              "description" : "",
-              "displayName" : "",
+              "description" : "AI-powered pricing recommendations and market analysis for your properties",
+              "displayName" : "Pricing Pro",
               "locale" : "en_US"
             }
           ],

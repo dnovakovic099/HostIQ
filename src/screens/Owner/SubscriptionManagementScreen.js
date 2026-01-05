@@ -195,13 +195,40 @@ export default function SubscriptionManagementScreen({ navigation }) {
               try {
                 console.log(`💳 Requesting subscription purchase...`);
                 
-                // Request the subscription purchase
-                // The purchaseUpdatedListener will handle the rest
-                await RNIap.requestSubscription({
-                  sku: subscriptionProduct.productId,
-                  // Store property ID in the purchase for later validation
-                  appAccountToken: propertyId, // iOS only
-                });
+                // For Android with offers, use requestSubscription with subscriptionOffers
+                if (Platform.OS === 'android' && subscriptionProduct.subscriptionOfferDetails && subscriptionProduct.subscriptionOfferDetails.length > 0) {
+                  const firstOffer = subscriptionProduct.subscriptionOfferDetails[0];
+                  console.log('📋 Using subscription offer:', {
+                    offerToken: firstOffer.offerToken,
+                    basePlanId: firstOffer.basePlanId,
+                    offerId: firstOffer.offerId
+                  });
+
+                  const subscriptionOffers = [{
+                    sku: subscriptionProduct.productId,
+                    offerToken: firstOffer.offerToken,
+                  }];
+
+                  console.log('🔄 Calling RNIap.requestSubscription with offers (Android):', {
+                    sku: subscriptionProduct.productId,
+                    subscriptionOffers: subscriptionOffers
+                  });
+
+                  // Use requestSubscription with subscriptionOffers for Android (v12 format)
+                  await RNIap.requestSubscription({
+                    sku: subscriptionProduct.productId,
+                    subscriptionOffers: subscriptionOffers,
+                  });
+                } else {
+                  // For iOS, use requestSubscription
+                  const subscriptionRequest = {
+                    sku: subscriptionProduct.productId,
+                    appAccountToken: propertyId, // Store property ID for later validation (iOS only)
+                  };
+
+                  console.log('🔄 Requesting subscription with:', subscriptionRequest);
+                  await RNIap.requestSubscription(subscriptionRequest);
+                }
 
                 console.log('✅ Purchase request sent');
               } catch (error) {
