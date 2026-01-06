@@ -216,33 +216,33 @@ export default function CleaningReportScreen({ route, navigation }) {
       Alert.alert('Error', 'Report data is not available');
       return;
     }
-    
+
     if (!report.id) {
       Alert.alert('Error', 'Report ID is missing. Please wait for the report to finish generating.');
       return;
     }
-    
+
     setDownloadingPdf(true);
-    
+
     try {
       const token = await SecureStore.getItemAsync('accessToken');
       if (!token) {
         throw new Error('Authentication token not found');
       }
-      
+
       const pdfUrl = `${API_URL}/reports/${report.id}/pdf`;
       console.log('📥 Downloading PDF from:', pdfUrl);
-      
+
       // Create a safe filename
       const safePropertyName = (report.property_name || 'Property').replace(/[^a-z0-9]/gi, '_');
-      const dateStr = report.cleaning_date 
+      const dateStr = report.cleaning_date
         ? new Date(report.cleaning_date).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0];
       const fileName = `Cleaning_Report_${safePropertyName}_${dateStr}.pdf`;
       const fileUri = FileSystem.documentDirectory + fileName;
-      
+
       console.log('💾 Saving PDF to:', fileUri);
-      
+
       // Download the PDF
       const downloadResult = await FileSystem.downloadAsync(
         pdfUrl,
@@ -253,12 +253,47 @@ export default function CleaningReportScreen({ route, navigation }) {
           },
         }
       );
-      
+
       console.log('📥 Download result:', downloadResult.status, downloadResult.uri);
-      
+
       if (downloadResult.status !== 200) {
         throw new Error(`Failed to download PDF. Status: ${downloadResult.status}`);
       }
+
+      // Verify the downloaded file is actually a PDF
+      const fileInfo = await FileSystem.getInfoAsync(downloadResult.uri);
+      console.log('📄 File info:', fileInfo);
+
+      if (!fileInfo.exists) {
+        throw new Error('Downloaded file does not exist');
+      }
+
+      // Check file size - PDFs should be at least a few KB
+      // Very small files are likely JSON error responses
+      if (fileInfo.size < 1000) {
+        console.log('⚠️ File is suspiciously small:', fileInfo.size, 'bytes');
+
+        // Try to read it as text to check if it's a JSON error
+        try {
+          const content = await FileSystem.readAsStringAsync(downloadResult.uri);
+          console.log('⚠️ Small file content:', content.substring(0, 500));
+
+          try {
+            const jsonError = JSON.parse(content);
+            throw new Error(jsonError.error || 'Server returned an error instead of PDF');
+          } catch (jsonParseError) {
+            // Not JSON, might be a legitimate small PDF or other error
+            throw new Error('Downloaded file is too small to be a valid PDF');
+          }
+        } catch (readError) {
+          console.error('❌ Error reading file:', readError);
+          throw new Error('Failed to validate downloaded file');
+        }
+      }
+
+      // For larger files, assume they are valid PDFs
+      // (18MB+ files are definitely not JSON error responses)
+      console.log('✅ PDF file validated successfully (size:', fileInfo.size, 'bytes)');
       
       // Check if expo-sharing is available
       if (Sharing && await Sharing.isAvailableAsync()) {
