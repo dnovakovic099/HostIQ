@@ -80,9 +80,23 @@ export default function OwnerDashboardScreen({ navigation }) {
 
     const fetchDashboardData = async () => {
         try {
-            const statsRes = await api.get('/owner/stats');
-            const inspectionsRes = await api.get('/owner/inspections/recent?limit=5');
-            const propertiesRes = await api.get('/owner/properties');
+            // Add timeout wrapper for properties request to prevent hanging
+            const propertiesWithTimeout = Promise.race([
+                api.get('/owner/properties'),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Properties request timeout')), 15000) // 15 second timeout
+                )
+            ]).catch(error => {
+                console.warn('Properties request failed or timed out:', error);
+                return { data: { manualProperties: [], pmsProperties: [] } }; // Return empty data on timeout
+            });
+
+            // Make requests in parallel, but don't let properties block the others
+            const [statsRes, inspectionsRes, propertiesRes] = await Promise.all([
+                api.get('/owner/stats'),
+                api.get('/owner/inspections/recent?limit=5'),
+                propertiesWithTimeout
+            ]);
 
             setStats({
                 properties: Number(statsRes.data.properties) || 0,
@@ -99,14 +113,16 @@ export default function OwnerDashboardScreen({ navigation }) {
 
             // Check properties structure - can be array or object with manualProperties/pmsProperties
             let allProperties = [];
-            if (propertiesRes.data.manualProperties || propertiesRes.data.pmsProperties) {
-                // New structure with manualProperties and pmsProperties
-                const manualProps = Array.isArray(propertiesRes.data.manualProperties) ? propertiesRes.data.manualProperties : [];
-                const pmsProps = Array.isArray(propertiesRes.data.pmsProperties) ? propertiesRes.data.pmsProperties : [];
-                allProperties = [...manualProps, ...pmsProps];
-            } else if (Array.isArray(propertiesRes.data)) {
-                // Legacy structure - direct array
-                allProperties = propertiesRes.data;
+            if (propertiesRes && propertiesRes.data) {
+                if (propertiesRes.data.manualProperties || propertiesRes.data.pmsProperties) {
+                    // New structure with manualProperties and pmsProperties
+                    const manualProps = Array.isArray(propertiesRes.data.manualProperties) ? propertiesRes.data.manualProperties : [];
+                    const pmsProps = Array.isArray(propertiesRes.data.pmsProperties) ? propertiesRes.data.pmsProperties : [];
+                    allProperties = [...manualProps, ...pmsProps];
+                } else if (Array.isArray(propertiesRes.data)) {
+                    // Legacy structure - direct array
+                    allProperties = propertiesRes.data;
+                }
             }
             
             const lowRated = allProperties.filter(prop => prop.hasLowRating);

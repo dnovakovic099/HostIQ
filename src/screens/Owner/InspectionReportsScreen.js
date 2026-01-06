@@ -29,7 +29,14 @@ export default function InspectionReportsScreen({ navigation }) {
 
   const fetchInspections = async () => {
     try {
-      const response = await api.get('/owner/inspections');
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), 30000) // 30 second timeout
+      );
+      
+      const apiPromise = api.get('/owner/inspections');
+      const response = await Promise.race([apiPromise, timeoutPromise]);
+      
       const validInspections = (response.data || []).filter(i => 
         i && 
         i.id && 
@@ -41,6 +48,13 @@ export default function InspectionReportsScreen({ navigation }) {
       applyFilters(validInspections, filter);
     } catch (error) {
       console.error('Error fetching inspections:', error);
+      if (error.message === 'Request timeout') {
+        Alert.alert(
+          'Request Timeout',
+          'The request took too long. Please check your connection and try again.',
+          [{ text: 'OK' }]
+        );
+      }
       setInspections([]);
       setFilteredInspections([]);
     } finally {
