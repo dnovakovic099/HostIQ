@@ -166,13 +166,12 @@ export default function CleaningReportScreen({ route, navigation }) {
     }
     
     // Construct the share URL
-    // NOTE: This requires a web frontend deployed at hostiq.app that handles /report/:shareToken
-    // Currently, hostiq.app may not be configured or may not have a web frontend deployed.
-    // This is a backend/infrastructure issue - you need to:
-    // 1. Deploy a web frontend at hostiq.app that displays reports, OR
-    // 2. Configure the backend to serve HTML pages for /report/:shareToken routes, OR
-    // 3. Use deep linking (hostiq://report/:token) to open the app directly
-    const shareUrl = `https://hostiq.app/report/${shareToken}`;
+    // Use the same base URL as the API (without the /api suffix) so that it always
+    // points to a real, reachable host (e.g. Railway / production backend).
+    // For the public HTML view, the backend exposes GET /report/:shareToken (see roomify-server/src/app.js),
+    // so the shared URL must use `/report/${shareToken}` (no /api, no /reports/public).
+    const baseUrl = API_URL.replace('/api', '');
+    const shareUrl = `${baseUrl}/report/${shareToken}`;
     
     // Validate URL format
     try {

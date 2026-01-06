@@ -90,10 +90,6 @@ const fixImageUrlSync = (url) => {
     const isProductionUrl = url.includes(productionDomain);
     
     if (isProductionUrl) {
-      if (url.startsWith('http://')) {
-        url = url.replace('http://', 'https://');
-      }
-      
       if (!baseUrl.includes('roomify-server-production')) {
         const path = url.replace(`https://${productionDomain}`, '').replace(`http://${productionDomain}`, '');
         fixedUrl = baseUrl + path;
@@ -101,11 +97,9 @@ const fixImageUrlSync = (url) => {
         fixedUrl = url;
       }
     } else {
-      if (url.startsWith('http://')) {
-        fixedUrl = url.replace('http://', 'https://');
-      } else {
-        fixedUrl = url;
-      }
+      // For non-production URLs (like local/dev IPs), don't force HTTPS.
+      // This prevents TLS errors when the backend only speaks HTTP.
+      fixedUrl = url;
     }
   } else {
     const baseUrl = API_URL.replace('/api', '');
@@ -138,27 +132,19 @@ const fixImageUrl = async (url) => {
     const isProductionUrl = url.includes(productionDomain);
     
     if (isProductionUrl) {
-      // Convert HTTP to HTTPS for production URLs (Railway supports HTTPS)
-      if (url.startsWith('http://')) {
-        url = url.replace('http://', 'https://');
-      }
-      
       // If we're using local API, replace production URL with local base
       if (!baseUrl.includes('roomify-server-production')) {
         // Extract the path from the production URL and use local base
         const path = url.replace(`https://${productionDomain}`, '').replace(`http://${productionDomain}`, '');
         fixedUrl = baseUrl + path;
       } else {
-        // Using production API, use HTTPS version
+        // Using production API, keep the URL as provided by backend
         fixedUrl = url;
       }
     } else {
-      // Not a production URL, convert HTTP to HTTPS for security
-      if (url.startsWith('http://')) {
-        fixedUrl = url.replace('http://', 'https://');
-      } else {
-        fixedUrl = url;
-      }
+      // Not a production URL (e.g. local/dev IP) – do NOT force HTTPS.
+      // Forcing HTTPS against an HTTP-only backend causes TLS failures.
+      fixedUrl = url;
     }
   } else {
     // It's a relative path (starts with /), construct full URL
