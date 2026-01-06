@@ -37,3 +37,4 @@ echo "✅ Cleanup complete!"
 echo ""
 echo "You can now try running: npx expo run:ios --device"
 
+

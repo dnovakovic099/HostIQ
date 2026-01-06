@@ -37,3 +37,4 @@ export EXPO_NO_METRO_LAZY=1
 # Start Expo with dev client
 npx expo start --dev-client --lan
 
+

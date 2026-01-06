@@ -153,25 +153,26 @@ export default function CleaningReportScreen({ route, navigation }) {
       return;
     }
     
-    // Use share_url from API response (backend provides the correct Railway domain)
-    // Fallback to share_token for backwards compatibility if share_url is not available
-    let shareUrl = report.share_url;
-    
-    if (!shareUrl && report.share_token) {
-      // Fallback: construct URL from share_token (should not happen if backend is updated)
-      console.warn('share_url not found in API response, using share_token fallback');
-      const shareToken = String(report.share_token).trim();
-      if (shareToken && shareToken.length > 0) {
-        // Use API_URL base to construct URL (removes hardcoded hostiq.app)
-        const baseUrl = API_URL.replace('/api', '');
-        shareUrl = `${baseUrl}/report/${shareToken}`;
-      }
-    }
-    
-    if (!shareUrl) {
+    if (!report.share_token) {
       Alert.alert('Error', 'Share link is not available. Please wait for the report to finish generating.');
       return;
     }
+    
+    // Sanitize and validate share_token
+    const shareToken = String(report.share_token).trim();
+    if (!shareToken || shareToken.length === 0) {
+      Alert.alert('Error', 'Invalid share token. Please try again.');
+      return;
+    }
+    
+    // Construct the share URL
+    // NOTE: This requires a web frontend deployed at hostiq.app that handles /report/:shareToken
+    // Currently, hostiq.app may not be configured or may not have a web frontend deployed.
+    // This is a backend/infrastructure issue - you need to:
+    // 1. Deploy a web frontend at hostiq.app that displays reports, OR
+    // 2. Configure the backend to serve HTML pages for /report/:shareToken routes, OR
+    // 3. Use deep linking (hostiq://report/:token) to open the app directly
+    const shareUrl = `https://hostiq.app/report/${shareToken}`;
     
     // Validate URL format
     try {
