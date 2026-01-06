@@ -184,6 +184,13 @@ export default function LoginScreen({ navigation }) {
               />
               <Text style={styles.title}>Welcome back</Text>
               <Text style={styles.subtitle}>Sign in to continue</Text>
+              
+              {/* Demo Credentials */}
+              <View style={styles.demoBox}>
+                <Text style={styles.demoTitle}>Demo Accounts:</Text>
+                <Text style={styles.demoText}>Owner: owner@hostiq.com / password123</Text>
+                <Text style={styles.demoText}>Cleaner: cleaner@hostiq.com / password123</Text>
+              </View>
             </View>
 
             {/* Form */}
@@ -295,13 +302,6 @@ export default function LoginScreen({ navigation }) {
                   <Text style={styles.signupButtonText}>Sign up</Text>
                 </View>
               </TouchableOpacity>
-
-              {/* Demo Credentials */}
-              <View style={styles.demoBox}>
-                <Text style={styles.demoTitle}>Demo Accounts:</Text>
-                <Text style={styles.demoText}>Owner: owner@hostiq.com / password123</Text>
-                <Text style={styles.demoText}>Cleaner: cleaner@hostiq.com / password123</Text>
-              </View>
             </View>
           </View>
         </KeyboardAvoidingView>
@@ -367,6 +367,7 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     textAlign: 'center',
     fontWeight: '400',
+    marginBottom: 20,
   },
   form: {
     width: '100%',
@@ -478,7 +479,8 @@ const styles = StyleSheet.create({
   },
   demoBox: {
     alignItems: 'center',
-    paddingTop: 4,
+    paddingTop: 16,
+    marginTop: 8,
   },
   demoTitle: {
     fontSize: 13,
