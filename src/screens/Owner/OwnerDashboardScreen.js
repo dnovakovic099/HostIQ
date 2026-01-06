@@ -64,6 +64,7 @@ export default function OwnerDashboardScreen({ navigation }) {
     const [refreshing, setRefreshing] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
     const lastFetchTime = useRef(0);
+    const propertiesFetchInProgress = useRef(false);
 
     const { loadOnboardingState, shouldShowOnboarding, updateCounts, markOnboardingSeen } = useOnboardingStore();
 
@@ -80,22 +81,10 @@ export default function OwnerDashboardScreen({ navigation }) {
 
     const fetchDashboardData = async () => {
         try {
-            // Add timeout wrapper for properties request to prevent hanging
-            const propertiesWithTimeout = Promise.race([
-                api.get('/owner/properties'),
-                new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Properties request timeout')), 15000) // 15 second timeout
-                )
-            ]).catch(error => {
-                console.warn('Properties request failed or timed out:', error);
-                return { data: { manualProperties: [], pmsProperties: [] } }; // Return empty data on timeout
-            });
-
-            // Make requests in parallel, but don't let properties block the others
-            const [statsRes, inspectionsRes, propertiesRes] = await Promise.all([
+            // Fetch critical data first (stats and inspections) - these are fast
+            const [statsRes, inspectionsRes] = await Promise.all([
                 api.get('/owner/stats'),
-                api.get('/owner/inspections/recent?limit=5'),
-                propertiesWithTimeout
+                api.get('/owner/inspections/recent?limit=5')
             ]);
 
             setStats({
@@ -111,23 +100,6 @@ export default function OwnerDashboardScreen({ navigation }) {
             );
             setRecentInspections(validInspections);
 
-            // Check properties structure - can be array or object with manualProperties/pmsProperties
-            let allProperties = [];
-            if (propertiesRes && propertiesRes.data) {
-                if (propertiesRes.data.manualProperties || propertiesRes.data.pmsProperties) {
-                    // New structure with manualProperties and pmsProperties
-                    const manualProps = Array.isArray(propertiesRes.data.manualProperties) ? propertiesRes.data.manualProperties : [];
-                    const pmsProps = Array.isArray(propertiesRes.data.pmsProperties) ? propertiesRes.data.pmsProperties : [];
-                    allProperties = [...manualProps, ...pmsProps];
-                } else if (Array.isArray(propertiesRes.data)) {
-                    // Legacy structure - direct array
-                    allProperties = propertiesRes.data;
-                }
-            }
-            
-            const lowRated = allProperties.filter(prop => prop.hasLowRating);
-            setLowRatingProperties(lowRated);
-
             // Fetch user profile for name
             try {
                 const userRes = await api.get('/auth/me');
@@ -139,13 +111,54 @@ export default function OwnerDashboardScreen({ navigation }) {
             }
 
             // Check onboarding after loading stats
-            // Count actual properties from the response
-            const totalProperties = allProperties.length;
+            // Use stats property count instead of fetching all properties
+            const totalProperties = Number(statsRes.data.properties) || 0;
             await loadOnboardingState();
             updateCounts(totalProperties, statsRes.data.cleaners);
             if (shouldShowOnboarding()) {
                 setShowOnboarding(true);
             }
+
+            // Fetch properties in background (non-blocking) for low-rated properties
+            // This is optional and won't block the dashboard from loading
+            // Skip if already fetching to prevent duplicate requests
+            if (!propertiesFetchInProgress.current) {
+                propertiesFetchInProgress.current = true;
+                
+                Promise.race([
+                    api.get('/owner/properties'),
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Properties request timeout')), 8000) // 8 second timeout
+                    )
+                ]).then(propertiesRes => {
+                    // Check properties structure - can be array or object with manualProperties/pmsProperties
+                    let allProperties = [];
+                    if (propertiesRes && propertiesRes.data) {
+                        if (propertiesRes.data.manualProperties || propertiesRes.data.pmsProperties) {
+                            // New structure with manualProperties and pmsProperties
+                            const manualProps = Array.isArray(propertiesRes.data.manualProperties) ? propertiesRes.data.manualProperties : [];
+                            const pmsProps = Array.isArray(propertiesRes.data.pmsProperties) ? propertiesRes.data.pmsProperties : [];
+                            allProperties = [...manualProps, ...pmsProps];
+                        } else if (Array.isArray(propertiesRes.data)) {
+                            // Legacy structure - direct array
+                            allProperties = propertiesRes.data;
+                        }
+                    }
+                    
+                    const lowRated = allProperties.filter(prop => prop.hasLowRating);
+                    setLowRatingProperties(lowRated);
+                }).catch(error => {
+                    // Silently fail - low-rated properties is a nice-to-have feature
+                    // Don't log timeout errors (expected for large property lists)
+                    if (error.message && !error.message.includes('timeout')) {
+                        console.warn('Could not fetch properties for low-rated warnings:', error.message);
+                    }
+                    setLowRatingProperties([]);
+                }).finally(() => {
+                    propertiesFetchInProgress.current = false;
+                });
+            }
+
         } catch (error) {
             console.error('Dashboard error:', error);
             setStats({ properties: 0, units: 0, cleaners: 0, inspections_today: 0 });

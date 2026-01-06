@@ -118,12 +118,17 @@ export default function SettingsScreen({ navigation }) {
             title="Edit Profile"
             onPress={() => navigation.navigate('EditProfile')}
           />
-          <View style={styles.divider} />
-          <SettingsItem
-            icon="lock-closed-outline"
-            title="Change Password"
-            onPress={() => navigation.navigate('ChangePassword')}
-          />
+          {/* Only show Change Password for email/password users, not Google users */}
+          {user?.auth_provider !== 'google' && (
+            <>
+              <View style={styles.divider} />
+              <SettingsItem
+                icon="lock-closed-outline"
+                title="Change Password"
+                onPress={() => navigation.navigate('ChangePassword')}
+              />
+            </>
+          )}
         </View>
       </View>
 
