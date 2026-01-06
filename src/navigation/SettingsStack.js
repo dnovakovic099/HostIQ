@@ -3,6 +3,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import SettingsScreen from '../screens/Common/SettingsScreen';
 import TermsOfServiceScreen from '../screens/Common/TermsOfServiceScreen';
 import PrivacyPolicyScreen from '../screens/Common/PrivacyPolicyScreen';
+import EditProfileScreen from '../screens/Common/EditProfileScreen';
+import ChangePasswordScreen from '../screens/Common/ChangePasswordScreen';
 
 const Stack = createStackNavigator();
 
@@ -43,6 +45,16 @@ export default function SettingsStack() {
         name="PrivacyPolicy" 
         component={PrivacyPolicyScreen}
         options={{ title: 'Privacy Policy' }}
+      />
+      <Stack.Screen 
+        name="EditProfile" 
+        component={EditProfileScreen}
+        options={{ title: 'Edit Profile' }}
+      />
+      <Stack.Screen 
+        name="ChangePassword" 
+        component={ChangePasswordScreen}
+        options={{ title: 'Change Password' }}
       />
     </Stack.Navigator>
   );

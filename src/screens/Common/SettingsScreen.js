@@ -11,20 +11,21 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
-import biometricAuth from '../../services/biometricAuth';
+// import biometricAuth from '../../services/biometricAuth';
 
 export default function SettingsScreen({ navigation }) {
-  const { user, logout, biometricAvailable, biometricEnabled, enableBiometric, disableBiometric } = useAuthStore();
-  const [biometricType, setBiometricType] = useState('');
+  const { user, logout } = useAuthStore();
+  // const { user, logout, biometricAvailable, biometricEnabled, enableBiometric, disableBiometric } = useAuthStore();
+  // const [biometricType, setBiometricType] = useState('');
 
-  useEffect(() => {
-    loadBiometricType();
-  }, []);
+  // useEffect(() => {
+  //   loadBiometricType();
+  // }, []);
 
-  const loadBiometricType = async () => {
-    const type = await biometricAuth.getBiometricTypeName();
-    setBiometricType(type);
-  };
+  // const loadBiometricType = async () => {
+  //   const type = await biometricAuth.getBiometricTypeName();
+  //   setBiometricType(type);
+  // };
 
   const handleLogout = () => {
     Alert.alert(
@@ -43,31 +44,31 @@ export default function SettingsScreen({ navigation }) {
     );
   };
 
-  const handleToggleBiometric = async (value) => {
-    if (value) {
-      // Enable biometric
-      const result = await enableBiometric();
-      if (!result.success) {
-        Alert.alert('Error', result.error || 'Failed to enable biometric authentication');
-      }
-    } else {
-      // Disable biometric
-      Alert.alert(
-        'Disable Biometric',
-        `Are you sure you want to disable ${biometricType}?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Disable',
-            style: 'destructive',
-            onPress: async () => {
-              await disableBiometric();
-            },
-          },
-        ]
-      );
-    }
-  };
+  // const handleToggleBiometric = async (value) => {
+  //   if (value) {
+  //     // Enable biometric
+  //     const result = await enableBiometric();
+  //     if (!result.success) {
+  //       Alert.alert('Error', result.error || 'Failed to enable biometric authentication');
+  //     }
+  //   } else {
+  //     // Disable biometric
+  //     Alert.alert(
+  //       'Disable Biometric',
+  //       `Are you sure you want to disable ${biometricType}?`,
+  //       [
+  //         { text: 'Cancel', style: 'cancel' },
+  //         {
+  //           text: 'Disable',
+  //           style: 'destructive',
+  //           onPress: async () => {
+  //             await disableBiometric();
+  //           },
+  //         },
+  //       ]
+  //     );
+  //   }
+  // };
 
   const SettingsItem = ({ icon, title, value, onPress, danger }) => (
     <TouchableOpacity
@@ -115,18 +116,18 @@ export default function SettingsScreen({ navigation }) {
           <SettingsItem
             icon="person-outline"
             title="Edit Profile"
-            onPress={() => Alert.alert('Coming Soon', 'Profile editing will be available soon')}
+            onPress={() => navigation.navigate('EditProfile')}
           />
           <View style={styles.divider} />
           <SettingsItem
             icon="lock-closed-outline"
             title="Change Password"
-            onPress={() => Alert.alert('Coming Soon', 'Password change will be available soon')}
+            onPress={() => navigation.navigate('ChangePassword')}
           />
         </View>
       </View>
 
-      <View style={styles.section}>
+      {/* <View style={styles.section}>
         <Text style={styles.sectionTitle}>Security</Text>
         <View style={styles.card}>
           {biometricAvailable && (
@@ -152,15 +153,10 @@ export default function SettingsScreen({ navigation }) {
               <View style={styles.divider} />
             </>
           )}
-          <SettingsItem
-            icon="lock-closed-outline"
-            title="Change Password"
-            onPress={() => Alert.alert('Coming Soon', 'Password change will be available soon')}
-          />
         </View>
-      </View>
+      </View> */}
 
-      <View style={styles.section}>
+      {/* <View style={styles.section}>
         <Text style={styles.sectionTitle}>Preferences</Text>
         <View style={styles.card}>
           <SettingsItem
@@ -176,7 +172,7 @@ export default function SettingsScreen({ navigation }) {
             onPress={() => Alert.alert('Coming Soon', 'Language selection will be available soon')}
           />
         </View>
-      </View>
+      </View> */}
 
       {user?.role === 'CLEANER' && (
         <View style={styles.section}>
