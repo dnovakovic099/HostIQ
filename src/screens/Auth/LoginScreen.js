@@ -13,6 +13,7 @@ import {
   Image,
   Dimensions,
   Animated,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,7 +36,10 @@ export default function LoginScreen({ navigation }) {
   const [biometricType, setBiometricType] = useState('');
   const [showBiometric, setShowBiometric] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const { login, biometricLogin, signInWithGoogle, biometricEnabled } = useAuthStore();
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
+  const codeInputRefs = useRef([]);
+  const { login, biometricLogin, signInWithGoogle, biometricEnabled, resendVerificationEmail, verifyCode } = useAuthStore();
   const autoLoginAttempted = useRef(false);
   
   // Check if Google Sign-In is configured
@@ -105,7 +109,68 @@ export default function LoginScreen({ navigation }) {
     setLoading(false);
 
     if (!result.success) {
-      Alert.alert('Login Failed', result.error);
+      if (result.requiresVerification) {
+        setShowVerificationModal(true);
+      } else {
+        Alert.alert('Login Failed', result.error);
+      }
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setLoading(true);
+    const result = await resendVerificationEmail(email);
+    setLoading(false);
+    
+    if (result.success) {
+      Alert.alert('Success', 'Verification code sent! Please check your email.');
+      // Clear code inputs
+      setVerificationCode(['', '', '', '', '', '']);
+    } else {
+      Alert.alert('Error', result.error || 'Failed to resend verification code');
+    }
+  };
+
+  const handleCodeChange = (index, value) => {
+    // Only allow digits
+    if (value && !/^\d$/.test(value)) return;
+    
+    const newCode = [...verificationCode];
+    newCode[index] = value;
+    setVerificationCode(newCode);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      codeInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleCodeKeyPress = (index, e) => {
+    // Handle backspace
+    if (e.nativeEvent.key === 'Backspace' && !verificationCode[index] && index > 0) {
+      codeInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    const code = verificationCode.join('');
+    if (code.length !== 6) {
+      Alert.alert('Error', 'Please enter the complete 6-digit code');
+      return;
+    }
+
+    setLoading(true);
+    const result = await verifyCode(email, code);
+    setLoading(false);
+
+    if (result.success) {
+      setShowVerificationModal(false);
+      // User is now logged in, navigation will happen automatically
+    } else {
+      Alert.alert('Verification Failed', result.error || 'Invalid verification code');
+      // Clear code on error
+      setVerificationCode(['', '', '', '', '', '']);
+      codeInputRefs.current[0]?.focus();
     }
   };
 
@@ -306,6 +371,81 @@ export default function LoginScreen({ navigation }) {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {/* Verification Modal */}
+      <Modal
+        visible={showVerificationModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowVerificationModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="mail-outline" size={48} color="#3B82F6" />
+              <Text style={styles.modalTitle}>Verification sent to your account</Text>
+              <Text style={styles.modalSubtitle}>
+                Enter code sent to{'\n'}
+                <Text style={styles.modalEmail}>{email}</Text>
+              </Text>
+            </View>
+
+            <View style={styles.modalBody}>
+              {/* Code Input */}
+              <View style={styles.codeContainer}>
+                {verificationCode.map((digit, index) => (
+                  <TextInput
+                    key={index}
+                    ref={ref => {
+                      if (ref) {
+                        codeInputRefs.current[index] = ref;
+                      }
+                    }}
+                    style={[
+                      styles.codeInput,
+                      digit && styles.codeInputFilled
+                    ]}
+                    value={digit}
+                    onChangeText={(value) => handleCodeChange(index, value)}
+                    onKeyPress={(e) => handleCodeKeyPress(index, e)}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    selectTextOnFocus
+                    autoFocus={index === 0}
+                  />
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.verifyButton,
+                  verificationCode.join('').length !== 6 && styles.verifyButtonDisabled
+                ]}
+                onPress={handleVerifyCode}
+                disabled={loading || verificationCode.join('').length !== 6}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.verifyButtonText}>Verify</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.resendButton}
+                onPress={handleResendVerification}
+                disabled={loading}
+              >
+                <Text style={styles.resendButtonText}>
+                  {loading ? 'Sending...' : "Didn't receive code? Resend"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -493,6 +633,123 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     fontWeight: '400',
     marginBottom: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#1E293B',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.3)',
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 15,
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  modalBody: {
+    marginBottom: 24,
+  },
+  modalText: {
+    fontSize: 14,
+    color: '#CBD5E1',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  modalEmail: {
+    color: '#60A5FA',
+    fontWeight: '600',
+  },
+  modalActions: {
+    gap: 12,
+  },
+  modalButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: 'rgba(148, 163, 184, 0.3)',
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalButtonTextSecondary: {
+    color: '#94A3B8',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  codeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 24,
+  },
+  codeInput: {
+    width: 50,
+    height: 60,
+    backgroundColor: 'rgba(30, 41, 59, 0.6)',
+    borderWidth: 2,
+    borderColor: 'rgba(148, 163, 184, 0.3)',
+    borderRadius: 12,
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  codeInputFilled: {
+    borderColor: '#3B82F6',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  verifyButton: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  verifyButtonDisabled: {
+    opacity: 0.5,
+  },
+  verifyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  resendButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  resendButtonText: {
+    color: '#60A5FA',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 

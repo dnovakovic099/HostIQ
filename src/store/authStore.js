@@ -126,6 +126,15 @@ export const useAuthStore = create((set, get) => ({
     } catch (error) {
       console.error('Login error:', error);
       
+      // Check if error is due to unverified account
+      if (error.response?.data?.requiresVerification) {
+        return {
+          success: false,
+          error: error.response?.data?.error || 'Please verify your account first',
+          requiresVerification: true
+        };
+      }
+      
       // Better error handling for different error types
       let errorMessage = 'Login failed';
       
@@ -607,6 +616,16 @@ export const useAuthStore = create((set, get) => ({
         name, 
         role 
       });
+      
+      // Check if verification is required
+      if (response.data.requiresVerification) {
+        return { 
+          success: true, 
+          requiresVerification: true,
+          message: response.data.message || 'Please check your email to verify your account.'
+        };
+      }
+      
       const { accessToken, refreshToken, user } = response.data;
       await get().setTokens(accessToken, refreshToken, user);
       
@@ -620,6 +639,39 @@ export const useAuthStore = create((set, get) => ({
       return { 
         success: false, 
         error: error.response?.data?.error || 'Registration failed' 
+      };
+    }
+  },
+
+  resendVerificationEmail: async (email) => {
+    try {
+      await api.post('/auth/resend-verification', { email });
+      return { success: true, message: 'Verification email sent' };
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.error || 'Failed to resend verification email' 
+      };
+    }
+  },
+
+  verifyCode: async (email, code) => {
+    try {
+      const response = await api.post('/auth/verify-code', { email, code });
+      const { accessToken, refreshToken, user } = response.data;
+      await get().setTokens(accessToken, refreshToken, user);
+      
+      // Reset onboarding state for new users so they see the welcome modal
+      const onboardingStore = useOnboardingStore.getState();
+      await onboardingStore.resetOnboarding();
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Verify code error:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.error || 'Invalid verification code' 
       };
     }
   },
