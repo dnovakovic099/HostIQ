@@ -182,8 +182,26 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
       if (!inspectionId && unitId) {
         try {
           // Fetch inspections for this unit and find the one linked to this assignment
-          const response = await api.get(`/owner/inspections/recent?limit=500`);
-          const inspections = response.data || [];
+          let inspections = [];
+          try {
+            const response = await api.get(`/owner/inspections/recent?limit=500`);
+            inspections = response.data || [];
+          } catch (timeoutError) {
+            // If timeout, try with smaller limit
+            if (timeoutError.code === 'ECONNABORTED' || timeoutError.message?.includes('timeout')) {
+              console.warn('Timeout fetching 500 inspections, trying with 100...');
+              try {
+                const fallbackResponse = await api.get(`/owner/inspections/recent?limit=100`);
+                inspections = fallbackResponse.data || [];
+              } catch (fallbackError) {
+                console.error('Error fetching inspections (fallback):', fallbackError);
+                // Continue with empty array - inspection won't be found but won't crash
+                inspections = [];
+              }
+            } else {
+              throw timeoutError;
+            }
+          }
           
           console.log('🔍 Searching through inspections:', {
             totalInspections: inspections.length,

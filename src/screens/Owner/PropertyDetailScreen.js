@@ -11,27 +11,31 @@ import {
   Modal,
   Platform,
   KeyboardAvoidingView,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 import { getRoomSuggestionByType, ROOM_SUGGESTIONS } from '../../config/roomSuggestions';
 
 const COLORS = {
-  bg: '#F2F2F7',
+  // Match PropertiesScreen palette
+  bg: '#F8FAFC',
   card: '#FFFFFF',
-  primary: '#4A90E2',
-  green: '#34C759',
-  orange: '#FF9500',
-  red: '#FF3B30',
-  pms: '#4A90E2', // HostIQ Blue for PMS badges
-  text: '#000000',
-  textSecondary: '#3C3C43',
-  textTertiary: '#8E8E93',
-  separator: '#C6C6C8',
-  fill: '#E5E5EA',
+  primary: '#548EDD', // HostIQ Brand Color
+  pms: '#548EDD',
+  text: '#1F2937',
+  textSecondary: '#6B7280',
+  textTertiary: '#9CA3AF',
+  border: '#E5E7EB',
+  green: '#10B981',
+  orange: '#F59E0B',
+  red: '#EF4444',
 };
 
 export default function PropertyDetailScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { propertyId, isPMS = false } = route.params;
   const [property, setProperty] = useState(null);
   const [units, setUnits] = useState([]);
@@ -415,27 +419,84 @@ export default function PropertyDetailScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* Header Gradient - match PropertiesScreen */}
+      <LinearGradient
+        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+      >
+        {Platform.OS === 'ios' ? (
+          <SafeAreaView>
+            <View style={styles.headerGradient}>
+              <View style={styles.headerIconWrapper}>
+                <View style={styles.headerIconInner}>
+                  <Ionicons name="home" size={28} color="#FFFFFF" />
+                </View>
+              </View>
+              <View style={styles.headerTextWrapper}>
+                <Text style={styles.headerTitle} numberOfLines={2}>
+                  {property?.name || 'Property Details'}
+                </Text>
+                <Text style={styles.headerSubtitle} numberOfLines={1}>
+                  {isPMS ? 'PMS Property' : 'Manual Property'} • {getTotalRooms()} rooms
+                </Text>
+              </View>
+            </View>
+          </SafeAreaView>
+        ) : (
+          <View style={styles.headerGradient}>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="home" size={28} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle} numberOfLines={2}>
+                {property?.name || 'Property Details'}
+              </Text>
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {isPMS ? 'PMS Property' : 'Manual Property'} • {getTotalRooms()} rooms
+              </Text>
+            </View>
+          </View>
+        )}
+      </LinearGradient>
+
       <ScrollView showsVerticalScrollIndicator={false}>
-        
         {/* Property Info */}
         <View style={styles.section}>
           <View style={styles.card}>
             {isPMS && (
-              <View style={styles.pmsBadge}>
+              <LinearGradient
+                colors={['#548EDD', '#4A7FD4']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.pmsBadge}
+              >
+                <Ionicons name="cloud" size={10} color="#FFFFFF" />
                 <Text style={styles.pmsBadgeText}>HOSTIFY</Text>
-              </View>
+              </LinearGradient>
             )}
             
             <TouchableOpacity 
               style={styles.infoRow}
               onPress={() => !isPMS && openEditModal('name')}
               disabled={isPMS}
+              activeOpacity={0.7}
             >
+              <View style={styles.infoIconContainer}>
+                <Ionicons name="business-outline" size={20} color={COLORS.primary} />
+              </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Name</Text>
                 <Text style={styles.infoValue} numberOfLines={2}>{property?.name}</Text>
               </View>
-              {!isPMS && <Ionicons name="chevron-forward" size={20} color={COLORS.separator} />}
+              {!isPMS && (
+                <View style={styles.chevronContainer}>
+                  <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
+                </View>
+              )}
             </TouchableOpacity>
             
             <View style={styles.divider} />
@@ -444,12 +505,20 @@ export default function PropertyDetailScreen({ route, navigation }) {
               style={styles.infoRow}
               onPress={() => !isPMS && openEditModal('address')}
               disabled={isPMS}
+              activeOpacity={0.7}
             >
+              <View style={styles.infoIconContainer}>
+                <Ionicons name="location-outline" size={20} color={COLORS.primary} />
+              </View>
               <View style={styles.infoContent}>
                 <Text style={styles.infoLabel}>Address</Text>
                 <Text style={styles.infoValue} numberOfLines={2}>{property?.address}</Text>
               </View>
-              {!isPMS && <Ionicons name="chevron-forward" size={20} color={COLORS.separator} />}
+              {!isPMS && (
+                <View style={styles.chevronContainer}>
+                  <Ionicons name="chevron-forward" size={18} color={COLORS.textTertiary} />
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -457,19 +526,21 @@ export default function PropertyDetailScreen({ route, navigation }) {
         {/* Stats */}
         <View style={styles.section}>
           <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{getTotalRooms()}</Text>
+            <View style={styles.statItem}>
               <Text style={styles.statLabel}>Rooms</Text>
+              <Text style={styles.statNumber}>{getTotalRooms()}</Text>
             </View>
-            <View style={styles.statBox}>
-              <Text style={styles.statNumber}>{isPMS ? '—' : getTotalInspections()}</Text>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
               <Text style={styles.statLabel}>Inspections</Text>
+              <Text style={styles.statNumber}>{isPMS ? '—' : getTotalInspections()}</Text>
             </View>
-            <View style={styles.statBox}>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Score</Text>
               <Text style={[styles.statNumber, { color: getScoreColor(score) }]}>
                 {score?.toFixed(1) || '—'}
               </Text>
-              <Text style={styles.statLabel}>Score</Text>
             </View>
           </View>
         </View>
@@ -526,11 +597,32 @@ export default function PropertyDetailScreen({ route, navigation }) {
             
             <TouchableOpacity 
               style={styles.actionRow}
-              onPress={() => navigation.navigate('PropertyValuables', { 
-                propertyId, 
-                propertyName: property?.name,
-                isPMS 
-              })}
+              onPress={() => {
+                const allRooms = getAllRooms();
+                if (allRooms.length === 0) {
+                  Alert.alert(
+                    'No Rooms',
+                    'Please add rooms to your property first before managing valuable items.',
+                    [{ text: 'OK' }]
+                  );
+                } else if (allRooms.length === 1) {
+                  // If only one room, navigate directly to it
+                  navigation.navigate('ValuableItems', {
+                    roomId: allRooms[0].id,
+                    roomName: allRooms[0].name,
+                    roomType: allRooms[0].room_type,
+                    propertyName: property?.name,
+                    isPMS
+                  });
+                } else {
+                  // Multiple rooms - show message to select from room list
+                  Alert.alert(
+                    'Select a Room',
+                    'Valuable items are managed per room. Please expand a room below and tap "Valuables" to manage items for that room.',
+                    [{ text: 'OK' }]
+                  );
+                }
+              }}
             >
               <View style={[styles.settingIcon, { backgroundColor: '#E3F2FD' }]}>
                 <Ionicons name="shield-checkmark-outline" size={18} color={COLORS.primary} />
@@ -562,18 +654,37 @@ export default function PropertyDetailScreen({ route, navigation }) {
           
           {allRooms.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Ionicons name="bed-outline" size={40} color={COLORS.textTertiary} />
+              <LinearGradient
+                colors={['#DBEAFE', '#BFDBFE']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.emptyIcon}
+              >
+                <Ionicons name="bed-outline" size={48} color={COLORS.primary} />
+              </LinearGradient>
               <Text style={styles.emptyTitle}>No Rooms</Text>
               <Text style={styles.emptyText}>
                 Add rooms to enable inspections
               </Text>
-              <TouchableOpacity style={styles.emptyButton} onPress={() => {
-                if (!isPMS && units.length === 1) {
-                  setSelectedUnitForRoom(units[0]);
-                }
-                setShowRoomPicker(true);
-              }}>
-                <Text style={styles.emptyButtonText}>Add Room</Text>
+              <TouchableOpacity 
+                style={styles.emptyButton} 
+                onPress={() => {
+                  if (!isPMS && units.length === 1) {
+                    setSelectedUnitForRoom(units[0]);
+                  }
+                  setShowRoomPicker(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#548EDD', '#4A7FD4']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.emptyButtonGradient}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.emptyButtonText}>Add Room</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           ) : (
@@ -585,10 +696,16 @@ export default function PropertyDetailScreen({ route, navigation }) {
                   <TouchableOpacity 
                     style={styles.roomRow}
                     onPress={() => setExpandedRooms(p => ({ ...p, [room.id]: !p[room.id] }))}
+                    activeOpacity={0.7}
                   >
-                    <View style={styles.roomIcon}>
+                    <LinearGradient
+                      colors={['#EFF6FF', '#DBEAFE']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.roomIcon}
+                    >
                       <Ionicons name={getRoomIcon(room.room_type)} size={22} color={COLORS.primary} />
-                    </View>
+                    </LinearGradient>
                     <View style={styles.roomContent}>
                       <Text style={styles.roomName}>{room.name}</Text>
                       <Text style={styles.roomType}>{getRoomLabel(room.room_type)}</Text>
@@ -598,11 +715,13 @@ export default function PropertyDetailScreen({ route, navigation }) {
                         <Ionicons name="chatbubble" size={12} color={COLORS.green} />
                       </View>
                     )}
-                    <Ionicons 
-                      name={expandedRooms[room.id] ? "chevron-down" : "chevron-forward"} 
-                      size={20} 
-                      color={COLORS.separator} 
-                    />
+                    <View style={styles.chevronContainer}>
+                      <Ionicons 
+                        name={expandedRooms[room.id] ? "chevron-down" : "chevron-forward"} 
+                        size={18} 
+                        color={COLORS.textTertiary} 
+                      />
+                    </View>
                   </TouchableOpacity>
                   
                   {expandedRooms[room.id] && (
@@ -628,17 +747,28 @@ export default function PropertyDetailScreen({ route, navigation }) {
                             propertyName: property?.name,
                             isPMS,
                           })}
+                          activeOpacity={0.7}
                         >
-                          <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.primary} />
+                          <LinearGradient
+                            colors={['#EFF6FF', '#DBEAFE']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.roomActionIcon}
+                          >
+                            <Ionicons name="shield-checkmark-outline" size={16} color={COLORS.primary} />
+                          </LinearGradient>
                           <Text style={styles.roomActionText}>Valuables</Text>
                         </TouchableOpacity>
                         
                         {isPMS && (
                           <TouchableOpacity 
-                            style={styles.roomActionBtn}
+                            style={[styles.roomActionBtn, styles.roomActionBtnDanger]}
                             onPress={() => handleDeleteRoom(room)}
+                            activeOpacity={0.7}
                           >
-                            <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+                            <View style={styles.roomActionIconDanger}>
+                              <Ionicons name="trash-outline" size={16} color={COLORS.red} />
+                            </View>
                             <Text style={[styles.roomActionText, { color: COLORS.red }]}>Delete</Text>
                           </TouchableOpacity>
                         )}
@@ -658,7 +788,14 @@ export default function PropertyDetailScreen({ route, navigation }) {
             
             {!units.some(u => u.inspections?.[0]) ? (
               <View style={styles.emptyCard}>
-                <Ionicons name="clipboard-outline" size={40} color={COLORS.textTertiary} />
+                <LinearGradient
+                  colors={['#DBEAFE', '#BFDBFE']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.emptyIcon}
+                >
+                  <Ionicons name="clipboard-outline" size={48} color={COLORS.primary} />
+                </LinearGradient>
                 <Text style={styles.emptyTitle}>No Inspections</Text>
                 <Text style={styles.emptyText}>Assign cleaners to start inspecting</Text>
               </View>
@@ -670,7 +807,11 @@ export default function PropertyDetailScreen({ route, navigation }) {
                     <TouchableOpacity 
                       style={styles.inspectionRow}
                       onPress={() => navigation.navigate('InspectionDetail', { inspectionId: unit.inspections[0].id })}
+                      activeOpacity={0.7}
                     >
+                      <View style={styles.inspectionIconContainer}>
+                        <Ionicons name="clipboard-outline" size={20} color={COLORS.primary} />
+                      </View>
                       <View style={styles.inspectionContent}>
                         <Text style={styles.inspectionUnit}>{unit.name}</Text>
                         <Text style={styles.inspectionDate}>
@@ -679,17 +820,20 @@ export default function PropertyDetailScreen({ route, navigation }) {
                           })}
                         </Text>
                       </View>
-                      <View style={[
-                        styles.scoreBadge, 
-                        { backgroundColor: getScoreColor(unit.inspections[0].cleanliness_score) + '20' }
-                      ]}>
+                      <LinearGradient
+                        colors={[getScoreColor(unit.inspections[0].cleanliness_score) + '20', getScoreColor(unit.inspections[0].cleanliness_score) + '10']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.scoreBadge}
+                      >
+                        <Ionicons name="star" size={14} color={getScoreColor(unit.inspections[0].cleanliness_score)} />
                         <Text style={[
                           styles.scoreBadgeText, 
                           { color: getScoreColor(unit.inspections[0].cleanliness_score) }
                         ]}>
                           {unit.inspections[0].cleanliness_score?.toFixed(1) || '—'}
                         </Text>
-                      </View>
+                      </LinearGradient>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -1000,6 +1144,46 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.bg,
   },
+  // Header Gradient (match PropertiesScreen)
+  headerWrapper: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
+  },
+  headerIconWrapper: {
+    marginRight: 14,
+  },
+  headerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.9,
+  },
   loadingView: {
     flex: 1,
     justifyContent: 'center',
@@ -1046,29 +1230,46 @@ const styles = StyleSheet.create({
   // Card
   card: {
     backgroundColor: COLORS.card,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: COLORS.separator,
+    backgroundColor: '#E0E7FF',
     marginLeft: 16,
   },
   
   // PMS Badge
   pmsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: COLORS.pms,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    gap: 4,
+    overflow: 'hidden',
     margin: 12,
     marginBottom: 0,
   },
   pmsBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
-    color: '#FFF',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   
@@ -1076,8 +1277,17 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 16,
     minHeight: 44,
+  },
+  infoIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   infoContent: {
     flex: 1,
@@ -1085,63 +1295,93 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 11,
     color: COLORS.textTertiary,
-    marginBottom: 1,
+    marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+    fontWeight: '600',
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 15,
     color: COLORS.text,
-    lineHeight: 18,
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  chevronContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   
   // Stats
   statsRow: {
     flexDirection: 'row',
     backgroundColor: COLORS.card,
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  statBox: {
+  statItem: {
     flex: 1,
     alignItems: 'center',
   },
+  statDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 8,
+  },
   statNumber: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '700',
     color: COLORS.text,
-    marginBottom: 1,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 11,
-    color: COLORS.textTertiary,
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
   },
   
   // Settings
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    paddingRight: 14,
+    padding: 14,
+    paddingRight: 16,
   },
   settingIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 12,
   },
   settingContent: {
     flex: 1,
   },
   settingTitle: {
-    fontSize: 15,
+    fontSize: 16,
+    fontWeight: '600',
     color: COLORS.text,
+    marginBottom: 2,
   },
   settingDesc: {
-    fontSize: 11,
-    color: COLORS.textTertiary,
+    fontSize: 12,
+    color: COLORS.textSecondary,
     marginTop: 1,
   },
   toggle: {
@@ -1172,12 +1412,13 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    paddingRight: 14,
+    padding: 14,
+    paddingRight: 16,
   },
   actionTitle: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 16,
+    fontWeight: '600',
     color: COLORS.text,
   },
   
@@ -1185,28 +1426,30 @@ const styles = StyleSheet.create({
   roomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 14,
     paddingRight: 16,
   },
   roomIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#E3F2FD',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
   },
   roomContent: {
     flex: 1,
   },
   roomName: {
     fontSize: 17,
+    fontWeight: '600',
     color: COLORS.text,
+    marginBottom: 2,
   },
   roomType: {
     fontSize: 13,
-    color: COLORS.textTertiary,
+    color: COLORS.textSecondary,
     marginTop: 1,
   },
   tipIndicator: {
@@ -1267,43 +1510,115 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.card,
-    padding: 10,
+    padding: 12,
+    borderRadius: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+  },
+  roomActionBtnDanger: {
+    borderColor: '#FEE2E2',
+  },
+  roomActionIcon: {
+    width: 28,
+    height: 28,
     borderRadius: 8,
-    gap: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  roomActionIconDanger: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   roomActionText: {
     fontSize: 15,
+    fontWeight: '600',
     color: COLORS.primary,
   },
   
   // Empty State
   emptyCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 10,
-    padding: 32,
+    borderRadius: 16,
+    padding: 40,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   emptyTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: COLORS.text,
-    marginTop: 12,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   emptyText: {
     fontSize: 15,
-    color: COLORS.textTertiary,
+    color: COLORS.textSecondary,
     textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
   },
   emptyButton: {
-    marginTop: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  emptyButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    gap: 8,
   },
   emptyButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
   },
@@ -1312,29 +1627,44 @@ const styles = StyleSheet.create({
   inspectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: 14,
     paddingRight: 16,
+  },
+  inspectionIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   inspectionContent: {
     flex: 1,
   },
   inspectionUnit: {
     fontSize: 17,
+    fontWeight: '600',
     color: COLORS.text,
+    marginBottom: 2,
   },
   inspectionDate: {
     fontSize: 13,
-    color: COLORS.textTertiary,
+    color: COLORS.textSecondary,
     marginTop: 1,
   },
   scoreBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    gap: 4,
+    overflow: 'hidden',
   },
   scoreBadgeText: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   
   // Modal (matching CreatePropertyScreen exactly)

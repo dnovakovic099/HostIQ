@@ -201,7 +201,7 @@ export default function OwnerStack() {
       <Stack.Screen 
         name="PropertyDetail" 
         component={PropertyDetailScreen}
-        options={{ title: 'Property Details' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="InspectionDetail" 

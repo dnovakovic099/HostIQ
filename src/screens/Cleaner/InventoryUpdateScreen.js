@@ -38,9 +38,32 @@ export default function InventoryUpdateScreen({ route, navigation }) {
   const fetchInventory = async () => {
     try {
       const res = await api.get(`/inventory/properties/${propertyId}/items`);
-      setItems(res.data);
+      setItems(res.data || []);
     } catch (error) {
       console.error('Error fetching inventory:', error);
+      
+      // Handle 404 - property not found or access denied
+      if (error.response?.status === 404) {
+        setItems([]);
+        // Show alert on refresh, not initial load
+        if (!loading && refreshing) {
+          Alert.alert(
+            'Inventory Not Available',
+            'This property is not accessible or has no inventory set up yet.',
+            [{ text: 'OK' }]
+          );
+        }
+      } else {
+        // Other errors
+        if (!loading && refreshing) {
+          Alert.alert(
+            'Error Loading Inventory',
+            'Failed to load inventory items. Please try again.',
+            [{ text: 'OK' }]
+          );
+        }
+        setItems([]);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

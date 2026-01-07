@@ -59,8 +59,27 @@ export default function InsightsCleanersTab({ navigation }) {
       const cleanersList = cleanersResponse.data || [];
       
       // Fetch inspections to calculate stats (get more to be accurate)
-      const inspectionsResponse = await api.get('/owner/inspections/recent?limit=500');
-      const allInspections = inspectionsResponse.data || [];
+      // Use a reasonable limit to avoid timeouts
+      let allInspections = [];
+      try {
+        const inspectionsResponse = await api.get('/owner/inspections/recent?limit=500');
+        allInspections = inspectionsResponse.data || [];
+      } catch (inspectionError) {
+        // If fetching 500 times out, try with a smaller limit
+        if (inspectionError.code === 'ECONNABORTED' || inspectionError.message?.includes('timeout')) {
+          console.warn('Timeout fetching 500 inspections, trying with 100...');
+          try {
+            const fallbackResponse = await api.get('/owner/inspections/recent?limit=100');
+            allInspections = fallbackResponse.data || [];
+          } catch (fallbackError) {
+            console.error('Error fetching inspections (fallback):', fallbackError);
+            // Continue with empty array - stats will be calculated from available data
+            allInspections = [];
+          }
+        } else {
+          throw inspectionError;
+        }
+      }
       
       // Calculate stats for each cleaner from actual inspections
       // Only count COMPLETE inspections (not PROCESSING, FAILED, or REJECTED)
@@ -126,6 +145,14 @@ export default function InsightsCleanersTab({ navigation }) {
       });
     } catch (error) {
       console.error('Error fetching cleaner performance:', error);
+      // Set empty state on error to prevent UI from being stuck
+      setCleaners([]);
+      setSummary({
+        totalCleaners: 0,
+        totalInspections: 0,
+        totalAssignments: 0,
+        avgPassRate: 0
+      });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -145,8 +172,28 @@ export default function InsightsCleanersTab({ navigation }) {
     
     // Fetch ALL inspections for this cleaner
     try {
-      const response = await api.get(`/owner/inspections/recent?limit=500`);
-      const allInspections = response.data || [];
+      let allInspections = [];
+      try {
+        const response = await api.get(`/owner/inspections/recent?limit=500`);
+        allInspections = response.data || [];
+      } catch (timeoutError) {
+        // If timeout, try with smaller limit
+        if (timeoutError.code === 'ECONNABORTED' || timeoutError.message?.includes('timeout')) {
+          console.warn('Timeout fetching 500 inspections, trying with 100...');
+          try {
+            const fallbackResponse = await api.get(`/owner/inspections/recent?limit=100`);
+            allInspections = fallbackResponse.data || [];
+          } catch (fallbackError) {
+            console.error('Error fetching inspections (fallback):', fallbackError);
+            // Fall back to pre-loaded data
+            setCleanerReports(cleaner.recentInspections || []);
+            return;
+          }
+        } else {
+          throw timeoutError;
+        }
+      }
+      
       // Same filter as stats: COMPLETE status with valid score
       const cleanerInspections = allInspections.filter(i => {
         if (i.creator?.id !== cleaner.id) return false;

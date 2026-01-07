@@ -78,7 +78,28 @@ client.interceptors.response.use(
     return response;
   },
   async (error) => {
-    console.log('❌ API Error:', error.config?.method?.toUpperCase(), error.config?.url, '→', error.response?.status, error.response?.data);
+    // Safely log error information, handling timeout and network errors
+    const method = error.config?.method?.toUpperCase() || 'UNKNOWN';
+    const url = error.config?.url || 'UNKNOWN';
+    const status = error.response?.status || (error.code === 'ECONNABORTED' ? 'TIMEOUT' : 'NO_RESPONSE');
+    const errorMessage = error.message || 'Unknown error';
+    
+    // Safely stringify error data to avoid JSON parsing issues
+    let errorData = null;
+    try {
+      if (error.response?.data) {
+        errorData = typeof error.response.data === 'string' 
+          ? error.response.data 
+          : JSON.stringify(error.response.data);
+      }
+    } catch (e) {
+      errorData = '[Unable to serialize error data]';
+    }
+    
+    console.log('❌ API Error:', method, url, '→', status, errorMessage);
+    if (errorData) {
+      console.log('❌ Error Details:', errorData.length > 500 ? errorData.substring(0, 500) + '...' : errorData);
+    }
     
     const originalRequest = error.config;
 

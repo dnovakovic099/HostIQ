@@ -26,7 +26,7 @@ const CATEGORY_ICONS = {
   'Toiletries': 'water',
   'Linens': 'bed',
   'Kitchen': 'restaurant',
-  'Cleaning': 'sparkles',
+  'Cleaning': 'color-wand',
   'Essentials': 'flash',
 };
 
@@ -49,11 +49,36 @@ export default function InventoryScreen({ route, navigation }) {
 
   const fetchInventory = async () => {
     try {
-      const params = selectedCategory ? `?category_id=${selectedCategory}` : '';
-      const res = await api.get(`/inventory/properties/${propertyId}/items${params}`);
-      setItems(res.data);
+      // NOTE: Backend inventory items currently do not have category linkage enabled,
+      // so we always fetch all items for the property and group/filter client-side.
+      const res = await api.get(`/inventory/properties/${propertyId}/items`);
+      setItems(res.data || []);
     } catch (error) {
       console.error('Error fetching inventory:', error);
+      
+      // Handle 404 - property not found or access denied
+      if (error.response?.status === 404) {
+        setItems([]);
+        // Don't show alert on initial load, only on refresh
+        if (!loading && refreshing) {
+          Alert.alert(
+            'Inventory Not Available',
+            'This property is not accessible or has no inventory set up yet.',
+            [{ text: 'OK' }]
+          );
+        }
+      } else {
+        // Other errors - show alert on refresh
+        if (!loading && refreshing) {
+          Alert.alert(
+            'Error Loading Inventory',
+            'Failed to load inventory items. Please try again.',
+            [{ text: 'OK' }]
+          );
+        }
+        // Set empty array to prevent UI errors
+        setItems([]);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -63,9 +88,11 @@ export default function InventoryScreen({ route, navigation }) {
   const fetchCategories = async () => {
     try {
       const res = await api.get('/inventory/categories');
-      setCategories(res.data);
+      setCategories(res.data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      // Set empty array to prevent UI errors
+      setCategories([]);
     }
   };
 
@@ -81,18 +108,27 @@ export default function InventoryScreen({ route, navigation }) {
     }
 
     try {
-      await api.post(`/inventory/properties/${propertyId}/items`, {
+      const payload = {
         name: newItem.name,
         quantity: parseInt(newItem.quantity) || 0,
         min_threshold: parseInt(newItem.min_threshold) || 2,
         unit: newItem.unit,
-        category_id: selectedCategory,
-      });
+      };
+      
+      // Only include category_id if a category is actually selected
+      if (selectedCategory) {
+        payload.category_id = selectedCategory;
+      }
+
+      await api.post(`/inventory/properties/${propertyId}/items`, payload);
       setShowAddModal(false);
       setNewItem({ name: '', quantity: '', min_threshold: '2', unit: 'units' });
+      setSelectedCategory(null);
       fetchInventory();
     } catch (error) {
-      Alert.alert('Error', 'Failed to add item');
+      const errorMessage = error.response?.data?.error || 'Failed to add item';
+      console.error('Error adding item:', error.response?.data);
+      Alert.alert('Error', errorMessage);
     }
   };
 
@@ -109,7 +145,9 @@ export default function InventoryScreen({ route, navigation }) {
               await api.post(`/inventory/items/${itemId}/restock`);
               fetchInventory();
             } catch (error) {
-              Alert.alert('Error', 'Failed to restock item');
+              const message = error.response?.data?.error || 'Failed to restock item';
+              console.error('Error restocking item:', error.response?.data || error);
+              Alert.alert('Error', message);
             }
           },
         },
@@ -179,6 +217,12 @@ export default function InventoryScreen({ route, navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#007AFF" />
         }
       >
+        {/* Header */}
+        <View style={styles.headerSection}>
+          <Text style={styles.headerTitle}>{propertyName}</Text>
+          <Text style={styles.headerSubtitle}>Inventory overview for this property</Text>
+        </View>
+
         {/* Quick Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statBox}>
@@ -205,20 +249,24 @@ export default function InventoryScreen({ route, navigation }) {
         {Object.entries(groupedItems).length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="cube-outline" size={48} color="#C7C7CC" />
-            <Text style={styles.emptyTitle}>No Inventory Items</Text>
+            <Text style={styles.emptyTitle}>No inventory items yet</Text>
             <Text style={styles.emptySubtitle}>
-              Add items to track supplies for this property
+              Add the essentials you want to track for this property. You can always update quantities later.
             </Text>
-            <TouchableOpacity
-              style={styles.addFirstButton}
-              onPress={() => setShowAddModal(true)}
-            >
-              <Ionicons name="add" size={20} color="#FFF" />
-              <Text style={styles.addFirstButtonText}>Add First Item</Text>
-            </TouchableOpacity>
+            {!loading && (
+              <TouchableOpacity
+                style={styles.addFirstButton}
+                onPress={() => setShowAddModal(true)}
+              >
+                <Ionicons name="add" size={20} color="#FFF" />
+                <Text style={styles.addFirstButtonText}>Add First Item</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
-          Object.entries(groupedItems).map(([categoryName, categoryItems]) => (
+          Object.entries(groupedItems)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([categoryName, categoryItems]) => (
             <View key={categoryName} style={styles.categorySection}>
               <View style={styles.categoryHeader}>
                 <Ionicons 
@@ -227,7 +275,9 @@ export default function InventoryScreen({ route, navigation }) {
                   color="#8E8E93" 
                 />
                 <Text style={styles.categoryTitle}>{categoryName}</Text>
-                <Text style={styles.categoryCount}>{categoryItems.length}</Text>
+                <View style={styles.categoryCountPill}>
+                  <Text style={styles.categoryCount}>{categoryItems.length}</Text>
+                </View>
               </View>
               
               {categoryItems.map(item => {
@@ -256,12 +306,22 @@ export default function InventoryScreen({ route, navigation }) {
                         </View>
                       </View>
                       
-                      <View style={styles.itemStatus}>
-                        <View style={[styles.statusBadge, { backgroundColor: `${statusConfig.color}15` }]}>
-                          <Ionicons name={statusConfig.icon} size={14} color={statusConfig.color} />
-                          <Text style={[styles.statusText, { color: statusConfig.color }]}>
-                            {statusConfig.label}
-                          </Text>
+                      <View style={styles.itemRight}>
+                        <TouchableOpacity
+                          style={styles.deleteBtn}
+                          onPress={() => handleDeleteItem(item.id, item.name)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <Ionicons name="trash-outline" size={16} color="#C7C7CC" />
+                        </TouchableOpacity>
+
+                        <View style={styles.itemStatus}>
+                          <View style={[styles.statusBadge, { backgroundColor: `${statusConfig.color}15` }]}>
+                            <Ionicons name={statusConfig.icon} size={14} color={statusConfig.color} />
+                            <Text style={[styles.statusText, { color: statusConfig.color }]}>
+                              {statusConfig.label}
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     </View>
@@ -277,14 +337,6 @@ export default function InventoryScreen({ route, navigation }) {
                         </TouchableOpacity>
                       </View>
                     )}
-                    
-                    <TouchableOpacity
-                      style={styles.deleteBtn}
-                      onPress={() => handleDeleteItem(item.id, item.name)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <Ionicons name="trash-outline" size={16} color="#C7C7CC" />
-                    </TouchableOpacity>
                   </View>
                 );
               })}
@@ -407,6 +459,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F2F2F7',
   },
+  headerSection: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+  },
+  headerSubtitle: {
+    marginTop: 4,
+    fontSize: 13,
+    color: '#8E8E93',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -441,8 +508,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF',
     borderRadius: 10,
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   statValue: {
     fontSize: 20,
@@ -473,24 +547,43 @@ const styles = StyleSheet.create({
   },
   categoryCount: {
     fontSize: 13,
-    color: '#C7C7CC',
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  categoryCountPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: '#007AFF15',
   },
   // Item Card
   itemCard: {
     backgroundColor: '#FFF',
     borderRadius: 12,
     padding: 14,
-    marginBottom: 8,
+    marginBottom: 10,
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   itemCardAlert: {
-    borderLeftWidth: 3,
-    borderLeftColor: '#FF9500',
+    borderLeftWidth: 0,
+    backgroundColor: '#FFF9F3',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#FFE0B2',
   },
   itemMain: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  itemRight: {
+    alignItems: 'flex-end',
+    gap: 6,
+    marginLeft: 12,
   },
   itemInfo: {
     flex: 1,
@@ -519,7 +612,7 @@ const styles = StyleSheet.create({
     color: '#C7C7CC',
   },
   itemStatus: {
-    marginLeft: 12,
+    marginLeft: 0,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -554,9 +647,6 @@ const styles = StyleSheet.create({
     color: '#007AFF',
   },
   deleteBtn: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
     padding: 4,
   },
   // Empty State

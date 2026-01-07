@@ -11,12 +11,31 @@ import {
   Modal,
   Image,
   RefreshControl,
+  Platform,
+  SafeAreaView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../api/client';
 
+const COLORS = {
+  bg: '#F8FAFC',
+  card: '#FFFFFF',
+  primary: '#548EDD', // HostIQ Brand Color
+  text: '#1F2937',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  border: '#E5E7EB',
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
+};
+
 export default function ValuableItemsScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { roomId, roomName, roomType, isPMS = false, propertyName } = route.params;
   
   const [items, setItems] = useState([]);
@@ -36,7 +55,7 @@ export default function ValuableItemsScreen({ route, navigation }) {
 
   useEffect(() => {
     navigation.setOptions({
-      title: `${roomName} Items`,
+      headerShown: false,
     });
     fetchItems();
   }, [roomId, roomName]);
@@ -198,29 +217,56 @@ export default function ValuableItemsScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Header Info */}
-      <View style={styles.headerInfo}>
-        <View style={styles.headerIconContainer}>
-          <Ionicons name="shield-checkmark" size={24} color="#5856D6" />
-        </View>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.headerTitle}>Valuable Items</Text>
-          <Text style={styles.headerSubtitle}>
-            {propertyName ? `${propertyName} • ` : ''}{roomName}
-          </Text>
-        </View>
-      </View>
+      {/* Header Gradient */}
+      <LinearGradient
+        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+      >
+        {Platform.OS === 'ios' ? (
+          <SafeAreaView>
+            <View style={styles.headerGradient}>
+              <View style={styles.headerIconWrapper}>
+                <View style={styles.headerIconInner}>
+                  <Ionicons name="shield-checkmark" size={28} color="#FFFFFF" />
+                </View>
+              </View>
+              <View style={styles.headerTextWrapper}>
+                <Text style={styles.headerTitle}>Valuable Items</Text>
+                <Text style={styles.headerSubtitle}>
+                  {propertyName ? `${propertyName} • ` : ''}{roomName}
+                </Text>
+              </View>
+            </View>
+          </SafeAreaView>
+        ) : (
+          <View style={styles.headerGradient}>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="shield-checkmark" size={28} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>Valuable Items</Text>
+              <Text style={styles.headerSubtitle}>
+                {propertyName ? `${propertyName} • ` : ''}{roomName}
+              </Text>
+            </View>
+          </View>
+        )}
+      </LinearGradient>
 
       {/* Info Banner */}
       <View style={styles.infoBanner}>
-        <Ionicons name="information-circle" size={18} color="#3B82F6" />
+        <Ionicons name="information-circle" size={18} color={COLORS.primary} />
         <Text style={styles.infoBannerText}>
           Add items you want verified during each cleaning. Cleaners will be required to photograph each item.
         </Text>
@@ -235,14 +281,28 @@ export default function ValuableItemsScreen({ route, navigation }) {
       >
         {items.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="cube-outline" size={64} color="#C7C7CC" />
+            <LinearGradient
+              colors={['#DBEAFE', '#BFDBFE']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.emptyIcon}
+            >
+              <Ionicons name="cube-outline" size={48} color={COLORS.primary} />
+            </LinearGradient>
             <Text style={styles.emptyTitle}>No Items Yet</Text>
             <Text style={styles.emptyText}>
               Add valuable items like TVs, game consoles, or expensive appliances that you want verified during each cleaning.
             </Text>
-            <TouchableOpacity style={styles.emptyButton} onPress={openAddModal}>
-              <Ionicons name="add-circle" size={20} color="#FFF" />
-              <Text style={styles.emptyButtonText}>Add First Item</Text>
+            <TouchableOpacity style={styles.emptyButton} onPress={openAddModal} activeOpacity={0.8}>
+              <LinearGradient
+                colors={['#548EDD', '#4A7FD4']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.emptyButtonGradient}
+              >
+                <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.emptyButtonText}>Add First Item</Text>
+              </LinearGradient>
             </TouchableOpacity>
           </View>
         ) : (
@@ -252,6 +312,7 @@ export default function ValuableItemsScreen({ route, navigation }) {
                 <TouchableOpacity
                   style={styles.itemPhotoContainer}
                   onPress={() => item.reference_photo && setViewingPhoto(item.reference_photo)}
+                  activeOpacity={0.7}
                 >
                   {item.reference_photo ? (
                     <Image
@@ -259,9 +320,14 @@ export default function ValuableItemsScreen({ route, navigation }) {
                       style={styles.itemPhoto}
                     />
                   ) : (
-                    <View style={styles.noPhotoPlaceholder}>
-                      <Ionicons name="image-outline" size={32} color="#C7C7CC" />
-                    </View>
+                    <LinearGradient
+                      colors={['#EFF6FF', '#DBEAFE']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.noPhotoPlaceholder}
+                    >
+                      <Ionicons name="image-outline" size={32} color={COLORS.primary} />
+                    </LinearGradient>
                   )}
                 </TouchableOpacity>
                 
@@ -273,7 +339,7 @@ export default function ValuableItemsScreen({ route, navigation }) {
                     </Text>
                   )}
                   <View style={styles.itemMeta}>
-                    <Ionicons name="camera-outline" size={12} color="#8E8E93" />
+                    <Ionicons name="camera-outline" size={12} color={COLORS.textMuted} />
                     <Text style={styles.itemMetaText}>Photo required</Text>
                   </View>
                 </View>
@@ -282,14 +348,16 @@ export default function ValuableItemsScreen({ route, navigation }) {
                   <TouchableOpacity
                     style={styles.actionButton}
                     onPress={() => openEditModal(item)}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="pencil" size={18} color="#4A90E2" />
+                    <Ionicons name="pencil" size={18} color={COLORS.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.actionButton}
                     onPress={() => handleDelete(item)}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                    <Ionicons name="trash-outline" size={18} color={COLORS.error} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -302,8 +370,15 @@ export default function ValuableItemsScreen({ route, navigation }) {
 
       {/* Add Button */}
       {items.length > 0 && (
-        <TouchableOpacity style={styles.fab} onPress={openAddModal}>
-          <Ionicons name="add" size={28} color="#FFF" />
+        <TouchableOpacity style={styles.fab} onPress={openAddModal} activeOpacity={0.9}>
+          <LinearGradient
+            colors={['#548EDD', '#4A7FD4']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fabGradient}
+          >
+            <Ionicons name="add" size={28} color="#FFF" />
+          </LinearGradient>
         </TouchableOpacity>
       )}
 
@@ -314,7 +389,11 @@ export default function ValuableItemsScreen({ route, navigation }) {
         transparent={true}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalOverlay}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
@@ -325,7 +404,13 @@ export default function ValuableItemsScreen({ route, navigation }) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              style={styles.modalBody} 
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.modalBodyContent}
+              nestedScrollEnabled={true}
+            >
               {/* Reference Photo */}
               <Text style={styles.inputLabel}>Reference Photo</Text>
               <View style={styles.photoSection}>
@@ -408,7 +493,7 @@ export default function ValuableItemsScreen({ route, navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Photo Viewer Modal */}
@@ -445,44 +530,53 @@ export default function ValuableItemsScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
   },
-  headerInfo: {
+  // Header Gradient
+  headerWrapper: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFF',
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(60, 60, 67, 0.12)',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
   },
-  headerIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#5856D615',
+  headerIconWrapper: {
+    marginRight: 14,
+  },
+  headerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  headerTextContainer: {
+  headerTextWrapper: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
-    letterSpacing: -0.4,
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    letterSpacing: 0.3,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
-    marginTop: 2,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.9,
   },
   infoBanner: {
     flexDirection: 'row',
@@ -506,30 +600,63 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
+    paddingVertical: 80,
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
-    marginTop: 16,
+    color: COLORS.text,
+    marginBottom: 8,
   },
   emptyText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: COLORS.textSecondary,
     textAlign: 'center',
-    marginTop: 8,
     lineHeight: 22,
+    marginBottom: 24,
   },
   emptyButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  emptyButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#5856D6',
-    paddingHorizontal: 24,
+    justifyContent: 'center',
+    paddingHorizontal: 28,
     paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 24,
     gap: 8,
   },
   emptyButtonText: {
@@ -542,15 +669,23 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   itemPhotoContainer: {
     width: 70,
@@ -566,7 +701,6 @@ const styles = StyleSheet.create({
   noPhotoPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#F2F2F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -575,15 +709,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   itemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.text,
     marginBottom: 4,
+    lineHeight: 22,
   },
   itemDescription: {
     fontSize: 13,
-    color: '#8E8E93',
+    color: COLORS.textSecondary,
     marginBottom: 6,
+    lineHeight: 18,
   },
   itemMeta: {
     flexDirection: 'row',
@@ -592,7 +728,7 @@ const styles = StyleSheet.create({
   },
   itemMetaText: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: COLORS.textMuted,
   },
   itemActions: {
     justifyContent: 'center',
@@ -602,25 +738,33 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#EFF6FF',
     justifyContent: 'center',
     alignItems: 'center',
   },
   fab: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 24,
     right: 20,
+    borderRadius: 18,
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  fabGradient: {
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#5856D6',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#5856D6',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
   },
   // Modal styles
   modalOverlay: {
@@ -633,6 +777,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
+    width: '100%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -648,8 +793,12 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   modalBody: {
-    padding: 16,
     maxHeight: 400,
+  },
+  modalBodyContent: {
+    padding: 16,
+    paddingBottom: 20,
+    flexGrow: 1,
   },
   inputLabel: {
     fontSize: 14,
@@ -659,11 +808,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#000',
+    color: COLORS.text,
   },
   textArea: {
     minHeight: 80,
@@ -680,17 +829,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
     padding: 20,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#E5E5EA',
+    borderColor: COLORS.border,
     borderStyle: 'dashed',
   },
   photoButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4A90E2',
+    color: COLORS.primary,
     marginTop: 8,
   },
   photoPreview: {
@@ -713,7 +862,7 @@ const styles = StyleSheet.create({
   },
   photoHint: {
     fontSize: 12,
-    color: '#8E8E93',
+    color: COLORS.textMuted,
     marginTop: 8,
     textAlign: 'center',
   },
@@ -723,7 +872,7 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F2F2F7',
+    borderTopColor: COLORS.border,
   },
   modalButton: {
     flex: 1,
@@ -732,15 +881,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
+    color: COLORS.textSecondary,
   },
   saveButton: {
-    backgroundColor: '#5856D6',
+    backgroundColor: COLORS.primary,
   },
   saveButtonText: {
     fontSize: 16,
