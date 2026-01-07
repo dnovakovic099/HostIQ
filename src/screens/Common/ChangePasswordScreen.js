@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../api/client';
 
@@ -82,6 +83,26 @@ export default function ChangePasswordScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <LinearGradient
+        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerWrapper}
+      >
+        <View style={styles.headerGradient}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.headerTextWrapper}>
+            <Text style={styles.headerTitle}>Change Password</Text>
+            <Text style={styles.headerSubtitle}>Update your password</Text>
+          </View>
+        </View>
+      </LinearGradient>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -92,15 +113,6 @@ export default function ChangePasswordScreen({ navigation }) {
           showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Ionicons name="arrow-back" size={24} color="#1D1D1F" />
-            </TouchableOpacity>
-            <Text style={styles.title}>Change Password</Text>
-          </View>
 
           {isGoogleUser ? (
             <View style={styles.infoCard}>
@@ -215,7 +227,7 @@ export default function ChangePasswordScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
   },
   keyboardView: {
     flex: 1,
@@ -225,21 +237,40 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 20,
+    paddingTop: 16,
     paddingBottom: 40,
   },
-  header: {
+  headerWrapper: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
   },
   backButton: {
     marginRight: 12,
     padding: 4,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1D1D1F',
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.9,
   },
   form: {
     backgroundColor: '#fff',

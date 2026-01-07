@@ -28,6 +28,7 @@ export default function InventoryUpdateScreen({ route, navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [updatedItems, setUpdatedItems] = useState({}); // Track local updates
   const [saving, setSaving] = useState(false);
+  const [inventoryUnavailable, setInventoryUnavailable] = useState(false); // 404 / access denied flag
 
   useFocusEffect(
     useCallback(() => {
@@ -39,21 +40,18 @@ export default function InventoryUpdateScreen({ route, navigation }) {
     try {
       const res = await api.get(`/inventory/properties/${propertyId}/items`);
       setItems(res.data || []);
+      setInventoryUnavailable(false);
     } catch (error) {
-      console.error('Error fetching inventory:', error);
-      
-      // Handle 404 - property not found or access denied
+      // Handle 404 - property not found or access denied gracefully
       if (error.response?.status === 404) {
         setItems([]);
-        // Show alert on refresh, not initial load
-        if (!loading && refreshing) {
-          Alert.alert(
-            'Inventory Not Available',
-            'This property is not accessible or has no inventory set up yet.',
-            [{ text: 'OK' }]
-          );
+        setInventoryUnavailable(true);
+        // Avoid noisy error overlays in dev; just log a quiet message
+        if (__DEV__) {
+          console.log('Inventory not available for this property (404):', error.response?.data);
         }
       } else {
+        console.error('Error fetching inventory:', error);
         // Other errors
         if (!loading && refreshing) {
           Alert.alert(
@@ -63,6 +61,7 @@ export default function InventoryUpdateScreen({ route, navigation }) {
           );
         }
         setItems([]);
+        setInventoryUnavailable(false);
       }
     } finally {
       setLoading(false);
@@ -182,9 +181,13 @@ export default function InventoryUpdateScreen({ route, navigation }) {
         {items.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="cube-outline" size={48} color="#C7C7CC" />
-            <Text style={styles.emptyTitle}>No Inventory</Text>
+            <Text style={styles.emptyTitle}>
+              {inventoryUnavailable ? 'Inventory not available' : 'No Inventory'}
+            </Text>
             <Text style={styles.emptySubtitle}>
-              The owner hasn't set up inventory for this property yet
+              {inventoryUnavailable
+                ? 'This property is not accessible or has no inventory set up yet.'
+                : "The owner hasn't set up inventory for this property yet"}
             </Text>
           </View>
         ) : (

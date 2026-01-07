@@ -49,12 +49,12 @@ export default function SettingsStack() {
       <Stack.Screen 
         name="EditProfile" 
         component={EditProfileScreen}
-        options={{ title: 'Edit Profile' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="ChangePassword" 
         component={ChangePasswordScreen}
-        options={{ title: 'Change Password' }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

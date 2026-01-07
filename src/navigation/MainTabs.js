@@ -68,7 +68,7 @@ function PropertiesStack() {
       <Stack.Screen 
         name="Inventory" 
         component={InventoryScreen}
-        options={{ title: 'Inventory' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="ValuableItems" 

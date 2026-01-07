@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -654,7 +656,10 @@ export default function CreatePropertyScreen({ navigation }) {
         visible={editingRoom !== null}
         onRequestClose={() => setEditingRoom(null)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
@@ -665,7 +670,10 @@ export default function CreatePropertyScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.editRoomContent}>
+            <ScrollView
+              style={styles.editRoomContent}
+              keyboardShouldPersistTaps="handled"
+            >
               {editingRoom && (
                 <>
                   <View style={styles.formGroup}>
@@ -737,7 +745,7 @@ export default function CreatePropertyScreen({ navigation }) {
               )}
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );

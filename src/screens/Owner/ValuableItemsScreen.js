@@ -36,7 +36,16 @@ const COLORS = {
 
 export default function ValuableItemsScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
-  const { roomId, roomName, roomType, isPMS = false, propertyName } = route.params;
+  const {
+    roomId,
+    roomName,
+    roomType,
+    isPMS = false,
+    propertyName,
+    propertyId,
+    showAll = false,
+  } = route.params;
+  const isAllRoomsMode = !!showAll && !roomId;
   
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,16 +67,48 @@ export default function ValuableItemsScreen({ route, navigation }) {
       headerShown: false,
     });
     fetchItems();
-  }, [roomId, roomName]);
+  }, [roomId, roomName, propertyId, isAllRoomsMode]);
 
   const fetchItems = async () => {
     try {
-      const endpoint = isPMS 
-        ? `/valuable-items/pms-room/${roomId}`
-        : `/valuable-items/room/${roomId}`;
-      
-      const response = await api.get(endpoint);
-      setItems(response.data.items || []);
+      if (isAllRoomsMode) {
+        // Aggregate all valuable items across all units/rooms for this property (manual only)
+        if (!propertyId) {
+          setItems([]);
+        } else {
+          const unitsRes = await api.get(`/owner/properties/${propertyId}/units`);
+          const units = unitsRes.data || [];
+          const aggregatedItems = [];
+
+          for (const unit of units) {
+            try {
+              const unitRes = await api.get(`/valuable-items/unit/${unit.id}`);
+              const rooms = unitRes.data?.rooms || [];
+              rooms.forEach(room => {
+                (room.valuable_items || []).forEach(item => {
+                  aggregatedItems.push({
+                    ...item,
+                    room_name: room.name,
+                    room_type: room.room_type,
+                  });
+                });
+              });
+            } catch (unitErr) {
+              // Log but don't fail the whole screen for one unit
+              console.error('Error fetching unit valuable items:', unitErr);
+            }
+          }
+
+          setItems(aggregatedItems);
+        }
+      } else {
+        const endpoint = isPMS 
+          ? `/valuable-items/pms-room/${roomId}`
+          : `/valuable-items/room/${roomId}`;
+        
+        const response = await api.get(endpoint);
+        setItems(response.data.items || []);
+      }
     } catch (error) {
       console.error('Error fetching valuable items:', error);
       Alert.alert('Error', 'Failed to load items');
@@ -80,9 +121,16 @@ export default function ValuableItemsScreen({ route, navigation }) {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchItems();
-  }, [roomId]);
+  }, [roomId, propertyId, isAllRoomsMode]);
 
   const openAddModal = () => {
+    if (isAllRoomsMode) {
+      Alert.alert(
+        'Add from a Room',
+        'To add a valuable item, open a specific room below in the Rooms section and tap "Valuables".'
+      );
+      return;
+    }
     setEditingItem(null);
     setItemName('');
     setItemDescription('');
@@ -168,6 +216,14 @@ export default function ValuableItemsScreen({ route, navigation }) {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
       } else {
+        if (isAllRoomsMode) {
+          Alert.alert(
+            'Add from a Room',
+            'To add a valuable item, open a specific room below in the Rooms section and tap "Valuables".'
+          );
+          setSaving(false);
+          return;
+        }
         // Create new item
         endpoint = isPMS 
           ? `/valuable-items/pms-room/${roomId}`
@@ -242,7 +298,8 @@ export default function ValuableItemsScreen({ route, navigation }) {
               <View style={styles.headerTextWrapper}>
                 <Text style={styles.headerTitle}>Valuable Items</Text>
                 <Text style={styles.headerSubtitle}>
-                  {propertyName ? `${propertyName} • ` : ''}{roomName}
+                  {propertyName ? `${propertyName} • ` : ''}
+                  {isAllRoomsMode ? 'All rooms' : roomName}
                 </Text>
               </View>
             </View>
@@ -257,7 +314,8 @@ export default function ValuableItemsScreen({ route, navigation }) {
             <View style={styles.headerTextWrapper}>
               <Text style={styles.headerTitle}>Valuable Items</Text>
               <Text style={styles.headerSubtitle}>
-                {propertyName ? `${propertyName} • ` : ''}{roomName}
+                {propertyName ? `${propertyName} • ` : ''}
+                {isAllRoomsMode ? 'All rooms' : roomName}
               </Text>
             </View>
           </View>
@@ -289,21 +347,27 @@ export default function ValuableItemsScreen({ route, navigation }) {
             >
               <Ionicons name="cube-outline" size={48} color={COLORS.primary} />
             </LinearGradient>
-            <Text style={styles.emptyTitle}>No Items Yet</Text>
-            <Text style={styles.emptyText}>
-              Add valuable items like TVs, game consoles, or expensive appliances that you want verified during each cleaning.
+            <Text style={styles.emptyTitle}>
+              {isAllRoomsMode ? 'No valuables yet' : 'No Items Yet'}
             </Text>
-            <TouchableOpacity style={styles.emptyButton} onPress={openAddModal} activeOpacity={0.8}>
-              <LinearGradient
-                colors={['#548EDD', '#4A7FD4']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.emptyButtonGradient}
-              >
-                <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.emptyButtonText}>Add First Item</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+            <Text style={styles.emptyText}>
+              {isAllRoomsMode
+                ? 'Add valuable items from any individual room. They will appear here once created.'
+                : 'Add valuable items like TVs, game consoles, or expensive appliances that you want verified during each cleaning.'}
+            </Text>
+            {!isAllRoomsMode && (
+              <TouchableOpacity style={styles.emptyButton} onPress={openAddModal} activeOpacity={0.8}>
+                <LinearGradient
+                  colors={['#548EDD', '#4A7FD4']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.emptyButtonGradient}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+                  <Text style={styles.emptyButtonText}>Add First Item</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <View style={styles.itemsList}>

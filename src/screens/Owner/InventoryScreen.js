@@ -10,16 +10,30 @@ import {
   Alert,
   TextInput,
   Modal,
+  Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
+
+const COLORS = {
+  bg: '#F8FAFC',
+  card: '#FFFFFF',
+  primary: '#548EDD', // HostIQ brand blue
+  text: '#1F2937',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  border: '#E0E7EB',
+};
 
 const STATUS_CONFIG = {
   IN_STOCK: { label: 'In Stock', color: '#34C759', icon: 'checkmark-circle' },
   LOW: { label: 'Low', color: '#FF9500', icon: 'alert-circle' },
   OUT_OF_STOCK: { label: 'Out', color: '#FF3B30', icon: 'close-circle' },
-  ORDERED: { label: 'Ordered', color: '#007AFF', icon: 'time' },
+  ORDERED: { label: 'Ordered', color: COLORS.primary, icon: 'time' },
 };
 
 const CATEGORY_ICONS = {
@@ -31,11 +45,13 @@ const CATEGORY_ICONS = {
 };
 
 export default function InventoryScreen({ route, navigation }) {
-  const { propertyId, propertyName } = route.params;
+  const insets = useSafeAreaInsets();
+  const { propertyId, propertyName, isPMS } = route.params;
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [inventoryUnavailable, setInventoryUnavailable] = useState(false); // 404 / access denied flag
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', quantity: '', min_threshold: '2', unit: 'units' });
@@ -53,21 +69,17 @@ export default function InventoryScreen({ route, navigation }) {
       // so we always fetch all items for the property and group/filter client-side.
       const res = await api.get(`/inventory/properties/${propertyId}/items`);
       setItems(res.data || []);
+      setInventoryUnavailable(false);
     } catch (error) {
-      console.error('Error fetching inventory:', error);
-      
-      // Handle 404 - property not found or access denied
+      // Handle 404 - property not found or access denied gracefully
       if (error.response?.status === 404) {
-        setItems([]);
-        // Don't show alert on initial load, only on refresh
-        if (!loading && refreshing) {
-          Alert.alert(
-            'Inventory Not Available',
-            'This property is not accessible or has no inventory set up yet.',
-            [{ text: 'OK' }]
-          );
+        setInventoryUnavailable(true);
+        // Avoid noisy error overlays in dev; just log a quiet message
+        if (__DEV__) {
+          console.log('Inventory not available for this property (404):', error.response?.data);
         }
       } else {
+        console.error('Error fetching inventory:', error);
         // Other errors - show alert on refresh
         if (!loading && refreshing) {
           Alert.alert(
@@ -78,6 +90,7 @@ export default function InventoryScreen({ route, navigation }) {
         }
         // Set empty array to prevent UI errors
         setItems([]);
+        setInventoryUnavailable(false);
       }
     } finally {
       setLoading(false);
@@ -120,14 +133,20 @@ export default function InventoryScreen({ route, navigation }) {
         payload.category_id = selectedCategory;
       }
 
-      await api.post(`/inventory/properties/${propertyId}/items`, payload);
+      const res = await api.post(`/inventory/properties/${propertyId}/items`, payload);
+      const createdItem = res.data;
+
       setShowAddModal(false);
       setNewItem({ name: '', quantity: '', min_threshold: '2', unit: 'units' });
       setSelectedCategory(null);
-      fetchInventory();
+
+      // Optimistically update local state so the new item appears immediately
+      // even if a follow-up GET would return 404 for this property.
+      setItems(prev => [...prev, createdItem]);
+      setInventoryUnavailable(false);
     } catch (error) {
       const errorMessage = error.response?.data?.error || 'Failed to add item';
-      console.error('Error adding item:', error.response?.data);
+      console.error('Error adding item:', error.response?.data || error);
       Alert.alert('Error', errorMessage);
     }
   };
@@ -191,75 +210,125 @@ export default function InventoryScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Summary Header */}
-      {(lowCount > 0 || outCount > 0) && (
-        <View style={styles.alertBanner}>
-          <Ionicons name="alert-circle" size={20} color="#FF9500" />
-          <Text style={styles.alertText}>
-            {outCount > 0 && `${outCount} out of stock`}
-            {outCount > 0 && lowCount > 0 && ' • '}
-            {lowCount > 0 && `${lowCount} running low`}
-          </Text>
-        </View>
-      )}
+      {/* Top gradient header – match Property detail / PropertiesScreen */}
+      <LinearGradient
+        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+      >
+        {Platform.OS === 'ios' ? (
+          <SafeAreaView>
+            <View style={styles.headerGradient}>
+              <View style={styles.headerIconWrapper}>
+                <View style={styles.headerIconInner}>
+                  <Ionicons name="home" size={24} color="#FFFFFF" />
+                </View>
+              </View>
+              <View style={styles.headerTextWrapper}>
+                <Text style={styles.headerTitleTop} numberOfLines={2}>
+                  {propertyName}
+                </Text>
+                <Text style={styles.headerSubtitleTop} numberOfLines={1}>
+                  {isPMS ? 'PMS Property' : 'Manual Property'} • Inventory
+                </Text>
+              </View>
+            </View>
+          </SafeAreaView>
+        ) : (
+          <View style={styles.headerGradient}>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="home" size={24} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitleTop} numberOfLines={2}>
+                {propertyName}
+              </Text>
+              <Text style={styles.headerSubtitleTop} numberOfLines={1}>
+                {isPMS ? 'PMS Property' : 'Manual Property'} • Inventory
+              </Text>
+            </View>
+          </View>
+        )}
+      </LinearGradient>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.primary} />
         }
       >
-        {/* Header */}
-        <View style={styles.headerSection}>
-          <Text style={styles.headerTitle}>{propertyName}</Text>
-          <Text style={styles.headerSubtitle}>Inventory overview for this property</Text>
-        </View>
-
         {/* Quick Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{items.length}</Text>
-            <Text style={styles.statLabel}>Total</Text>
+        <View style={styles.headerCard}>
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{items.length}</Text>
+              <Text style={styles.statLabel}>Total</Text>
+            </View>
+            <View style={[styles.statBox, styles.statBoxSuccess]}>
+              <Text style={[styles.statValue, { color: '#16A34A' }]}>
+                {items.filter(i => i.status === 'IN_STOCK').length}
+              </Text>
+              <Text style={styles.statLabel}>In Stock</Text>
+            </View>
+            <View style={[styles.statBox, styles.statBoxWarning]}>
+              <Text style={[styles.statValue, { color: '#F59E0B' }]}>{lowCount}</Text>
+              <Text style={styles.statLabel}>Low</Text>
+            </View>
+            <View style={[styles.statBox, styles.statBoxError]}>
+              <Text style={[styles.statValue, { color: '#EF4444' }]}>{outCount}</Text>
+              <Text style={styles.statLabel}>Out</Text>
+            </View>
           </View>
-          <View style={[styles.statBox, { backgroundColor: '#34C75915' }]}>
-            <Text style={[styles.statValue, { color: '#34C759' }]}>
-              {items.filter(i => i.status === 'IN_STOCK').length}
-            </Text>
-            <Text style={styles.statLabel}>In Stock</Text>
-          </View>
-          <View style={[styles.statBox, { backgroundColor: '#FF950015' }]}>
-            <Text style={[styles.statValue, { color: '#FF9500' }]}>{lowCount}</Text>
-            <Text style={styles.statLabel}>Low</Text>
-          </View>
-          <View style={[styles.statBox, { backgroundColor: '#FF3B3015' }]}>
-            <Text style={[styles.statValue, { color: '#FF3B30' }]}>{outCount}</Text>
-            <Text style={styles.statLabel}>Out</Text>
-          </View>
+
+          {(lowCount > 0 || outCount > 0) && (
+            <View style={styles.alertBanner}>
+              <Ionicons name="alert-circle" size={18} color="#F59E0B" />
+              <Text style={styles.alertText}>
+                {outCount > 0 && `${outCount} out of stock`}
+                {outCount > 0 && lowCount > 0 && ' • '}
+                {lowCount > 0 && `${lowCount} running low`}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Items by Category */}
         {Object.entries(groupedItems).length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="cube-outline" size={48} color="#C7C7CC" />
-            <Text style={styles.emptyTitle}>No inventory items yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Add the essentials you want to track for this property. You can always update quantities later.
+            <Ionicons name="cube-outline" size={48} color={COLORS.textMuted} />
+            <Text style={styles.emptyTitle}>
+              {inventoryUnavailable ? 'Inventory not available' : 'No inventory items yet'}
             </Text>
-            {!loading && (
+            <Text style={styles.emptySubtitle}>
+              {inventoryUnavailable
+                ? 'This property is not accessible or has no inventory set up yet.'
+                : 'Add the essentials you want to track for this property. You can always update quantities later.'}
+            </Text>
+            {!loading && !inventoryUnavailable && (
               <TouchableOpacity
                 style={styles.addFirstButton}
                 onPress={() => setShowAddModal(true)}
               >
-                <Ionicons name="add" size={20} color="#FFF" />
-                <Text style={styles.addFirstButtonText}>Add First Item</Text>
+                <LinearGradient
+                  colors={['#548EDD', '#4A7FD4']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.addFirstButtonInner}
+                >
+                  <Ionicons name="add-circle-outline" size={20} color="#FFF" />
+                  <Text style={styles.addFirstButtonText}>Add First Item</Text>
+                </LinearGradient>
               </TouchableOpacity>
             )}
           </View>
@@ -352,7 +421,14 @@ export default function InventoryScreen({ route, navigation }) {
         style={styles.fab}
         onPress={() => setShowAddModal(true)}
       >
-        <Ionicons name="add" size={28} color="#FFF" />
+        <LinearGradient
+          colors={['#548EDD', '#4A7FD4']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabInner}
+        >
+          <Ionicons name="add" size={28} color="#FFF" />
+        </LinearGradient>
       </TouchableOpacity>
 
       {/* Add Item Modal */}
@@ -457,75 +533,139 @@ export default function InventoryScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
   },
-  headerSection: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 4,
+  // Gradient header (copied from PropertyDetail/Properties styles)
+  headerWrapper: {
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
+  },
+  headerIconWrapper: {
+    marginRight: 14,
+  },
+  headerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitleTop: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  headerSubtitleTop: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.9,
+  },
+  headerCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#548EDD',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: COLORS.text,
   },
   headerSubtitle: {
     marginTop: 4,
     fontSize: 13,
-    color: '#8E8E93',
+    color: COLORS.textSecondary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: COLORS.bg,
   },
   scrollContent: {
     paddingTop: 8,
+    paddingBottom: 120,
   },
   // Alert Banner
   alertBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF950015',
-    paddingHorizontal: 16,
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,
   },
   alertText: {
     fontSize: 14,
-    color: '#FF9500',
+    color: '#F59E0B',
     fontWeight: '500',
   },
   // Stats
   statsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginTop: 16,
     gap: 8,
   },
   statBox: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#F9FAFB',
     borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  statBoxSuccess: {
+    backgroundColor: '#ECFDF3',
+    borderColor: '#BBF7D0',
+  },
+  statBoxWarning: {
+    backgroundColor: '#FFFBEB',
+    borderColor: '#FED7AA',
+  },
+  statBoxError: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
   },
   statValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: COLORS.text,
   },
   statLabel: {
     fontSize: 11,
-    color: '#8E8E93',
+    color: COLORS.textMuted,
     marginTop: 2,
   },
   // Category Section
@@ -542,7 +682,7 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: COLORS.textSecondary,
     flex: 1,
   },
   categoryCount: {
@@ -558,16 +698,24 @@ const styles = StyleSheet.create({
   },
   // Item Card
   itemCard: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     position: 'relative',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#548EDD',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   itemCardAlert: {
     borderLeftWidth: 0,
@@ -666,18 +814,21 @@ const styles = StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 6,
   },
   addFirstButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    marginTop: 20,
+  },
+  addFirstButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 10,
-    marginTop: 20,
     gap: 6,
   },
   addFirstButtonText: {
@@ -690,17 +841,25 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 30,
+    borderRadius: 18,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#548EDD',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  fabInner: {
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   bottomPadding: {
     height: 100,

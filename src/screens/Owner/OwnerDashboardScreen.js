@@ -354,6 +354,8 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     <Text style={styles.quickActionText}>Team</Text>
                                 </TouchableOpacity>
 
+                                {/* Plans quick action temporarily disabled to prevent navigation to Subscriptions */}
+                                {/*
                                 <TouchableOpacity
                                     style={styles.quickActionBtn}
                                     onPress={() => navigation.navigate('SubscriptionManagement')}
@@ -369,6 +371,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     </LinearGradient>
                                     <Text style={styles.quickActionText}>Plans</Text>
                                 </TouchableOpacity>
+                                */}
 
                                 <TouchableOpacity
                                     style={styles.quickActionBtn}
@@ -700,7 +703,9 @@ const styles = StyleSheet.create({
     },
     quickActionsRow: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
+        // Use space-between so remaining actions stay evenly distributed
+        // even when one quick action (like Plans) is hidden
+        justifyContent: 'space-between',
         alignItems: 'center',
     },
     quickActionsDivider: {

@@ -605,23 +605,36 @@ export default function PropertyDetailScreen({ route, navigation }) {
                     'Please add rooms to your property first before managing valuable items.',
                     [{ text: 'OK' }]
                   );
-                } else if (allRooms.length === 1) {
-                  // If only one room, navigate directly to it
-                  navigation.navigate('ValuableItems', {
-                    roomId: allRooms[0].id,
-                    roomName: allRooms[0].name,
-                    roomType: allRooms[0].room_type,
-                    propertyName: property?.name,
-                    isPMS
-                  });
-                } else {
-                  // Multiple rooms - show message to select from room list
-                  Alert.alert(
-                    'Select a Room',
-                    'Valuable items are managed per room. Please expand a room below and tap "Valuables" to manage items for that room.',
-                    [{ text: 'OK' }]
-                  );
+                  return;
                 }
+
+                if (isPMS) {
+                  // PMS properties still manage valuables per room
+                  if (allRooms.length === 1) {
+                    navigation.navigate('ValuableItems', {
+                      roomId: allRooms[0].id,
+                      roomName: allRooms[0].name,
+                      roomType: allRooms[0].room_type,
+                      propertyName: property?.name,
+                      isPMS
+                    });
+                  } else {
+                    Alert.alert(
+                      'Select a Room',
+                      'Valuable items are managed per room. Please expand a room below and tap "Valuables" to manage items for that room.',
+                      [{ text: 'OK' }]
+                    );
+                  }
+                  return;
+                }
+
+                // Manual properties: show all valuables across all rooms
+                navigation.navigate('ValuableItems', {
+                  propertyId,
+                  propertyName: property?.name,
+                  isPMS,
+                  showAll: true,
+                });
               }}
             >
               <View style={[styles.settingIcon, { backgroundColor: '#E3F2FD' }]}>
