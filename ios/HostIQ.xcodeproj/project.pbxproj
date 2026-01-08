@@ -369,6 +369,7 @@
 					"FB_SONARKIT_ENABLED=1",
 				);
 				INFOPLIST_FILE = HostIQ/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HostIQ;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -402,6 +403,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 48AXH55PRT;
 				INFOPLIST_FILE = HostIQ/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HostIQ;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
