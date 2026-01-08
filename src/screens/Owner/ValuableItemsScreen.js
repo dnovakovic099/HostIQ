@@ -185,7 +185,7 @@ export default function ValuableItemsScreen({ route, navigation }) {
 
   const handleSave = async () => {
     if (!itemName.trim()) {
-      Alert.alert('Error', 'Please enter an item name');
+      Alert.alert('Missing Information', 'Please enter a name for this valuable item');
       return;
     }
 

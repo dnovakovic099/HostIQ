@@ -58,13 +58,11 @@ export default function ChangePasswordScreen({ navigation }) {
 
     setLoading(true);
     try {
-      // TODO: Replace with actual API endpoint when available
-      // await api.put('/auth/change-password', {
-      //   currentPassword,
-      //   newPassword,
-      // });
+      await api.put('/auth/change-password', {
+        currentPassword,
+        newPassword,
+      });
       
-      // For now, just show success message
       Alert.alert('Success', 'Password changed successfully', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
@@ -75,7 +73,8 @@ export default function ChangePasswordScreen({ navigation }) {
       setConfirmPassword('');
     } catch (error) {
       console.error('Change password error:', error);
-      Alert.alert('Error', error.response?.data?.error || 'Failed to change password. Please check your current password and try again.');
+      const errorMessage = error.response?.data?.error || error.response?.data?.errors?.[0]?.msg || 'Failed to change password. Please check your current password and try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }

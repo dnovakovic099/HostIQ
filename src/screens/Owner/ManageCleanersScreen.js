@@ -27,6 +27,10 @@ export default function ManageCleanersScreen({ navigation }) {
   const [inviteName, setInviteName] = useState('');
   const [invitePassword, setInvitePassword] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [showEditPasswordModal, setShowEditPasswordModal] = useState(false);
+  const [editingCleaner, setEditingCleaner] = useState(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
   
   // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
   const tabBarHeight = 15;
@@ -91,6 +95,102 @@ export default function ManageCleanersScreen({ navigation }) {
     }
   };
 
+  const handleEditPassword = (cleaner) => {
+    console.log('🔐 handleEditPassword called with cleaner:', cleaner);
+    if (!cleaner || !cleaner.id) {
+      console.error('❌ Invalid cleaner object:', cleaner);
+      Alert.alert('Error', 'Invalid cleaner information');
+      return;
+    }
+    setEditingCleaner(cleaner);
+    setNewPassword('');
+    setShowEditPasswordModal(true);
+    console.log('🔐 Modal should now be visible');
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
+      return;
+    }
+
+    if (!editingCleaner || !editingCleaner.id) {
+      Alert.alert('Error', 'Cleaner information is missing');
+      return;
+    }
+
+    setUpdatingPassword(true);
+    try {
+      console.log('🔐 ========== STARTING PASSWORD UPDATE ==========');
+      console.log('🔐 Updating password for cleaner:', editingCleaner.id);
+      console.log('🔐 Cleaner name:', editingCleaner.name);
+      console.log('🔐 New password length:', newPassword.length);
+      console.log('🔐 API endpoint:', `/owner/cleaners/${editingCleaner.id}/password`);
+      console.log('🔐 API base URL:', api.defaults?.baseURL || 'Not set');
+      
+      const requestData = {
+        password: newPassword,
+      };
+      console.log('🔐 Request data:', { password: '***' }); // Don't log actual password
+      
+      console.log('🔐 Making API PUT request...');
+      console.log('🔐 Full URL will be:', `${api.defaults?.baseURL || ''}/owner/cleaners/${editingCleaner.id}/password`);
+      
+      // Make the API call with explicit error handling
+      let response;
+      try {
+        response = await api.put(`/owner/cleaners/${editingCleaner.id}/password`, requestData);
+        console.log('🔐 API request completed');
+        console.log('🔐 Response status:', response?.status);
+        console.log('🔐 Response data:', response?.data);
+      } catch (apiError) {
+        console.error('🔐 API call failed:', apiError);
+        console.error('🔐 Error details:', {
+          message: apiError.message,
+          response: apiError.response?.data,
+          status: apiError.response?.status,
+          config: {
+            url: apiError.config?.url,
+            method: apiError.config?.method,
+            baseURL: apiError.config?.baseURL
+          }
+        });
+        throw apiError; // Re-throw to be caught by outer catch
+      }
+      
+      // Verify we got a successful response
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server');
+      }
+      
+      console.log('✅ Password update response:', response.data);
+      
+      // Only show success if we got a 200 status
+      if (response.status === 200) {
+        Alert.alert('Success', 'Password updated successfully');
+        setShowEditPasswordModal(false);
+        setNewPassword('');
+        setEditingCleaner(null);
+      } else {
+        throw new Error(`Unexpected status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Update password error:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error message:', error.message);
+      
+      const errorMessage = error.response?.data?.error || 
+                          error.response?.data?.message || 
+                          error.message || 
+                          'Failed to update password';
+      
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
   const handleRemoveCleaner = (cleaner) => {
     // Check if cleaner has active assignments
     const hasAssignments = (cleaner._count?.assignments || 0) > 0;
@@ -137,13 +237,33 @@ export default function ManageCleanersScreen({ navigation }) {
         activeOpacity={0.7}
         onPress={navigateToAssignments}
       >
-        <TouchableOpacity
-          style={styles.removeButton}
-          onPress={() => handleRemoveCleaner(item)}
-          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        >
-          <Ionicons name="trash-outline" size={18} color="#EF4444" />
-        </TouchableOpacity>
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={(e) => {
+              console.log('🔐 Edit password button pressed for cleaner:', item.id);
+              e.stopPropagation();
+              e.preventDefault();
+              handleEditPassword(item);
+            }}
+            onPressIn={(e) => {
+              e.stopPropagation();
+            }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="lock-closed-outline" size={18} color="#548EDD" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.removeButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleRemoveCleaner(item);
+            }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Ionicons name="trash-outline" size={18} color="#EF4444" />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.cleanerHeader}>
           <LinearGradient
@@ -333,6 +453,73 @@ export default function ManageCleanersScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      {/* Edit Password Modal */}
+      <Modal
+        visible={showEditPasswordModal}
+        animationType="slide"
+        transparent={true}
+        onShow={() => {
+          console.log('🔐 Edit Password Modal shown');
+          console.log('🔐 editingCleaner:', editingCleaner);
+        }}
+        onRequestClose={() => {
+          console.log('🔐 Modal close requested');
+          setShowEditPasswordModal(false);
+          setNewPassword('');
+          setEditingCleaner(null);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                Update Password{editingCleaner ? ` - ${editingCleaner.name}` : ''}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowEditPasswordModal(false);
+                  setNewPassword('');
+                  setEditingCleaner(null);
+                }}
+              >
+                <Ionicons name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalSubtitle}>
+              Enter a new password for {editingCleaner?.name || 'this cleaner'}
+            </Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="New Password (min 6 characters)"
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              autoFocus
+            />
+
+            <TouchableOpacity
+              style={[styles.button, (updatingPassword || !newPassword || newPassword.length < 6) && styles.buttonDisabled]}
+              onPress={() => {
+                console.log('🔐 Update Password button pressed');
+                console.log('🔐 editingCleaner:', editingCleaner);
+                console.log('🔐 newPassword length:', newPassword?.length);
+                handleUpdatePassword();
+              }}
+              disabled={updatingPassword || !newPassword || newPassword.length < 6}
+            >
+              {updatingPassword ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Update Password</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -413,12 +600,20 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  removeButton: {
+  actionButtonsContainer: {
     position: 'absolute',
     top: 12,
     right: 12,
+    flexDirection: 'row',
+    gap: 8,
+    zIndex: 100,
+    elevation: 10, // For Android
+  },
+  editButton: {
     padding: 4,
-    zIndex: 10,
+  },
+  removeButton: {
+    padding: 4,
   },
   cleanerHeader: {
     flexDirection: 'row',
@@ -573,6 +768,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 15,
   },
   input: {
     height: 50,

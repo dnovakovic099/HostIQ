@@ -269,7 +269,8 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
-    });
+      timeZone: 'UTC',
+    }) + ' UTC';
   };
 
   const formatTimestamp = (date) => {
@@ -282,7 +283,8 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
       minute: '2-digit',
       second: '2-digit',
       hour12: true,
-    });
+      timeZone: 'UTC',
+    }) + ' UTC';
   };
 
   const generatePDFHtml = () => {

@@ -215,7 +215,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#3A5F9F', '#2E4F8F', '#1E3F7F', '#0F2F6F']}
+        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.headerWrapper}

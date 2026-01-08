@@ -255,15 +255,18 @@ export default function MainTabs() {
             options={{ title: 'Properties' }}
             listeners={({ navigation }) => ({
               focus: () => {
-                // Reset to PropertiesList when tab is focused
+                // Always reset to PropertiesList when tab is focused
                 // Get the nested stack navigator
                 const state = navigation.getState();
                 const propertiesRoute = state?.routes?.find(r => r.name === 'Properties');
                 if (propertiesRoute?.state) {
                   const stackState = propertiesRoute.state;
                   const currentRoute = stackState.routes?.[stackState.index || 0];
-                  // If we're on CreateProperty, navigate back to PropertiesList
-                  if (currentRoute?.name === 'CreateProperty') {
+                  const currentRouteName = currentRoute?.name;
+                  
+                  // Reset to PropertiesList if we're not already on it
+                  // This ensures clicking the Properties tab always shows the list first
+                  if (currentRouteName && currentRouteName !== 'PropertiesList') {
                     // Use the parent navigation to navigate within the nested stack
                     const parentNav = navigation.getParent();
                     if (parentNav) {

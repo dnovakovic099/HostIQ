@@ -479,7 +479,7 @@ export default function CleanerHistoryScreen({ navigation }) {
               <Text style={styles.quickActionText}>Reports</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('PaymentSettings')}
               activeOpacity={0.8}
@@ -488,7 +488,7 @@ export default function CleanerHistoryScreen({ navigation }) {
                 <Ionicons name="wallet" size={22} color="#3A7B37" />
               </View>
               <Text style={styles.quickActionText}>Payments</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity
               style={styles.quickActionBtn}

@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.solutions41labs.hostiq",
+      "bundleIdentifier": "com.hostiq.app",
       "buildNumber": "35",
       "deploymentTarget": "14.0",
       "infoPlist": {

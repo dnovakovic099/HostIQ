@@ -92,7 +92,12 @@ export default function CleanerHomeScreen({ navigation }) {
           propertyName: job.unit?.property?.name,
         });
       } catch (error) {
-        Alert.alert('Error', 'Failed to start assignment');
+        const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to start assignment';
+        Alert.alert(
+          'Inspection Not Ready',
+          errorMessage,
+          [{ text: 'OK' }]
+        );
       }
     } else {
       // Continuing an in-progress inspection
@@ -182,22 +187,32 @@ export default function CleanerHomeScreen({ navigation }) {
             </View>
           )}
 
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={() => handleStartJob(item)}
-          >
-            <LinearGradient
-              colors={colors.gradients.primary}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.actionButtonGradient}
-            >
-              <Text style={styles.actionButtonText}>
-                {isInProgress ? 'Continue Inspection' : 'Start Inspection'}
+          {/* Check if unit has rooms before showing Start Inspection button */}
+          {(!item.unit?.rooms || item.unit.rooms.length === 0) && !isInProgress ? (
+            <View style={styles.waitingBox}>
+              <Ionicons name="time-outline" size={16} color={colors.accent.warning} />
+              <Text style={styles.waitingText}>
+                Waiting for owner to add rooms
               </Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleStartJob(item)}
+            >
+              <LinearGradient
+                colors={colors.gradients.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.actionButtonGradient}
+              >
+                <Text style={styles.actionButtonText}>
+                  {isInProgress ? 'Continue Inspection' : 'Start Inspection'}
+                </Text>
+                <Ionicons name="arrow-forward" size={20} color="#fff" />
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -367,6 +382,23 @@ const styles = StyleSheet.create({
     borderLeftColor: colors.accent.info,
   },
   notesText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.text.secondary,
+    marginLeft: spacing.sm,
+    flex: 1,
+    fontWeight: typography.fontWeight.medium,
+  },
+  waitingBox: {
+    flexDirection: 'row',
+    backgroundColor: colors.accent.warning + '10',
+    padding: spacing.md,
+    borderRadius: borderRadius.sm,
+    marginTop: spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.accent.warning,
+    alignItems: 'center',
+  },
+  waitingText: {
     fontSize: typography.fontSize.sm,
     color: colors.text.secondary,
     marginLeft: spacing.sm,

@@ -183,7 +183,7 @@ export default function SettingsScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Payments</Text>
           <View style={styles.card}>
-            <SettingsItem
+            {/* <SettingsItem
               icon="card-outline"
               title="Payment Settings"
               onPress={() => navigation.navigate('HomeTab', { screen: 'PaymentSettings' })}
@@ -193,7 +193,7 @@ export default function SettingsScreen({ navigation }) {
               icon="receipt-outline"
               title="Payment History"
               onPress={() => navigation.navigate('HomeTab', { screen: 'PaymentHistory' })}
-            />
+            /> */}
           </View>
         </View>
       )}

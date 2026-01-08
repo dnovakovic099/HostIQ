@@ -14,6 +14,9 @@ import {
   Dimensions,
   Animated,
   Modal,
+  ScrollView,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -227,7 +230,14 @@ export default function LoginScreen({ navigation }) {
           style={styles.keyboardView}
           keyboardVerticalOffset={0}
         >
-          <View style={styles.content}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.content}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+            >
             {/* Close Button */}
             {navigation.canGoBack() && (
               <TouchableOpacity
@@ -368,7 +378,8 @@ export default function LoginScreen({ navigation }) {
                 </View>
               </TouchableOpacity>
             </View>
-          </View>
+            </ScrollView>
+          </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </SafeAreaView>
 
@@ -468,8 +479,11 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     paddingHorizontal: 32,
   },
   closeButton: {

@@ -139,7 +139,12 @@ export default function CreateInspectionScreen({ navigation }) {
       });
     } catch (error) {
       console.error('Create preset inspection error:', error);
-      Alert.alert('Error', error.response?.data?.error || 'Failed to create inspection');
+      const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to create inspection';
+      Alert.alert(
+        'Inspection Not Ready',
+        errorMessage,
+        [{ text: 'OK' }]
+      );
     } finally {
       setLoading(false);
     }

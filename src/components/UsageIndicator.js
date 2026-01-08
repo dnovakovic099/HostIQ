@@ -69,9 +69,10 @@ export default function UsageIndicator({ navigation, compact = false }) {
   };
 
   const handlePress = () => {
-    if (navigation) {
-      navigation.navigate('SubscriptionManagement');
-    }
+    // Temporarily commented out - redirects to Subscriptions screen
+    // if (navigation) {
+    //   navigation.navigate('SubscriptionManagement');
+    // }
   };
 
   if (compact) {

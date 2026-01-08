@@ -27,6 +27,19 @@ import colors from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import shadows from '../../theme/shadows';
 
+const COLORS = {
+  bg: '#F8FAFC',
+  card: '#FFFFFF',
+  primary: '#548EDD', // HostIQ Brand Color
+  text: '#1F2937',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  border: '#E5E7EB',
+  success: '#10B981',
+  warning: '#F59E0B',
+  error: '#EF4444',
+};
+
 export default function CaptureMediaScreen({ route, navigation }) {
   const { 
     assignment, 
@@ -219,14 +232,24 @@ export default function CaptureMediaScreen({ route, navigation }) {
             throw new Error('Cannot create new inspection: missing unit_id');
           }
           
-          const response = await api.post('/cleaner/inspections', {
-            unit_id: unitIdForNew,
-            assignment_id: assignment?.id,
-          });
-          setInspection(response.data);
-          createInspection(response.data);
-          console.log('✅ Created new inspection:', response.data.id);
-          return response.data;
+          try {
+            const response = await api.post('/cleaner/inspections', {
+              unit_id: unitIdForNew,
+              assignment_id: assignment?.id,
+            });
+            setInspection(response.data);
+            createInspection(response.data);
+            console.log('✅ Created new inspection:', response.data.id);
+            return response.data;
+          } catch (createError) {
+            const errorMessage = createError.response?.data?.message || createError.response?.data?.error || 'Failed to create inspection';
+            Alert.alert(
+              'Inspection Not Ready',
+              errorMessage,
+              [{ text: 'OK', onPress: () => navigation.goBack() }]
+            );
+            return null;
+          }
         }
         
         // Inspection is valid, use it
@@ -234,7 +257,16 @@ export default function CaptureMediaScreen({ route, navigation }) {
         return inspectionData;
       } catch (error) {
         console.error('Error checking inspection status:', error);
-        // Fall through to create new inspection
+        // If it's a room validation error, show message and don't proceed
+        if (error.response?.status === 400 && error.response?.data?.message) {
+          Alert.alert(
+            'Inspection Not Ready',
+            error.response.data.message,
+            [{ text: 'OK', onPress: () => navigation.goBack() }]
+          );
+          return null;
+        }
+        // Fall through to create new inspection for other errors
       }
     }
 
@@ -249,7 +281,12 @@ export default function CaptureMediaScreen({ route, navigation }) {
         createInspection(response.data);
         return response.data;
       } catch (error) {
-        Alert.alert('Error', 'Failed to create inspection');
+        const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to create inspection';
+        Alert.alert(
+          'Cannot Start Inspection',
+          errorMessage,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
         throw error;
       }
     }
@@ -264,7 +301,12 @@ export default function CaptureMediaScreen({ route, navigation }) {
         createInspection(response.data);
         return response.data;
       } catch (error) {
-        Alert.alert('Error', 'Failed to create inspection');
+        const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to create inspection';
+        Alert.alert(
+          'Cannot Start Inspection',
+          errorMessage,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
         throw error;
       }
     }
@@ -525,10 +567,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
   };
 
   // Valuable Item Functions
-  const handleValuableItemPhoto = async (item) => {
-    setSelectedValuableItem(item);
-    setValuableItemNotes(valuableItemPhotos[item.id]?.notes || '');
-    
+  const handleTakePhotoForValuableItem = async (item) => {
     const hasPermission = await requestPermissions();
     if (!hasPermission) return;
 
@@ -553,6 +592,34 @@ export default function CaptureMediaScreen({ route, navigation }) {
     } catch (error) {
       console.error('Camera error:', error);
       Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
+  const handlePickFromGalleryForValuableItem = async (item) => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: false,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const resizedUri = await resizeImage(result.assets[0].uri);
+        setValuableItemPhotos(prev => ({
+          ...prev,
+          [item.id]: {
+            uri: resizedUri,
+            notes: prev[item.id]?.notes || ''
+          }
+        }));
+        console.log(`✅ Photo selected from gallery for valuable item: ${item.name}`);
+      }
+    } catch (error) {
+      console.error('Gallery error:', error);
+      Alert.alert('Error', 'Failed to pick photo');
     }
   };
 
@@ -590,11 +657,11 @@ export default function CaptureMediaScreen({ route, navigation }) {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#4A90E2" />
+            <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Capture Inspection</Text>
-            <Text style={styles.headerSubtitle}>
+            <Text style={styles.errorHeaderTitle}>Capture Inspection</Text>
+            <Text style={styles.errorHeaderSubtitle}>
               {displayPropertyName} • {displayUnitName}
             </Text>
           </View>
@@ -617,7 +684,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Beautiful Gradient Header */}
       <LinearGradient
-        colors={['#DBEAFE', '#93C5FD']}
+        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0.8 }}
         style={styles.headerWrapper}
@@ -625,11 +692,11 @@ export default function CaptureMediaScreen({ route, navigation }) {
         <SafeAreaView>
           <View style={styles.headerGradient}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#4A90E2" />
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
-                <Ionicons name="camera" size={28} color="#4A90E2" />
+                <Ionicons name="camera" size={28} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
@@ -845,46 +912,72 @@ export default function CaptureMediaScreen({ route, navigation }) {
                     </View>
                   )}
 
+                  {hasPhoto && (
+                    <View style={styles.valuableItemPhotoPreview}>
+                      <Image
+                        source={{ uri: valuableItemPhotos[item.id].uri }}
+                        style={styles.valuableItemPhotoThumbnail}
+                      />
+                      <View style={styles.valuableItemPhotoOverlay}>
+                        <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                        <Text style={styles.valuableItemPhotoButtonText}>Photo Added</Text>
+                      </View>
+                    </View>
+                  )}
+                  
                   <View style={styles.valuableItemActions}>
-                    <TouchableOpacity
-                      style={styles.valuableItemPhotoButton}
-                      onPress={() => handleValuableItemPhoto(item)}
-                      activeOpacity={0.7}
-                    >
-                      {hasPhoto ? (
-                        <View style={styles.valuableItemPhotoPreview}>
-                          <Image
-                            source={{ uri: valuableItemPhotos[item.id].uri }}
-                            style={styles.valuableItemPhotoThumbnail}
-                          />
-                          <View style={styles.valuableItemPhotoOverlay}>
-                            <Ionicons name="camera" size={16} color="#FFF" />
-                            <Text style={styles.valuableItemPhotoButtonText}>Retake</Text>
-                          </View>
-                        </View>
-                      ) : (
-                        <>
-                          <Ionicons name="camera" size={20} color="#5856D6" />
-                          <Text style={styles.valuableItemPhotoButtonText}>Take Photo</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                    
-                    {hasPhoto && (
-                      <TouchableOpacity
-                        style={styles.addNoteButton}
-                        onPress={() => {
-                          setSelectedValuableItem(item);
-                          setValuableItemNotes(valuableItemPhotos[item.id]?.notes || '');
-                          setShowValuableItemModal(true);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="chatbubble-outline" size={16} color="#5856D6" />
-                        <Text style={styles.addNoteText}>
-                          {valuableItemPhotos[item.id]?.notes ? 'Edit Note' : 'Add Note'}
-                        </Text>
-                      </TouchableOpacity>
+                    {hasPhoto ? (
+                      <>
+                        <TouchableOpacity
+                          style={styles.valuableItemRetakeButton}
+                          onPress={() => handleTakePhotoForValuableItem(item)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="camera" size={16} color="#5856D6" />
+                          <Text style={styles.valuableItemRetakeButtonText}>Retake</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.valuableItemGalleryRetakeButton}
+                          onPress={() => handlePickFromGalleryForValuableItem(item)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="images" size={16} color="#5856D6" />
+                          <Text style={styles.valuableItemRetakeButtonText}>Change</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.addNoteButton}
+                          onPress={() => {
+                            setSelectedValuableItem(item);
+                            setValuableItemNotes(valuableItemPhotos[item.id]?.notes || '');
+                            setShowValuableItemModal(true);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="chatbubble-outline" size={16} color="#5856D6" />
+                          <Text style={styles.addNoteText}>
+                            {valuableItemPhotos[item.id]?.notes ? 'Edit Note' : 'Add Note'}
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <>
+                        <TouchableOpacity
+                          style={styles.valuableItemCameraButton}
+                          onPress={() => handleTakePhotoForValuableItem(item)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="camera" size={18} color="#FFF" />
+                          <Text style={styles.valuableItemCameraButtonText}>Take Photo</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.valuableItemGalleryButton}
+                          onPress={() => handlePickFromGalleryForValuableItem(item)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="images" size={18} color="#5856D6" />
+                          <Text style={styles.valuableItemGalleryButtonText}>From Gallery</Text>
+                        </TouchableOpacity>
+                      </>
                     )}
                   </View>
                 </View>
@@ -1038,7 +1131,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.bg,
   },
   // Beautiful Gradient Header
   headerWrapper: {
@@ -1081,26 +1174,50 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: 0.3,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.card,
+  },
+  headerContent: {
+    flex: 1,
+  },
+  errorHeaderTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  errorHeaderSubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
     fontWeight: '500',
   },
   // Modern Rooms Overview Card
   roomsOverviewCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 8,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    shadowColor: '#3B82F6',
+    borderColor: '#E0E7FF',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -1126,11 +1243,11 @@ const styles = StyleSheet.create({
   roomsOverviewTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.text,
     flex: 1,
   },
   roomsCountBadge: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1143,12 +1260,12 @@ const styles = StyleSheet.create({
   
   // Modern Room Cards
   modernRoomCard: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.card,
     borderRadius: 12,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E0E7FF',
   },
   modernRoomCardComplete: {
     backgroundColor: '#F0FDF4',
@@ -1170,7 +1287,7 @@ const styles = StyleSheet.create({
   modernRoomName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.text,
   },
   completeBadge: {
     flexDirection: 'row',
@@ -1188,7 +1305,7 @@ const styles = StyleSheet.create({
   },
   modernRoomTips: {
     fontSize: 13,
-    color: '#64748B',
+    color: COLORS.textSecondary,
     lineHeight: 18,
   },
   roomCardFooter: {
@@ -1204,7 +1321,7 @@ const styles = StyleSheet.create({
   roomCardActionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: COLORS.primary,
   },
   capturePrompt: {
     flexDirection: 'row',
@@ -1216,7 +1333,7 @@ const styles = StyleSheet.create({
   },
   capturePromptText: {
     fontSize: 12,
-    color: '#3B82F6',
+    color: COLORS.primary,
     fontWeight: '600',
   },
   // Room Card Capture Buttons
@@ -1233,7 +1350,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3B82F6',
+    backgroundColor: COLORS.primary,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 10,
@@ -1254,24 +1371,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#3B82F6',
+    borderColor: COLORS.primary,
     gap: 6,
   },
   roomGalleryButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#3B82F6',
+    color: COLORS.primary,
   },
   // Summary Card
   summaryCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 8,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
+    borderColor: COLORS.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -1290,12 +1407,12 @@ const styles = StyleSheet.create({
   summaryNumber: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
+    color: COLORS.text,
     marginBottom: 4,
   },
   summaryLabel: {
     fontSize: 11,
-    color: '#64748B',
+    color: COLORS.textSecondary,
     fontWeight: '500',
   },
   summaryDivider: {
@@ -1555,21 +1672,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   submitButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: COLORS.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
-    shadowColor: '#34C759',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
   submitButtonDisabled: {
-    backgroundColor: '#C7C7CC',
+    backgroundColor: '#CBD5F5',
     opacity: 0.6,
     shadowOpacity: 0,
   },
@@ -1658,10 +1775,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
+    borderColor: COLORS.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -1912,14 +2029,81 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: 44,
   },
-  valuableItemPhotoPreview: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  valuableItemCameraButton: {
+    flex: 1,
+    minWidth: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#5856D6',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    gap: 6,
+  },
+  valuableItemCameraButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  valuableItemGalleryButton: {
+    flex: 1,
+    minWidth: 120,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#5856D6',
+    gap: 6,
+  },
+  valuableItemGalleryButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#5856D6',
+  },
+  valuableItemRetakeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#5856D6',
+    gap: 4,
+  },
+  valuableItemGalleryRetakeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: '#5856D6',
+    gap: 4,
+  },
+  valuableItemRetakeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#5856D6',
+  },
+  valuableItemPhotoPreview: {
+    width: '100%',
+    height: 120,
+    borderRadius: 10,
     overflow: 'hidden',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    position: 'relative',
+    marginBottom: 12,
   },
   valuableItemPhotoThumbnail: {
     width: '100%',
@@ -1932,7 +2116,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(16, 185, 129, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 4,
@@ -1940,7 +2124,7 @@ const styles = StyleSheet.create({
   valuableItemPhotoButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#5856D6',
+    color: '#FFFFFF',
   },
   referencePhotoContainer: {
     marginBottom: 12,
