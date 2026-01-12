@@ -9,7 +9,7 @@
       }
     ]
   },
-  "identifier" : "87E730D0",
+  "identifier" : "137245F3",
   "nonRenewingSubscriptions" : [
 
   ],
@@ -17,99 +17,13 @@
 
   ],
   "settings" : {
+    "_applicationInternalID" : "6754883928",
+    "_developerTeamID" : "48AXH55PRT",
     "_failTransactionsEnabled" : false,
-    "_storeKitErrors" : [
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Load Products"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Purchase"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Verification"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "App Store Sync"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Subscription Status"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "App Transaction"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Manage Subscriptions Sheet"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Refund Request Sheet"
-      },
-      {
-        "current" : null,
-        "enabled" : false,
-        "name" : "Offer Code Redeem Sheet"
-      }
-    ]
+    "_shouldSetupSyncOnLoad" : true
   },
   "subscriptionGroups" : [
-    {
-      "id" : "2896E968",
-      "localizations" : [
 
-      ],
-      "name" : "Property Subscriptions",
-      "subscriptions" : [
-        {
-          "adHocOffers" : [
-
-          ],
-          "codeOffers" : [
-
-          ],
-          "displayPrice" : "29.00",
-          "familyShareable" : false,
-          "groupNumber" : 1,
-          "internalID" : "B813096F",
-          "introductoryOffer" : {
-            "displayPrice" : "0.00",
-            "internalID" : "F8CD1E3D",
-            "numberOfPeriods" : 1,
-            "paymentMode" : "free",
-            "subscriptionPeriod" : "P7D"
-          },
-          "localizations" : [
-            {
-              "description" : "AI-powered pricing recommendations and market analysis for your properties",
-              "displayName" : "Pricing Pro",
-              "locale" : "en_US"
-            }
-          ],
-          "productID" : "property_subscription_monthly",
-          "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "Property Subscription Monthly",
-          "subscriptionGroupID" : "2896E968",
-          "type" : "RecurringSubscription",
-          "winbackOffers" : [
-
-          ]
-        }
-      ]
-    }
   ],
   "version" : {
     "major" : 4,

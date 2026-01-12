@@ -284,7 +284,7 @@ export default function MainTabs() {
             component={InsightsStack}
             options={{ title: 'Insights' }}
           />
-          {/* <Tab.Screen 
+          <Tab.Screen 
             name="Pricing" 
             component={PricingStack}
             options={{ title: 'Pricing' }}
@@ -293,7 +293,7 @@ export default function MainTabs() {
             name="Subscription" 
             component={SubscriptionStack}
             options={{ title: 'Subscription' }}
-          /> */}
+          />
         </>
       )}
 
