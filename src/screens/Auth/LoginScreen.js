@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAuthStore } from '../../store/authStore';
 import biometricAuth from '../../services/biometricAuth';
 import colors from '../../theme/colors';
@@ -42,7 +43,7 @@ export default function LoginScreen({ navigation }) {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const codeInputRefs = useRef([]);
-  const { login, biometricLogin, signInWithGoogle, biometricEnabled, resendVerificationEmail, verifyCode } = useAuthStore();
+  const { login, biometricLogin, signInWithGoogle, signInWithApple, biometricEnabled, resendVerificationEmail, verifyCode } = useAuthStore();
   const autoLoginAttempted = useRef(false);
   
   // Check if Google Sign-In is configured
@@ -214,6 +215,25 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    try {
+      setLoading(true);
+      const result = await signInWithApple();
+      setLoading(false);
+
+      if (!result.success && result.error !== 'Sign in was cancelled') {
+        Alert.alert('Sign in with Apple Failed', result.error || 'Please try again');
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Apple Sign-In handler error:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'An unexpected error occurred during Sign in with Apple.'
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -348,24 +368,41 @@ export default function LoginScreen({ navigation }) {
                 <View style={styles.dividerLine} />
               </View>
 
-              {/* Google Sign-In Button */}
-              <TouchableOpacity
-                style={styles.googleButtonWrapper}
-                onPress={handleGoogleSignIn}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                <View style={styles.googleButton}>
-                  {loading ? (
-                    <ActivityIndicator color="#4285F4" />
-                  ) : (
-                    <>
-                      <Ionicons name="logo-google" size={20} color="#4285F4" style={styles.googleIcon} />
-                      <Text style={styles.googleButtonText}>Sign in with Google</Text>
-                    </>
-                  )}
+              {/* Social Sign-In Buttons */}
+              {Platform.OS === 'ios' ? (
+                <View style={styles.googleButtonWrapper}>
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                    cornerRadius={16}
+                    style={{ width: '100%', height: 56 }}
+                    onPress={handleAppleSignIn}
+                  />
                 </View>
-              </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.googleButtonWrapper}
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.googleButton}>
+                    {loading ? (
+                      <ActivityIndicator color="#4285F4" />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="logo-google"
+                          size={20}
+                          color="#4285F4"
+                          style={styles.googleIcon}
+                        />
+                        <Text style={styles.googleButtonText}>Sign in with Google</Text>
+                      </>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
 
               {/* Sign Up Link */}
               <TouchableOpacity

@@ -104,12 +104,53 @@ class SubscriptionService {
     }
 
     try {
+      console.log('🔍 Fetching subscription products from store...');
+      console.log('📦 Product ID:', PRODUCT_ID);
+      console.log('📱 Platform:', Platform.OS);
+      
       // react-native-iap v12+ requires { skus: [...] } format
       // Works for both iOS and Android
       const products = await RNIap.getSubscriptions({ skus: [PRODUCT_ID] });
+      
+      console.log('📦 Products returned:', products?.length || 0);
+      if (products && products.length > 0) {
+        console.log('✅ Product found:', {
+          productId: products[0].productId,
+          title: products[0].title,
+          price: products[0].localizedPrice
+        });
+      } else {
+        console.warn('⚠️ No products found in store');
+        console.warn('   This usually means:');
+        if (Platform.OS === 'ios') {
+          console.warn('   1. StoreKit Configuration not enabled in Xcode scheme');
+          console.warn('   2. App not running from Xcode (StoreKit only works in native builds)');
+          console.warn('   3. Product ID mismatch with StoreKit Configuration file');
+          console.warn('   4. Running in Expo Go (StoreKit doesn\'t work in Expo Go)');
+        } else {
+          console.warn('   1. Product not configured in Google Play Console');
+          console.warn('   2. App not signed with correct keystore');
+          console.warn('   3. Product ID mismatch');
+        }
+      }
+      
       return products || [];
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('❌ Error fetching products:', error);
+      console.error('   Error code:', error?.code);
+      console.error('   Error message:', error?.message);
+      console.error('   Product ID requested:', PRODUCT_ID);
+      
+      // Provide more helpful error message
+      if (error?.code === 'E_ITEM_NOT_AVAILABLE' || 
+          error?.message?.includes('not available') ||
+          error?.message?.includes('not found')) {
+        const platformHint = Platform.OS === 'ios' 
+          ? '\n\nFor iOS: Ensure StoreKit Configuration is enabled in Xcode scheme and app is running from Xcode.'
+          : '\n\nFor Android: Ensure product is configured in Google Play Console.';
+        throw new Error(`Product "${PRODUCT_ID}" not found in ${Platform.OS === 'ios' ? 'App Store' : 'Google Play'} store.${platformHint}`);
+      }
+      
       throw error;
     }
   }
@@ -124,9 +165,14 @@ class SubscriptionService {
 
     try {
       // Get product info first to ensure it's available
+      console.log('🔍 Checking if product is available before purchase...');
       const products = await this.getAvailableProducts();
       if (!products || products.length === 0) {
-        throw new Error('Subscription product not available in store');
+        const errorMsg = Platform.OS === 'ios'
+          ? `Subscription product "${PRODUCT_ID}" not found in App Store.\n\nTroubleshooting:\n1. Ensure StoreKit Configuration is enabled in Xcode scheme\n2. Run app from Xcode (not Expo Go)\n3. Check Products.storekit file has correct product ID`
+          : `Subscription product "${PRODUCT_ID}" not found in Google Play.\n\nTroubleshooting:\n1. Ensure product is configured in Google Play Console\n2. Check product ID matches exactly`;
+        console.error('❌', errorMsg);
+        throw new Error(errorMsg);
       }
 
       const product = products[0];

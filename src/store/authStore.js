@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import api from '../api/client';
 import biometricAuth from '../services/biometricAuth';
 import { useOnboardingStore } from './onboardingStore';
@@ -532,6 +534,96 @@ export const useAuthStore = create((set, get) => ({
       };
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  signInWithApple: async () => {
+    try {
+      // Only attempt Apple Sign-In on iOS devices
+      if (Platform.OS !== 'ios') {
+        return { success: false, error: 'Sign in with Apple is only available on iOS.' };
+      }
+
+      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      if (!isAvailable) {
+        return { success: false, error: 'Sign in with Apple is not available on this device.' };
+      }
+
+      // Recommended: use a cryptographically secure nonce
+      const rawNonce = Math.random().toString(36).substring(2);
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce
+      );
+
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+
+      const { identityToken, user: appleUserId, email, fullName } = credential;
+
+      if (!identityToken) {
+        return {
+          success: false,
+          error: 'Failed to get identity token from Apple. Please try again.',
+        };
+      }
+
+      const displayName =
+        fullName?.givenName || fullName?.familyName
+          ? `${fullName?.givenName || ''} ${fullName?.familyName || ''}`.trim()
+          : 'User';
+
+      // Send token to backend – backend will create/link the user and issue JWTs
+      const response = await api.post('/auth/apple/mobile', {
+        identityToken,
+        appleUserId,
+        email,
+        name: displayName,
+      });
+
+      const { accessToken, refreshToken, user } = response.data || {};
+
+      if (!accessToken || !user) {
+        return {
+          success: false,
+          error: 'Incomplete response from server. Please try again.',
+        };
+      }
+
+      await get().setTokens(accessToken, refreshToken, user);
+
+      // Reset onboarding state for new users so they see the welcome modal
+      const onboardingStore = useOnboardingStore.getState();
+      if (onboardingStore?.resetOnboarding) {
+        await onboardingStore.resetOnboarding();
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Apple Sign-In Error:', error);
+
+      // Handle user cancellation gracefully
+      if (
+        error?.code === 'ERR_REQUEST_CANCELED' ||
+        error?.code === 'ERR_CANCELED' ||
+        (typeof error?.message === 'string' &&
+          (error.message.toLowerCase().includes('canceled') ||
+            error.message.toLowerCase().includes('cancelled')))
+      ) {
+        return { success: false, error: 'Sign in was cancelled' };
+      }
+
+      const errorMessage =
+        error?.response?.data?.error ||
+        error?.message ||
+        'Sign in with Apple failed. Please try again.';
+
+      return { success: false, error: errorMessage };
     }
   },
 

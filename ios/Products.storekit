@@ -1,15 +1,5 @@
 {
-  "appPolicies" : {
-    "eula" : "",
-    "policies" : [
-      {
-        "locale" : "en_US",
-        "policyText" : "",
-        "policyURL" : ""
-      }
-    ]
-  },
-  "identifier" : "135278BC",
+  "identifier" : "Products",
   "nonRenewingSubscriptions" : [
 
   ],
@@ -17,12 +7,7 @@
 
   ],
   "settings" : {
-    "_applicationInternalID" : "6754883928",
-    "_developerTeamID" : "48AXH55PRT",
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 789976064.21720004,
-    "_locale" : "en_US",
-    "_storefront" : "USA",
     "_storeKitErrors" : [
       {
         "current" : null,
@@ -73,11 +58,11 @@
   },
   "subscriptionGroups" : [
     {
-      "id" : "21888862",
+      "id" : "21482223",
       "localizations" : [
 
       ],
-      "name" : "HostIQ Pro",
+      "name" : "HostIQ Subscriptions",
       "subscriptions" : [
         {
           "adHocOffers" : [
@@ -86,32 +71,29 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "0.99",
+          "displayPrice" : "9.99",
           "familyShareable" : false,
           "groupNumber" : 1,
-          "internalID" : "6757709622",
+          "internalID" : "6735671234",
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "Unlock premium property insights & tools.",
-              "displayName" : "HostIQ Pro",
+              "description" : "Monthly subscription for HostIQ Pro features",
+              "displayName" : "HostIQ Pro Subscription",
               "locale" : "en_US"
             }
           ],
           "productID" : "hostiq_pro_subscription",
           "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "HostIQ Pro",
-          "subscriptionGroupID" : "21888862",
-          "type" : "RecurringSubscription",
-          "winbackOffers" : [
-
-          ]
+          "referenceName" : "HostIQ Pro Monthly",
+          "subscriptionGroupID" : "21482223",
+          "type" : "RecurringSubscription"
         }
       ]
     }
   ],
   "version" : {
-    "major" : 4,
+    "major" : 3,
     "minor" : 0
   }
 }
