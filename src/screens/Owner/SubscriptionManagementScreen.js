@@ -18,8 +18,8 @@ import { SUBSCRIPTION_CONFIG } from '../../config/constants';
 
 // Product IDs - These must match what you configure in App Store Connect & Google Play Console
 const SUBSCRIPTION_SKUS = Platform.select({
-  ios: ['property_subscription_monthly'], // Replace with your Apple product ID
-  android: ['property_subscription_monthly'], // Replace with your Google product ID
+  ios: ['hostiq_pro_subscription'], // Replace with your Apple product ID
+  android: ['hostiq_pro_subscription'], // Replace with your Google product ID
 });
 
 export default function SubscriptionManagementScreen({ navigation }) {

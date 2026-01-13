@@ -3,7 +3,7 @@ import * as RNIap from 'react-native-iap';
 import api from '../api/client';
 import { API_ENDPOINTS } from '../config/api';
 
-const PRODUCT_ID = 'property_subscription_monthly';
+const PRODUCT_ID = 'hostiq_pro_subscription';
 
 class SubscriptionService {
   constructor() {
@@ -560,7 +560,7 @@ class SubscriptionService {
       if (error.response?.status === 404) {
         console.warn('⚠️ Backend endpoint not found, using fallback product data');
         return [{
-          product_id: 'property_subscription_monthly',
+          product_id: 'hostiq_pro_subscription',
           name: 'Pricing Pro',
           description: 'AI-powered pricing recommendations and market analysis',
           duration: 'monthly',
@@ -663,7 +663,7 @@ class SubscriptionService {
           console.error(`⚠️ PRODUCTS NOT FOUND IN ${storeName.toUpperCase()}`);
           console.error('═══════════════════════════════════════════════════════');
           console.error('Requested IDs:', productIds);
-          console.error('Expected ID:  property_subscription_monthly');
+          console.error('Expected ID:  hostiq_pro_subscription');
           if (Platform.OS === 'ios') {
             console.error('');
             console.error('TROUBLESHOOTING STEPS:');
@@ -673,8 +673,8 @@ class SubscriptionService {
             console.error('');
             console.error('2. ✅ Verify product ID matches exactly (case-sensitive):');
             console.error('   Requested:', productIds[0]);
-            console.error('   StoreKit file:', 'property_subscription_monthly');
-            console.error('   Match:', productIds[0] === 'property_subscription_monthly');
+            console.error('   StoreKit file:', 'hostiq_pro_subscription');
+            console.error('   Match:', productIds[0] === 'hostiq_pro_subscription');
             console.error('');
             console.error('3. ✅ Ensure app is running from Xcode (not Expo Go)');
             console.error('   StoreKit Configuration only works in native builds');

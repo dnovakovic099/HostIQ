@@ -92,7 +92,7 @@ const SubscriptionUpsellScreen = ({ onSubscribe }) => {
           </View>
         </View>
         <View style={styles.priceRow}>
-          <Text style={styles.priceAmount}>$29</Text>
+          <Text style={styles.priceAmount}>$0.99</Text>
           <Text style={styles.pricePeriod}>/month</Text>
         </View>
         <Text style={styles.priceSavings}>Save 40% with annual billing</Text>
@@ -319,7 +319,7 @@ export default function PricingScreen() {
       // Show confirmation with product price if available
       const priceText = product?.localizedPrice 
         ? ` for ${product.localizedPrice}/month`
-        : ' for $29/month';
+        : ' for $0.99/month';
       
       const platformText = Platform.OS === 'ios' ? 'App Store' : 'Google Play';
       
