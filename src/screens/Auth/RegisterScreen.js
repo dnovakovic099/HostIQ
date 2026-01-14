@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useAuthStore } from '../../store/authStore';
 import colors from '../../theme/colors';
 
@@ -28,13 +29,13 @@ export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('CLEANER');
+  const [role, setRole] = useState(null); // No role selected initially
   const [loading, setLoading] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const codeInputRefs = useRef([]);
-  const { register, signInWithGoogle, resendVerificationEmail, verifyCode } = useAuthStore();
+  const { register, signInWithGoogle, signInWithApple, resendVerificationEmail, verifyCode } = useAuthStore();
   
   // Check if Google Sign-In is configured
   const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
@@ -51,6 +52,11 @@ export default function RegisterScreen({ navigation }) {
   const handleRegister = async () => {
     if (!name || !email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (!role) {
+      Alert.alert('Error', 'Please select whether you are a Cleaner or Owner');
       return;
     }
 
@@ -134,6 +140,11 @@ export default function RegisterScreen({ navigation }) {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!role) {
+      Alert.alert('Role Selection Required', 'Please select whether you are a Cleaner or Owner before signing up with Google.');
+      return;
+    }
+
     try {
       setLoading(true);
       const result = await signInWithGoogle(role);
@@ -158,6 +169,40 @@ export default function RegisterScreen({ navigation }) {
       setLoading(false);
       console.error('Google Sign-In handler error:', error);
       Alert.alert('Error', error.message || 'An unexpected error occurred. Please check your Google Sign-In configuration.');
+    }
+  };
+
+  const handleAppleSignInPress = async () => {
+    // Check if role is selected before proceeding
+    if (!role) {
+      Alert.alert('Role Selection Required', 'Please select whether you are a Cleaner or Owner before signing up with Apple.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const result = await signInWithApple(role);
+      setLoading(false);
+
+      if (!result.success) {
+        // Don't show alert if user cancelled
+        if (result.error !== 'Sign in was cancelled') {
+          // Check if error requires role selection
+          if (result.error === 'requiresRoleSelection' || result.error?.includes('role selection') || result.error?.includes('role is required')) {
+            Alert.alert(
+              'Role Selection Required',
+              'Please select whether you are a Cleaner or Owner before signing up with Apple.',
+              [{ text: 'OK' }]
+            );
+          } else {
+            Alert.alert('Sign in with Apple Failed', result.error || 'Please try again');
+          }
+        }
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error('Apple Sign-In handler error:', error);
+      Alert.alert('Error', error.message || 'An unexpected error occurred during Sign in with Apple.');
     }
   };
 
@@ -200,7 +245,7 @@ export default function RegisterScreen({ navigation }) {
               <Text style={styles.subtitle}>Join HostIQ to get started</Text>
             </View>
 
-            {/* Role Selection for Google Sign-In */}
+            {/* Role Selection */}
             <View style={styles.googleRoleSection}>
               <Text style={styles.label}>I am a:</Text>
               <View style={styles.roleContainer}>
@@ -264,25 +309,37 @@ export default function RegisterScreen({ navigation }) {
               </View>
             </View>
 
-            {/* Google Sign-In Button */}
+            {/* Social Sign-In Buttons */}
             <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.googleButtonWrapper}
-                onPress={handleGoogleSignIn}
-                disabled={loading}
-                activeOpacity={0.85}
-              >
-                <View style={styles.googleButton}>
-                  {loading ? (
-                    <ActivityIndicator color="#4285F4" />
-                  ) : (
-                    <>
-                      <Ionicons name="logo-google" size={20} color="#4285F4" style={styles.googleIcon} />
-                      <Text style={styles.googleButtonText}>Sign up with Google</Text>
-                    </>
-                  )}
+              {Platform.OS === 'ios' ? (
+                <View style={styles.appleButtonWrapper}>
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                    cornerRadius={16}
+                    style={{ width: '100%', height: 56 }}
+                    onPress={handleAppleSignInPress}
+                  />
                 </View>
-              </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.googleButtonWrapper}
+                  onPress={handleGoogleSignIn}
+                  disabled={loading}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.googleButton}>
+                    {loading ? (
+                      <ActivityIndicator color="#4285F4" />
+                    ) : (
+                      <>
+                        <Ionicons name="logo-google" size={20} color="#4285F4" style={styles.googleIcon} />
+                        <Text style={styles.googleButtonText}>Sign up with Google</Text>
+                      </>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              )}
 
               {/* Divider */}
               <View style={styles.dividerContainer}>
@@ -405,7 +462,7 @@ export default function RegisterScreen({ navigation }) {
               <TouchableOpacity
                 style={styles.createButtonWrapper}
                 onPress={handleRegister}
-                disabled={loading || !name || !email || !password || !confirmPassword}
+                disabled={loading || !name || !email || !password || !confirmPassword || !role}
                 activeOpacity={0.85}
               >
                 <LinearGradient
@@ -692,6 +749,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#94A3B8',
     fontWeight: '500',
+  },
+  appleButtonWrapper: {
+    marginBottom: 16,
   },
   googleButtonWrapper: {
     marginBottom: 16,

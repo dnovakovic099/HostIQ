@@ -21,6 +21,7 @@ import api from '../../api/client';
 import UsageIndicator from '../../components/UsageIndicator';
 import OnboardingPopup from '../../components/OnboardingPopup';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { useAuthStore } from '../../store/authStore';
 
 const { width } = Dimensions.get('window');
 
@@ -51,6 +52,7 @@ const COLORS = {
 
 export default function OwnerDashboardScreen({ navigation }) {
     const insets = useSafeAreaInsets();
+    const { user } = useAuthStore();
     const [stats, setStats] = useState({
         properties: 0,
         units: 0,
@@ -59,7 +61,6 @@ export default function OwnerDashboardScreen({ navigation }) {
     });
     const [recentInspections, setRecentInspections] = useState([]);
     const [lowRatingProperties, setLowRatingProperties] = useState([]);
-    const [userName, setUserName] = useState('Owner');
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
@@ -99,16 +100,6 @@ export default function OwnerDashboardScreen({ navigation }) {
                 inspection && inspection.unit && inspection.unit.property && inspection.creator
             );
             setRecentInspections(validInspections);
-
-            // Fetch user profile for name
-            try {
-                const userRes = await api.get('/auth/me');
-                if (userRes.data && userRes.data.name) {
-                    setUserName(userRes.data.name.split(' ')[0]); // Get first name
-                }
-            } catch (error) {
-                console.log('Could not fetch user name:', error);
-            }
 
             // Check onboarding after loading stats
             // Use stats property count instead of fetching all properties
@@ -259,6 +250,8 @@ export default function OwnerDashboardScreen({ navigation }) {
         return inspection.media.slice(0, 3).map(m => m.url);
     };
 
+    const firstName = (user?.name || 'Owner').split(' ')[0];
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -305,7 +298,7 @@ export default function OwnerDashboardScreen({ navigation }) {
 
                         <View style={styles.welcomeContent}>
                             <Text style={styles.welcomeGreeting}>Hello, </Text>
-                            <Text style={styles.welcomeName}>{userName}!</Text>
+                            <Text style={styles.welcomeName}>{firstName}!</Text>
                         </View>
                         <Text style={styles.welcomeSubtitle}>Manage your properties with ease</Text>
                     </LinearGradient>

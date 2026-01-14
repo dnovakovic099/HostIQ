@@ -380,28 +380,28 @@ export default function LoginScreen({ navigation }) {
                   />
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={styles.googleButtonWrapper}
-                  onPress={handleGoogleSignIn}
-                  disabled={loading}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.googleButton}>
-                    {loading ? (
-                      <ActivityIndicator color="#4285F4" />
-                    ) : (
-                      <>
+              <TouchableOpacity
+                style={styles.googleButtonWrapper}
+                onPress={handleGoogleSignIn}
+                disabled={loading}
+                activeOpacity={0.85}
+              >
+                <View style={styles.googleButton}>
+                  {loading ? (
+                    <ActivityIndicator color="#4285F4" />
+                  ) : (
+                    <>
                         <Ionicons
                           name="logo-google"
                           size={20}
                           color="#4285F4"
                           style={styles.googleIcon}
                         />
-                        <Text style={styles.googleButtonText}>Sign in with Google</Text>
-                      </>
-                    )}
-                  </View>
-                </TouchableOpacity>
+                      <Text style={styles.googleButtonText}>Sign in with Google</Text>
+                    </>
+                  )}
+                </View>
+              </TouchableOpacity>
               )}
 
               {/* Sign Up Link */}

@@ -13,10 +13,20 @@ export default function TermsOfServiceScreen() {
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={true}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Terms of Service</Text>
-        <Text style={styles.lastUpdated}>Last Updated: {new Date().toLocaleDateString()}</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Terms of Service</Text>
+          <View style={styles.titleUnderline} />
+          <Text style={styles.lastUpdated}>
+            Last Updated:{' '}
+            {new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </Text>
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>1. Acceptance of Terms</Text>
@@ -37,21 +47,36 @@ export default function TermsOfServiceScreen() {
           <Text style={styles.paragraph}>
             To use certain features of the App, you must register for an account. You agree to:
           </Text>
-          <Text style={styles.bulletPoint}>
-            • Provide accurate, current, and complete information during registration
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • Maintain and promptly update your account information
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • Maintain the security of your password and identification
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • Accept all responsibility for any and all activities that occur under your account
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • Notify us immediately of any unauthorized use of your account
-          </Text>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Provide accurate, current, and complete information during registration
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Maintain and promptly update your account information
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Maintain the security of your password and identification
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Accept all responsibility for any and all activities that occur under your account
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Notify us immediately of any unauthorized use of your account
+            </Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -59,18 +84,30 @@ export default function TermsOfServiceScreen() {
           <Text style={styles.paragraph}>
             You are responsible for:
           </Text>
-          <Text style={styles.bulletPoint}>
-            • All content you submit, post, or display through the App
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • Ensuring that your use of the App complies with all applicable laws and regulations
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • Maintaining the confidentiality of your account credentials
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • Using the App only for lawful purposes and in accordance with these Terms
-          </Text>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              All content you submit, post, or display through the App
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Ensuring that your use of the App complies with all applicable laws and regulations
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Maintaining the confidentiality of your account credentials
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Using the App only for lawful purposes and in accordance with these Terms
+            </Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -78,21 +115,36 @@ export default function TermsOfServiceScreen() {
           <Text style={styles.paragraph}>
             You agree not to use the App:
           </Text>
-          <Text style={styles.bulletPoint}>
-            • In any way that violates any applicable federal, state, local, or international law or regulation
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • To transmit, or procure the sending of, any advertising or promotional material without our prior written consent
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • To impersonate or attempt to impersonate the Company, a Company employee, another user, or any other person or entity
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • In any way that infringes upon the rights of others, or in any way is illegal, threatening, fraudulent, or harmful
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • To engage in any other conduct that restricts or inhibits anyone's use or enjoyment of the App
-          </Text>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              In any way that violates any applicable federal, state, local, or international law or regulation
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              To transmit, or procure the sending of, any advertising or promotional material without our prior written consent
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              To impersonate or attempt to impersonate the Company, a Company employee, another user, or any other person or entity
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              In any way that infringes upon the rights of others, or in any way is illegal, threatening, fraudulent, or harmful
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              To engage in any other conduct that restricts or inhibits anyone&apos;s use or enjoyment of the App
+            </Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -114,18 +166,30 @@ export default function TermsOfServiceScreen() {
           <Text style={styles.paragraph}>
             If you purchase any paid features or subscriptions:
           </Text>
-          <Text style={styles.bulletPoint}>
-            • Payment will be charged to your payment method at confirmation of purchase
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • Subscriptions automatically renew unless auto-renew is turned off at least 24 hours before the end of the current period
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • Your account will be charged for renewal within 24 hours prior to the end of the current period
-          </Text>
-          <Text style={styles.bulletPoint}>
-            • You can manage and cancel your subscriptions by going to your account settings
-          </Text>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Payment will be charged to your payment method at confirmation of purchase
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Subscriptions automatically renew unless auto-renew is turned off at least 24 hours before the end of the current period
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              Your account will be charged for renewal within 24 hours prior to the end of the current period
+            </Text>
+          </View>
+          <View style={styles.bulletRow}>
+            <View style={styles.bulletDot} />
+            <Text style={styles.bulletText}>
+              You can manage and cancel your subscriptions by going to your account settings
+            </Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -178,6 +242,9 @@ export default function TermsOfServiceScreen() {
         </View>
 
         <View style={styles.footer}>
+          <View style={styles.footerIcon}>
+            <Text style={styles.footerIconText}>✓</Text>
+          </View>
           <Text style={styles.footerText}>
             By using HostIQ, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
           </Text>
@@ -190,59 +257,112 @@ export default function TermsOfServiceScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FA',
   },
   scrollView: {
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 48,
+  },
+  header: {
+    marginBottom: 32,
+    paddingBottom: 24,
+    borderBottomWidth: 2,
+    borderBottomColor: '#E8E9EB',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1D1D1F',
-    marginBottom: 8,
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  titleUnderline: {
+    width: 60,
+    height: 4,
+    backgroundColor: '#4A90E2',
+    borderRadius: 2,
+    marginBottom: 16,
   },
   lastUpdated: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 24,
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1D1D1F',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1A1A1A',
     marginBottom: 12,
+    letterSpacing: -0.2,
   },
   paragraph: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: '#333',
-    marginBottom: 8,
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#374151',
+    marginBottom: 10,
+    letterSpacing: 0.1,
   },
-  bulletPoint: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: '#333',
-    marginLeft: 8,
-    marginBottom: 6,
+  bulletRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    paddingLeft: 4,
+  },
+  bulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4A90E2',
+    marginTop: 10,
+    marginRight: 12,
+  },
+  bulletText: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#374151',
+    letterSpacing: 0.1,
   },
   footer: {
-    marginTop: 32,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
+    marginTop: 48,
+    paddingTop: 28,
+    paddingBottom: 8,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8E9EB',
+    alignItems: 'center',
+  },
+  footerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#4A90E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  footerIconText: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   footerText: {
     fontSize: 14,
-    lineHeight: 20,
-    color: '#666',
-    fontStyle: 'italic',
+    lineHeight: 22,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
 });
 

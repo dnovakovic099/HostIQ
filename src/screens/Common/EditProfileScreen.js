@@ -18,7 +18,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../api/client';
 
 export default function EditProfileScreen({ navigation }) {
-  const { user } = useAuthStore();
+  const { user, setTokens, accessToken, refreshToken } = useAuthStore();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [loading, setLoading] = useState(false);
@@ -29,32 +29,51 @@ export default function EditProfileScreen({ navigation }) {
       return;
     }
 
-    if (!email.trim()) {
-      Alert.alert('Error', 'Email is required');
-      return;
-    }
+    // For OAuth users (Google/Apple), email is managed by the provider and shouldn't be editable
+    // Only validate email for non-OAuth users
+    if (user?.auth_provider !== 'google' && user?.auth_provider !== 'apple') {
+      if (!email.trim()) {
+        Alert.alert('Error', 'Email is required');
+        return;
+      }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        Alert.alert('Error', 'Please enter a valid email address');
+        return;
+      }
     }
 
     setLoading(true);
     try {
-      // TODO: Replace with actual API endpoint when available
-      // const response = await api.put('/auth/profile', { name, email });
-      // useAuthStore.setState({ user: { ...user, name, email } });
+      // Prepare update data
+      const updateData = { name: name.trim() };
       
-      // For now, just update locally
-      useAuthStore.setState({ user: { ...user, name, email } });
+      // Only include email for non-OAuth users
+      if (user?.auth_provider !== 'google' && user?.auth_provider !== 'apple') {
+        updateData.email = email.trim();
+      }
+
+      const response = await api.put('/auth/profile', updateData);
+      
+      // Update the user in the auth store
+      if (response.data?.user) {
+        await setTokens(accessToken, refreshToken, response.data.user);
+      } else {
+        // Fallback: update user manually if response structure is different
+        useAuthStore.setState({ 
+          user: { ...user, ...updateData } 
+        });
+      }
+      
       Alert.alert('Success', 'Profile updated successfully', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
       console.error('Update profile error:', error);
-      Alert.alert('Error', error.response?.data?.error || 'Failed to update profile. Please try again.');
+      const errorMessage = error.response?.data?.error || error.response?.data?.errors?.[0]?.msg || 'Failed to update profile. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -109,9 +128,17 @@ export default function EditProfileScreen({ navigation }) {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>
+                Email
+                {(user?.auth_provider === 'google' || user?.auth_provider === 'apple') && (
+                  <Text style={styles.labelHint}> (managed by {user?.auth_provider === 'google' ? 'Google' : 'Apple'})</Text>
+                )}
+              </Text>
               <TextInput
-                style={styles.input}
+                style={[
+                  styles.input,
+                  (user?.auth_provider === 'google' || user?.auth_provider === 'apple') && styles.inputDisabled
+                ]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Enter your email"
@@ -119,7 +146,7 @@ export default function EditProfileScreen({ navigation }) {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoCorrect={false}
-                editable={!loading}
+                editable={!loading && user?.auth_provider !== 'google' && user?.auth_provider !== 'apple'}
               />
             </View>
 
@@ -208,6 +235,12 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
   },
+  labelHint: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
   input: {
     height: 48,
     borderWidth: 1,
@@ -217,6 +250,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#FFFFFF',
     color: '#1F2937',
+  },
+  inputDisabled: {
+    backgroundColor: '#F3F4F6',
+    color: '#6B7280',
   },
   saveButton: {
     height: 50,

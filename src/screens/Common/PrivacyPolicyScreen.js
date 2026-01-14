@@ -8,196 +8,337 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const PRIVACY_POLICY_URL = 'https://dnovakovic099.github.io/hostiq-privacy/';
+// Post-process parsed content to correct any statements about location data
+const adjustLocationContent = (elements) => {
+  if (!Array.isArray(elements)) return elements || [];
 
-// Enhanced function to parse HTML and extract structured content
-const parseHtml = (html) => {
-  if (!html) return [];
-  
-  // Remove script and style tags and their content
-  let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-  
-  // Replace common HTML entities
-  text = text.replace(/&nbsp;/g, ' ');
-  text = text.replace(/&amp;/g, '&');
-  text = text.replace(/&lt;/g, '<');
-  text = text.replace(/&gt;/g, '>');
-  text = text.replace(/&quot;/g, '"');
-  text = text.replace(/&#39;/g, "'");
-  text = text.replace(/&apos;/g, "'");
-  text = text.replace(/&mdash;/g, '—');
-  text = text.replace(/&ndash;/g, '–');
-  text = text.replace(/&hellip;/g, '...');
-  
-  const elements = [];
-  
-  // Extract headings (h1-h6)
-  const headingRegex = /<h([1-6])[^>]*>(.*?)<\/h[1-6]>/gi;
-  let headingMatch;
-  let lastIndex = 0;
-  
-  while ((headingMatch = headingRegex.exec(text)) !== null) {
-    // Add any text before this heading as paragraph
-    const beforeText = text.substring(lastIndex, headingMatch.index);
-    const beforeContent = beforeText
-      .replace(/<p[^>]*>/gi, '\n')
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    if (beforeContent) {
-      // Split into paragraphs
-      beforeContent.split(/\n\s*\n/).forEach(para => {
-        const trimmed = para.trim();
-        if (trimmed && trimmed.length > 0) {
-          elements.push({ type: 'paragraph', text: trimmed });
-        }
-      });
+  const LOCATION_REGEX = /(location\s+data|location\s+information|geolocation|gps)/i;
+  const correctedText =
+    "We do not track or use your device's location data. Instead, we only ask you to provide the address of the properties you manage within HostIQ.";
+
+  const updatedElements = elements.map((item) => {
+    if (
+      (item.type === 'paragraph' || item.type === 'bullet') &&
+      typeof item.text === 'string' &&
+      LOCATION_REGEX.test(item.text)
+    ) {
+      return {
+        ...item,
+        text: correctedText,
+      };
     }
-    
-    // Add the heading
-    const headingText = headingMatch[2]
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    if (headingText) {
-      const level = parseInt(headingMatch[1]);
-      elements.push({ type: 'heading', text: headingText, level });
-    }
-    
-    lastIndex = headingRegex.lastIndex;
-  }
-  
-  // Process remaining content after last heading
-  const remainingText = text.substring(lastIndex);
-  
-  // Extract paragraphs
-  const paragraphRegex = /<p[^>]*>(.*?)<\/p>/gi;
-  let paraMatch;
-  let paraLastIndex = 0;
-  
-  while ((paraMatch = paragraphRegex.exec(remainingText)) !== null) {
-    // Check if there's content between paragraphs
-    const betweenText = remainingText.substring(paraLastIndex, paraMatch.index);
-    const betweenContent = betweenText
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    if (betweenContent && !betweenContent.match(/^[\s\n]*$/)) {
-      elements.push({ type: 'paragraph', text: betweenContent });
-    }
-    
-    const paraText = paraMatch[1]
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    
-    if (paraText) {
-      elements.push({ type: 'paragraph', text: paraText });
-    }
-    
-    paraLastIndex = paragraphRegex.lastIndex;
-  }
-  
-  // If no structured content found, fall back to simple parsing
-  if (elements.length === 0) {
-    // Remove all HTML tags but preserve structure
-    let cleanText = text
-      .replace(/<h[1-6][^>]*>/gi, '\n\n###HEADING###')
-      .replace(/<\/h[1-6]>/gi, '###END###\n\n')
-      .replace(/<p[^>]*>/gi, '\n\n')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<li[^>]*>/gi, '\n• ')
-      .replace(/<\/li>/gi, '')
-      .replace(/<ul[^>]*>/gi, '\n')
-      .replace(/<\/ul>/gi, '\n')
-      .replace(/<ol[^>]*>/gi, '\n')
-      .replace(/<\/ol>/gi, '\n')
-      .replace(/<strong[^>]*>/gi, '**')
-      .replace(/<\/strong>/gi, '**')
-      .replace(/<em[^>]*>/gi, '*')
-      .replace(/<\/em>/gi, '*')
-      .replace(/<[^>]+>/g, ' ');
-    
-    // Split into paragraphs
-    const paragraphs = cleanText.split(/\n\s*\n/).filter(p => p.trim().length > 0);
-    
-    paragraphs.forEach(para => {
-      const trimmed = para.trim();
-      if (trimmed.startsWith('###HEADING###')) {
-        const headingText = trimmed.replace(/###HEADING###/g, '').replace(/###END###/g, '').trim();
-        if (headingText) {
-          elements.push({ type: 'heading', text: headingText, level: 2 });
-        }
-      } else if (trimmed.startsWith('•')) {
-        elements.push({ type: 'bullet', text: trimmed });
-      } else if (trimmed.length > 0) {
-        elements.push({ type: 'paragraph', text: trimmed });
-      }
-    });
-  }
-  
-  // Filter out redundant headings and metadata
-  const filteredElements = [];
-  const seenHeadings = new Set();
-  const skipHeadingPatterns = [
-    /^privacy\s+policy$/i,
-    /^hostiq\s*[-–—]\s*privacy\s+policy/i,
-    /^privacy\s+policy\s*hostiq$/i,
-  ];
-  
-  const skipParagraphPatterns = [
-    /^hostiq\s*[-–—]\s*privacy\s+policy\s*hostiq$/i,
-    /^privacy\s+policy\s*hostiq$/i,
-    /^hostiq\s*[-–—]\s*privacy\s+policy$/i,
-  ];
-  
-  for (let i = 0; i < elements.length; i++) {
-    const item = elements[i];
-    
-    if (item.type === 'heading') {
-      const headingLower = item.text.toLowerCase().trim();
-      
-      // Skip if it matches common redundant patterns
-      const isRedundant = skipHeadingPatterns.some(pattern => pattern.test(headingLower));
-      
-      // Skip duplicate headings that appear early (first 3 elements)
-      const isEarlyDuplicate = i < 3 && seenHeadings.has(headingLower);
-      
-      if (isRedundant || isEarlyDuplicate) {
-        continue;
-      }
-      
-      seenHeadings.add(headingLower);
-    }
-    
-    if (item.type === 'paragraph') {
-      const paraLower = item.text.toLowerCase().trim();
-      
-      // Skip metadata paragraphs that match skip patterns
-      const isMetadata = skipParagraphPatterns.some(pattern => pattern.test(paraLower));
-      
-      // Skip very short paragraphs that are just "HostIQ" or similar at the beginning
-      const isShortMetadata = i < 2 && item.text.length < 50 && 
-        (item.text.toLowerCase().includes('hostiq') || 
-         item.text.toLowerCase().includes('privacy policy'));
-      
-      if (isMetadata || isShortMetadata) {
-        continue;
-      }
-    }
-    
-    filteredElements.push(item);
-  }
-  
-  return filteredElements;
+
+    return item;
+  });
+
+  // If there was no explicit location statement found, just return as-is.
+  // We don't want to add redundant text if the policy already correctly omits it.
+  return updatedElements;
 };
+
+// Heuristically promote certain short, title-like paragraphs to headings
+const enhanceHeadings = (elements) => {
+  if (!Array.isArray(elements)) return elements || [];
+
+  const isLikelyHeading = (text) => {
+    if (!text) return false;
+
+    const trimmed = text.trim();
+    const wordCount = trimmed.split(/\s+/).length;
+
+    // Too short or too long is unlikely to be a heading
+    if (wordCount < 2 || wordCount > 12) return false;
+
+    // Full sentences with punctuation are unlikely to be headings
+    if (/[.?]{1}\s*$/.test(trimmed)) return false;
+
+    const isAllCaps = trimmed === trimmed.toUpperCase();
+    const words = trimmed.split(/\s+/);
+    const isTitleCase = words.every((w) => {
+      if (w.length <= 2) return true; // allow short words like "of", "to"
+      return /^[A-Z0-9]/.test(w[0]);
+    });
+
+    const startsWithNumber = /^[0-9]+(\.[0-9]+)*\s+/.test(trimmed);
+
+    return isAllCaps || isTitleCase || startsWithNumber;
+  };
+
+  return elements.map((item) => {
+    if (item.type !== 'paragraph' || typeof item.text !== 'string') {
+      return item;
+    }
+
+    if (!isLikelyHeading(item.text)) {
+      return item;
+    }
+
+    const trimmed = item.text.trim();
+    const startsWithNumber = /^[0-9]+(\.[0-9]+)*\s+/.test(trimmed);
+
+    // Numbered headings get a slightly smaller level
+    const level = startsWithNumber ? 3 : 2;
+
+    return {
+      ...item,
+      type: 'heading',
+      level,
+    };
+  });
+};
+
+// Static privacy policy content rendered in the app
+const STATIC_POLICY_CONTENT = [
+  // Introduction
+  { type: 'heading', level: 2, text: 'Introduction' },
+  {
+    type: 'paragraph',
+    text:
+      'Welcome to HostIQ ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application.',
+  },
+  {
+    type: 'paragraph',
+    text:
+      'Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the application.',
+  },
+
+  // Information We Collect
+  { type: 'heading', level: 2, text: 'Information We Collect' },
+  {
+    type: 'paragraph',
+    disableBold: true,
+    text:
+      'We may collect information about you in a variety of ways. The information we may collect via the Application includes:',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Personal Data: Email address, name, and account credentials when you register for an account.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Property Data: Information about your rental properties, including addresses, pricing, and listing details you choose to enter.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Photos and Media: Images you capture or upload for property inspections, only when you explicitly grant camera or photo library access.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Usage Data: Information about how you use our app, including features accessed and time spent.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Device Information: Device type, operating system, and unique device identifiers.',
+  },
+
+  // How We Use Your Information
+  { type: 'heading', level: 2, text: 'How We Use Your Information' },
+  {
+    type: 'paragraph',
+    disableBold: true,
+    text: 'We use the information we collect or receive:',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• To provide our services: Managing your properties, generating insights, and enabling inspection features.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• To improve our app: Understanding how users interact with our features to make improvements.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• To communicate with you: Sending important updates about your account or our services.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• To process transactions: Managing subscriptions and in-app purchases.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• To ensure security: Protecting against unauthorized access and maintaining data integrity.',
+  },
+
+  // Device Permissions
+  { type: 'heading', level: 2, text: 'Device Permissions' },
+  {
+    type: 'paragraph',
+    disableBold: true,
+    text: 'Our app may request access to certain features on your device:',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Camera: To capture inspection photos and videos of your properties. Access is only used when you actively take photos within the app.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Photo Library: To select existing photos for property inspections. We only access photos you explicitly select.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Biometric Authentication: Face ID or fingerprint for secure, convenient login. Biometric data never leaves your device.',
+  },
+  {
+    type: 'paragraph',
+    text:
+      'You can revoke these permissions at any time through your device settings.',
+  },
+
+  // Data Storage and Security
+  { type: 'heading', level: 2, text: 'Data Storage and Security' },
+  {
+    type: 'paragraph',
+    text:
+      'We implement appropriate technical and organizational security measures to protect your personal information. Your data is encrypted in transit and at rest. We use industry-standard protocols to ensure your information remains secure.',
+  },
+  {
+    type: 'paragraph',
+    text:
+      'However, no method of transmission over the Internet or electronic storage is 100% secure. While we strive to protect your personal information, we cannot guarantee absolute security.',
+  },
+
+  // Third-Party Services
+  { type: 'heading', level: 2, text: 'Third-Party Services' },
+  {
+    type: 'paragraph',
+    text:
+      'Our app may contain links to third-party websites or integrate with third-party services. These services have their own privacy policies, and we encourage you to review them. We are not responsible for the privacy practices of third parties.',
+  },
+  {
+    type: 'paragraph',
+    text: 'We may use third-party service providers for:',
+  },
+  {
+    type: 'bullet',
+    text: '• Payment processing (Apple App Store, Google Play Store)',
+  },
+  {
+    type: 'bullet',
+    text: '• Analytics to improve our services',
+  },
+  {
+    type: 'bullet',
+    text: '• Cloud hosting and data storage',
+  },
+
+  // Data Retention
+  { type: 'heading', level: 2, text: 'Data Retention' },
+  {
+    type: 'paragraph',
+    text:
+      'We retain your personal information only for as long as necessary to fulfill the purposes outlined in this privacy policy, unless a longer retention period is required by law. When you delete your account, we will delete or anonymize your personal data within 30 days.',
+  },
+
+  // Your Privacy Rights
+  { type: 'heading', level: 2, text: 'Your Privacy Rights' },
+  {
+    type: 'paragraph',
+    disableBold: true,
+    text:
+      'Depending on your location, you may have certain rights regarding your personal information:',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Access: Request a copy of the personal data we hold about you.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Correction: Request correction of inaccurate personal data.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Deletion: Request deletion of your personal data.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Portability: Request transfer of your data to another service.',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• Opt-out: Opt out of certain data processing activities.',
+  },
+  {
+    type: 'paragraph',
+    text:
+      'To exercise any of these rights, please contact us using the information below.',
+  },
+
+  // Children's Privacy
+  { type: 'heading', level: 2, text: "Children's Privacy" },
+  {
+    type: 'paragraph',
+    text:
+      'Our application is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If we discover that a child under 13 has provided us with personal information, we will delete it immediately.',
+  },
+
+  // Changes to This Policy
+  { type: 'heading', level: 2, text: 'Changes to This Policy' },
+  {
+    type: 'paragraph',
+    text:
+      'We may update this privacy policy from time to time. The updated version will be indicated by an updated "Effective Date" at the top of this page. We encourage you to review this privacy policy periodically to stay informed about how we are protecting your information.',
+  },
+
+  // Contact Us
+  { type: 'heading', level: 2, text: 'Contact Us' },
+  {
+    type: 'paragraph',
+    text:
+      'If you have questions or concerns about this privacy policy or our practices, please contact us at contact@securestay.ai.',
+  },
+];
+
+// Helper function to render text with bold labels (text before colon)
+const renderTextWithBold = (text, baseStyle, isBullet = false) => {
+  // Pattern: "• Label: description" or "Label: description"
+  // Split on colon but keep the colon with the label part
+  const colonIndex = text.indexOf(':');
+  
+  // If no colon found, render as regular text
+  if (colonIndex === -1) {
+    // Remove bullet character if it's a bullet item (we use visual dot instead)
+    const cleanText = isBullet ? text.replace(/^•\s*/, '') : text;
+    return <Text style={baseStyle}>{cleanText}</Text>;
+  }
+  
+  // Split into label (before colon) and description (after colon)
+  let labelPart = text.substring(0, colonIndex);
+  const descriptionPart = text.substring(colonIndex + 1);
+  
+  // Remove bullet character if it's a bullet item (we use visual dot instead)
+  if (isBullet) {
+    labelPart = labelPart.replace(/^•\s*/, '');
+  }
+  
+  const cleanLabel = labelPart.trim();
+  
+  return (
+    <Text style={baseStyle}>
+      <Text style={[baseStyle, styles.boldText]}>{cleanLabel}:</Text>
+      {descriptionPart && <Text style={baseStyle}>{descriptionPart}</Text>}
+    </Text>
+  );
+};
+
+// (Old HTML parsing logic removed; content is now defined statically below)
 
 export default function PrivacyPolicyScreen() {
   const [content, setContent] = useState([]);
@@ -205,30 +346,25 @@ export default function PrivacyPolicyScreen() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchPrivacyPolicy();
-  }, []);
-
-  const fetchPrivacyPolicy = async () => {
     try {
-      setLoading(true);
-      const response = await fetch(PRIVACY_POLICY_URL);
-      const html = await response.text();
-      const parsedContent = parseHtml(html);
-      setContent(parsedContent);
+      const adjustedContent = adjustLocationContent(STATIC_POLICY_CONTENT);
+      const enhancedContent = enhanceHeadings(adjustedContent);
+      setContent(enhancedContent);
       setError(null);
     } catch (err) {
-      console.error('Error fetching privacy policy:', err);
+      console.error('Error loading privacy policy:', err);
       setError('Failed to load privacy policy. Please try again later.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4A90E2" />
+          <Text style={styles.loadingText}>Loading Privacy Policy...</Text>
         </View>
       </SafeAreaView>
     );
@@ -252,10 +388,13 @@ export default function PrivacyPolicyScreen() {
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={true}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Privacy Policy</Text>
-        <Text style={styles.lastUpdated}>Last Updated: {new Date().toLocaleDateString()}</Text>
+        <View style={styles.header}>
+          <Text style={styles.title}>Privacy Policy</Text>
+          <View style={styles.titleUnderline} />
+          <Text style={styles.lastUpdated}>Last Updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</Text>
+        </View>
 
         {content.map((item, index) => {
           if (item.type === 'heading') {
@@ -272,7 +411,10 @@ export default function PrivacyPolicyScreen() {
             
             return (
               <View key={index} style={containerStyle}>
-                <Text style={headingStyle}>{item.text}</Text>
+                <View style={styles.headingWrapper}>
+                  <View style={styles.headingAccent} />
+                  <Text style={headingStyle}>{item.text}</Text>
+                </View>
               </View>
             );
           }
@@ -280,19 +422,33 @@ export default function PrivacyPolicyScreen() {
           if (item.type === 'bullet') {
             return (
               <View key={index} style={styles.bulletContainer}>
-                <Text style={styles.bulletPoint}>{item.text}</Text>
+                <View style={styles.bulletDot} />
+                <View style={styles.bulletContent}>
+                  {renderTextWithBold(item.text, styles.bulletPoint, true)}
+                </View>
+              </View>
+            );
+          }
+
+          if (item.type === 'paragraph' && item.disableBold) {
+            return (
+              <View key={index} style={styles.paragraphContainer}>
+                <Text style={styles.paragraph}>{item.text}</Text>
               </View>
             );
           }
 
           return (
             <View key={index} style={styles.paragraphContainer}>
-              <Text style={styles.paragraph}>{item.text}</Text>
+              {renderTextWithBold(item.text, styles.paragraph)}
             </View>
           );
         })}
 
         <View style={styles.footer}>
+          <View style={styles.footerIcon}>
+            <Text style={styles.footerIconText}>✓</Text>
+          </View>
           <Text style={styles.footerText}>
             By using HostIQ, you acknowledge that you have read, understood, and agree to this Privacy Policy.
           </Text>
@@ -305,91 +461,168 @@ export default function PrivacyPolicyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FA',
   },
   scrollView: {
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 24,
+    paddingTop: 2,
+    paddingBottom: 48,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#F8F9FA',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  header: {
+    marginBottom: 32,
+    paddingBottom: 24,
+    borderBottomWidth: 2,
+    borderBottomColor: '#E8E9EB',
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1D1D1F',
-    marginBottom: 8,
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    marginBottom: 12,
+    letterSpacing: -0.5,
+  },
+  titleUnderline: {
+    width: 60,
+    height: 4,
+    backgroundColor: '#4A90E2',
+    borderRadius: 2,
+    marginBottom: 16,
   },
   lastUpdated: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 24,
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
   headingContainer: {
-    marginTop: 32,
-    marginBottom: 16,
+    marginTop: 36,
+    marginBottom: 20,
   },
   firstHeadingContainer: {
-    marginTop: 8,
+    marginTop: 12,
+  },
+  headingWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headingAccent: {
+    width: 4,
+    height: 24,
+    backgroundColor: '#4A90E2',
+    borderRadius: 2,
+    marginRight: 12,
   },
   heading1: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1D1D1F',
-    marginBottom: 4,
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    letterSpacing: -0.3,
+    flex: 1,
   },
   heading2: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1D1D1F',
-    marginBottom: 4,
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    letterSpacing: -0.2,
+    flex: 1,
   },
   heading3: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
-    color: '#1D1D1F',
-    marginBottom: 4,
+    color: '#1A1A1A',
+    letterSpacing: -0.1,
+    flex: 1,
   },
   paragraphContainer: {
-    marginBottom: 16,
+    marginBottom: 18,
+    paddingLeft: 16,
   },
   paragraph: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: '#333',
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#374151',
+    letterSpacing: 0.1,
   },
   bulletContainer: {
-    marginBottom: 8,
-    marginLeft: 8,
+    marginBottom: 12,
+    flexDirection: 'row',
+    paddingLeft: 16,
+  },
+  bulletDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4A90E2',
+    marginTop: 10,
+    marginRight: 12,
+  },
+  bulletContent: {
+    flex: 1,
   },
   bulletPoint: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: '#333',
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#374151',
+    letterSpacing: 0.1,
+  },
+  boldText: {
+    fontWeight: '700',
+    color: '#1A1A1A',
   },
   footer: {
-    marginTop: 32,
-    paddingTop: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
+    marginTop: 48,
+    paddingTop: 28,
+    paddingBottom: 8,
+    paddingHorizontal: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E8E9EB',
+    alignItems: 'center',
+  },
+  footerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#4A90E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  footerIconText: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   footerText: {
     fontSize: 14,
-    lineHeight: 20,
-    color: '#666',
-    fontStyle: 'italic',
+    lineHeight: 22,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontWeight: '500',
+    letterSpacing: 0.2,
   },
   errorText: {
     fontSize: 16,
-    color: '#FF3B30',
+    color: '#EF4444',
     textAlign: 'center',
     marginTop: 20,
+    fontWeight: '500',
   },
 });
 

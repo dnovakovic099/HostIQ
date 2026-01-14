@@ -30,6 +30,13 @@ export default function ChangePasswordScreen({ navigation }) {
   // Check if user signed up via Google
   const isGoogleUser = user?.auth_provider === 'google';
 
+  // Password validation helpers
+  const passwordRequirements = {
+    minLength: newPassword.length >= 8,
+    different: currentPassword && newPassword && currentPassword !== newPassword,
+    match: newPassword && confirmPassword && newPassword === confirmPassword,
+  };
+
   const handleChangePassword = async () => {
     if (!currentPassword) {
       Alert.alert('Error', 'Please enter your current password');
@@ -112,110 +119,202 @@ export default function ChangePasswordScreen({ navigation }) {
           showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
         >
-
           {isGoogleUser ? (
             <View style={styles.infoCard}>
-              <Ionicons name="information-circle" size={48} color="#4A90E2" style={styles.infoIcon} />
+              <View style={styles.infoIconContainer}>
+                <Ionicons name="information-circle" size={56} color="#4A90E2" />
+              </View>
               <Text style={styles.infoTitle}>Password Change Not Available</Text>
               <Text style={styles.infoText}>
                 You signed up using Google, so you don't have a password set in this app. Your account is managed through your Google account.
               </Text>
+              <View style={styles.infoDivider} />
               <Text style={styles.infoSubtext}>
-                To change your password, please update it in your Google Account settings.
+                To change your password, please update it in your Google Account settings at myaccount.google.com
               </Text>
             </View>
           ) : (
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Current Password</Text>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={styles.input}
-                    value={currentPassword}
-                    onChangeText={setCurrentPassword}
-                    placeholder="Enter current password"
-                    placeholderTextColor="#8E8E93"
-                    secureTextEntry={!showCurrentPassword}
-                    autoCapitalize="none"
-                    editable={!loading}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-                  >
-                    <Ionicons
-                      name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={20}
-                      color="#8E8E93"
-                    />
-                  </TouchableOpacity>
-                </View>
+            <>
+              <View style={styles.introSection}>
+                <Text style={styles.introTitle}>Secure Your Account</Text>
+                <Text style={styles.introDescription}>
+                  Keep your account safe by regularly updating your password. Choose a strong, unique password that you haven't used before.
+                </Text>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>New Password</Text>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={styles.input}
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    placeholder="Enter new password (min 8 characters)"
-                    placeholderTextColor="#8E8E93"
-                    secureTextEntry={!showNewPassword}
-                    autoCapitalize="none"
-                    editable={!loading}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowNewPassword(!showNewPassword)}
-                  >
-                    <Ionicons
-                      name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={20}
-                      color="#8E8E93"
-                    />
-                  </TouchableOpacity>
+              <View style={styles.form}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons name="lock-closed" size={20} color="#4A90E2" />
+                  <Text style={styles.sectionTitle}>Password Information</Text>
                 </View>
-              </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Confirm New Password</Text>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={styles.input}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    placeholder="Confirm new password"
-                    placeholderTextColor="#8E8E93"
-                    secureTextEntry={!showConfirmPassword}
-                    autoCapitalize="none"
-                    editable={!loading}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeIcon}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    <Ionicons
-                      name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                      size={20}
-                      color="#8E8E93"
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Current Password</Text>
+                  <Text style={styles.helperText}>
+                    Enter your current password to verify your identity
+                  </Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.input}
+                      value={currentPassword}
+                      onChangeText={setCurrentPassword}
+                      placeholder="Enter current password"
+                      placeholderTextColor="#8E8E93"
+                      secureTextEntry={!showCurrentPassword}
+                      autoCapitalize="none"
+                      editable={!loading}
                     />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.eyeIcon}
+                      onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                    >
+                      <Ionicons
+                        name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={22}
+                        color="#8E8E93"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
 
-              <TouchableOpacity
-                style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-                onPress={handleChangePassword}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Change Password</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+                <View style={styles.divider} />
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>New Password</Text>
+                  <Text style={styles.helperText}>
+                    Create a strong password with at least 8 characters
+                  </Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={styles.input}
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      placeholder="Enter new password"
+                      placeholderTextColor="#8E8E93"
+                      secureTextEntry={!showNewPassword}
+                      autoCapitalize="none"
+                      editable={!loading}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeIcon}
+                      onPress={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      <Ionicons
+                        name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={22}
+                        color="#8E8E93"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {newPassword.length > 0 && (
+                    <View style={styles.requirementsContainer}>
+                      <View style={styles.requirementRow}>
+                        <Ionicons
+                          name={passwordRequirements.minLength ? 'checkmark-circle' : 'ellipse-outline'}
+                          size={16}
+                          color={passwordRequirements.minLength ? '#10B981' : '#9CA3AF'}
+                        />
+                        <Text style={[
+                          styles.requirementText,
+                          passwordRequirements.minLength && styles.requirementTextMet
+                        ]}>
+                          At least 8 characters
+                        </Text>
+                      </View>
+                      <View style={styles.requirementRow}>
+                        <Ionicons
+                          name={passwordRequirements.different ? 'checkmark-circle' : 'ellipse-outline'}
+                          size={16}
+                          color={passwordRequirements.different ? '#10B981' : '#9CA3AF'}
+                        />
+                        <Text style={[
+                          styles.requirementText,
+                          passwordRequirements.different && styles.requirementTextMet
+                        ]}>
+                          Different from current password
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.divider} />
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Confirm New Password</Text>
+                  <Text style={styles.helperText}>
+                    Re-enter your new password to confirm it matches
+                  </Text>
+                  <View style={styles.passwordContainer}>
+                    <TextInput
+                      style={[
+                        styles.input,
+                        confirmPassword.length > 0 && newPassword !== confirmPassword && styles.inputError
+                      ]}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      placeholder="Re-enter new password"
+                      placeholderTextColor="#8E8E93"
+                      secureTextEntry={!showConfirmPassword}
+                      autoCapitalize="none"
+                      editable={!loading}
+                    />
+                    <TouchableOpacity
+                      style={styles.eyeIcon}
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      <Ionicons
+                        name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={22}
+                        color="#8E8E93"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {confirmPassword.length > 0 && (
+                    <View style={styles.requirementRow}>
+                      <Ionicons
+                        name={passwordRequirements.match ? 'checkmark-circle' : 'close-circle'}
+                        size={16}
+                        color={passwordRequirements.match ? '#10B981' : '#EF4444'}
+                      />
+                      <Text style={[
+                        styles.requirementText,
+                        passwordRequirements.match ? styles.requirementTextMet : styles.requirementTextError
+                      ]}>
+                        {passwordRequirements.match ? 'Passwords match' : 'Passwords do not match'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.securityTip}>
+                  <Ionicons name="shield-checkmark" size={18} color="#4A90E2" />
+                  <Text style={styles.securityTipText}>
+                    <Text style={styles.securityTipBold}>Security Tip:</Text> Use a combination of letters, numbers, and special characters for better security.
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    loading && styles.saveButtonDisabled,
+                    (!currentPassword || !newPassword || !confirmPassword) && styles.saveButtonDisabled
+                  ]}
+                  onPress={handleChangePassword}
+                  disabled={loading || !currentPassword || !newPassword || !confirmPassword}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle" size={20} color="#FFF" style={styles.buttonIcon} />
+                      <Text style={styles.saveButtonText}>Update Password</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -235,9 +334,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 20,
-    paddingTop: 16,
-    paddingBottom: 40,
+    padding: 24,
+    paddingTop: 28,
+    paddingBottom: 48,
   },
   headerWrapper: {
     borderBottomLeftRadius: 24,
@@ -271,95 +370,212 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     opacity: 0.9,
   },
+  introSection: {
+    marginBottom: 28,
+    paddingHorizontal: 4,
+  },
+  introTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
+  introDescription: {
+    fontSize: 15,
+    color: '#6B7280',
+    lineHeight: 22,
+    letterSpacing: 0.1,
+  },
   form: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginLeft: 10,
+    letterSpacing: 0.2,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 28,
   },
   label: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#333',
+    color: '#1F2937',
     marginBottom: 8,
+    letterSpacing: 0.1,
+  },
+  helperText: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 12,
+    lineHeight: 18,
   },
   passwordContainer: {
     position: 'relative',
   },
   input: {
-    height: 48,
-    borderWidth: 1,
+    height: 52,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingRight: 48,
+    paddingRight: 52,
     fontSize: 16,
     backgroundColor: '#FFFFFF',
     color: '#1F2937',
   },
+  inputError: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
   eyeIcon: {
     position: 'absolute',
-    right: 12,
-    top: 14,
-    padding: 4,
+    right: 14,
+    top: 15,
+    padding: 6,
+    zIndex: 1,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 8,
+    marginBottom: 24,
+  },
+  requirementsContainer: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  requirementText: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    marginLeft: 10,
+    lineHeight: 18,
+  },
+  requirementTextMet: {
+    color: '#10B981',
+  },
+  requirementTextError: {
+    color: '#EF4444',
+  },
+  securityTip: {
+    flexDirection: 'row',
+    backgroundColor: '#EFF6FF',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 24,
+    borderLeftWidth: 3,
+    borderLeftColor: '#4A90E2',
+  },
+  securityTipText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#1E40AF',
+    lineHeight: 20,
+    marginLeft: 10,
+  },
+  securityTipBold: {
+    fontWeight: '700',
   },
   saveButton: {
-    height: 50,
-    borderRadius: 8,
+    height: 56,
+    borderRadius: 12,
     backgroundColor: '#4A90E2',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
+    flexDirection: 'row',
+    shadowColor: '#4A90E2',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   saveButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  buttonIcon: {
+    marginRight: 8,
   },
   saveButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
+    letterSpacing: 0.3,
   },
   infoCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
+    borderRadius: 16,
+    padding: 32,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  infoIcon: {
-    marginBottom: 16,
+  infoIconContainer: {
+    marginBottom: 20,
+    padding: 12,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 50,
   },
   infoTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#1D1D1F',
-    marginBottom: 12,
+    marginBottom: 16,
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
   infoText: {
     fontSize: 16,
-    color: '#666',
+    color: '#4B5563',
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 12,
+    marginBottom: 20,
+    letterSpacing: 0.1,
+  },
+  infoDivider: {
+    width: '100%',
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 20,
   },
   infoSubtext: {
     fontSize: 14,
-    color: '#999',
+    color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
     fontStyle: 'italic',
+    letterSpacing: 0.1,
   },
 });
 

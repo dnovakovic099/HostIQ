@@ -289,11 +289,15 @@ export default function MainTabs() {
             component={PricingStack}
             options={{ title: 'Pricing' }}
           />
+          {/*
+            Temporarily hide the Subscription tab from the bottom bar.
+            To re-enable, remove this comment block and restore the Tab.Screen.
           <Tab.Screen 
             name="Subscription" 
             component={SubscriptionStack}
             options={{ title: 'Subscription' }}
           />
+          */}
         </>
       )}
 

@@ -537,7 +537,7 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  signInWithApple: async () => {
+  signInWithApple: async (role) => {
     try {
       // Only attempt Apple Sign-In on iOS devices
       if (Platform.OS !== 'ios') {
@@ -579,12 +579,19 @@ export const useAuthStore = create((set, get) => ({
           : 'User';
 
       // Send token to backend – backend will create/link the user and issue JWTs
-      const response = await api.post('/auth/apple/mobile', {
+      const requestBody = {
         identityToken,
         appleUserId,
         email,
         name: displayName,
-      });
+      };
+
+      // Include role if provided (required for new sign-ups)
+      if (role) {
+        requestBody.role = role;
+      }
+
+      const response = await api.post('/auth/apple/mobile', requestBody);
 
       const { accessToken, refreshToken, user } = response.data || {};
 
@@ -618,8 +625,24 @@ export const useAuthStore = create((set, get) => ({
         return { success: false, error: 'Sign in was cancelled' };
       }
 
+      // Handle role selection requirement
+      const errorData = error?.response?.data;
+      if (
+        errorData?.error === 'Role selection required' ||
+        errorData?.requiresRoleSelection === true ||
+        (typeof errorData?.error === 'string' &&
+          (errorData.error.includes('role selection') ||
+            errorData.error.includes('role is required') ||
+            errorData.error.includes('role required')))
+      ) {
+        return {
+          success: false,
+          error: 'requiresRoleSelection',
+        };
+      }
+
       const errorMessage =
-        error?.response?.data?.error ||
+        errorData?.error ||
         error?.message ||
         'Sign in with Apple failed. Please try again.';
 
