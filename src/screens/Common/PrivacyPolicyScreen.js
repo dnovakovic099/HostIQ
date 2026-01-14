@@ -14,7 +14,7 @@ const adjustLocationContent = (elements) => {
 
   const LOCATION_REGEX = /(location\s+data|location\s+information|geolocation|gps)/i;
   const correctedText =
-    "We do not track or use your device's location data. Instead, we only ask you to provide the address of the properties you manage within HostIQ.";
+    "We do not track or use your device's precise or approximate location. Instead, we only ask you to provide the address of the properties you manage within HostIQ.";
 
   const updatedElements = elements.map((item) => {
     if (
@@ -136,6 +136,14 @@ const STATIC_POLICY_CONTENT = [
       '• Device Information: Device type, operating system, and unique device identifiers.',
   },
 
+  // Location Data
+  { type: 'heading', level: 2, text: 'Location Data' },
+  {
+    type: 'paragraph',
+    text:
+      "We do not track or use your device's precise or approximate location. Instead, we only ask you to manually provide the address of the properties you manage within HostIQ.",
+  },
+
   // How We Use Your Information
   { type: 'heading', level: 2, text: 'How We Use Your Information' },
   {
@@ -174,7 +182,7 @@ const STATIC_POLICY_CONTENT = [
   {
     type: 'paragraph',
     disableBold: true,
-    text: 'Our app may request access to certain features on your device:',
+    text: 'Our app may request access to certain features on your device. HostIQ does not request or use your device’s built-in location services; any property addresses are entered by you manually and are not derived from background tracking:',
   },
   {
     type: 'bullet',
@@ -232,6 +240,11 @@ const STATIC_POLICY_CONTENT = [
   {
     type: 'bullet',
     text: '• Cloud hosting and data storage',
+  },
+  {
+    type: 'bullet',
+    text:
+      '• AI services (such as OpenAI / ChatGPT) to help analyze inspection data and provide insights. When used, these services only receive the minimum necessary information required to provide the requested functionality.',
   },
 
   // Data Retention
