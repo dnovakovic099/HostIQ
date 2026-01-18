@@ -829,6 +829,67 @@ export const useAuthStore = create((set, get) => ({
     });
   },
 
+  deleteAccount: async () => {
+    const { accessToken } = get();
+    
+    try {
+      // Call the delete account endpoint
+      await api.delete('/auth/account', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+
+      // Sign out from Google if signed in
+      try {
+        const isSignedIn = await GoogleSignin.isSignedIn();
+        if (isSignedIn) {
+          await GoogleSignin.signOut();
+        }
+      } catch (error) {
+        console.log('Google sign out error (non-critical):', error);
+      }
+
+      // Clear all stored tokens and credentials
+      await SecureStore.deleteItemAsync('accessToken');
+      await SecureStore.deleteItemAsync('refreshToken');
+      
+      // Clear biometric credentials
+      try {
+        await biometricAuth.deleteStoredValue('saved_email');
+        await biometricAuth.deleteStoredValue('saved_password');
+        await biometricAuth.deleteStoredValue('remember_me');
+      } catch (error) {
+        console.log('Biometric cleanup error (non-critical):', error);
+      }
+      
+      // Reset auth state
+      set({ 
+        user: null, 
+        accessToken: null, 
+        refreshToken: null, 
+        isAuthenticated: false,
+        biometricEnabled: false
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error('Delete account error:', error);
+      
+      let errorMessage = 'Failed to delete account';
+      if (error.response) {
+        errorMessage = error.response.data?.error || `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        errorMessage = 'Cannot reach server. Please check your internet connection.';
+      } else {
+        errorMessage = error.message || 'Failed to delete account';
+      }
+      
+      return { 
+        success: false, 
+        error: errorMessage
+      };
+    }
+  },
+
   getRole: () => {
     return get().user?.role || null;
   },

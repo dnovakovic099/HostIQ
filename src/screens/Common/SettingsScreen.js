@@ -14,7 +14,8 @@ import { useAuthStore } from '../../store/authStore';
 // import biometricAuth from '../../services/biometricAuth';
 
 export default function SettingsScreen({ navigation }) {
-  const { user, logout } = useAuthStore();
+  const { user, logout, deleteAccount } = useAuthStore();
+  const [isDeleting, setIsDeleting] = useState(false);
   // const { user, logout, biometricAvailable, biometricEnabled, enableBiometric, disableBiometric } = useAuthStore();
   // const [biometricType, setBiometricType] = useState('');
 
@@ -38,6 +39,34 @@ export default function SettingsScreen({ navigation }) {
           style: 'destructive',
           onPress: async () => {
             await logout();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone. All your data, including properties, inspections, and reports, will be permanently deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            const result = await deleteAccount();
+            setIsDeleting(false);
+            
+            if (!result.success) {
+              Alert.alert(
+                'Error',
+                result.error || 'Failed to delete account. Please try again.',
+                [{ text: 'OK' }]
+              );
+            }
+            // If successful, the user will be logged out automatically by deleteAccount
           },
         },
       ]
@@ -119,7 +148,7 @@ export default function SettingsScreen({ navigation }) {
             onPress={() => navigation.navigate('EditProfile')}
           />
           {/* Only show Change Password for email/password users, not Google users */}
-          {user?.auth_provider !== 'google' && (
+          {user?.auth_provider !== 'google' && user?.auth_provider !== 'apple' && (
             <>
               <View style={styles.divider} />
               <SettingsItem
@@ -129,6 +158,13 @@ export default function SettingsScreen({ navigation }) {
               />
             </>
           )}
+          <View style={styles.divider} />
+          <SettingsItem
+            icon="trash-outline"
+            title="Delete Account"
+            onPress={isDeleting ? undefined : handleDeleteAccount}
+            danger
+          />
         </View>
       </View>
 

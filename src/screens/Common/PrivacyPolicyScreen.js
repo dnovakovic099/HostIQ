@@ -1,401 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Post-process parsed content to correct any statements about location data
-const adjustLocationContent = (elements) => {
-  if (!Array.isArray(elements)) return elements || [];
-
-  const LOCATION_REGEX = /(location\s+data|location\s+information|geolocation|gps)/i;
-  const correctedText =
-    "We do not track or use your device's precise or approximate location. Instead, we only ask you to provide the address of the properties you manage within HostIQ.";
-
-  const updatedElements = elements.map((item) => {
-    if (
-      (item.type === 'paragraph' || item.type === 'bullet') &&
-      typeof item.text === 'string' &&
-      LOCATION_REGEX.test(item.text)
-    ) {
-      return {
-        ...item,
-        text: correctedText,
-      };
-    }
-
-    return item;
-  });
-
-  // If there was no explicit location statement found, just return as-is.
-  // We don't want to add redundant text if the policy already correctly omits it.
-  return updatedElements;
-};
-
-// Heuristically promote certain short, title-like paragraphs to headings
-const enhanceHeadings = (elements) => {
-  if (!Array.isArray(elements)) return elements || [];
-
-  const isLikelyHeading = (text) => {
-    if (!text) return false;
-
-    const trimmed = text.trim();
-    const wordCount = trimmed.split(/\s+/).length;
-
-    // Too short or too long is unlikely to be a heading
-    if (wordCount < 2 || wordCount > 12) return false;
-
-    // Full sentences with punctuation are unlikely to be headings
-    if (/[.?]{1}\s*$/.test(trimmed)) return false;
-
-    const isAllCaps = trimmed === trimmed.toUpperCase();
-    const words = trimmed.split(/\s+/);
-    const isTitleCase = words.every((w) => {
-      if (w.length <= 2) return true; // allow short words like "of", "to"
-      return /^[A-Z0-9]/.test(w[0]);
-    });
-
-    const startsWithNumber = /^[0-9]+(\.[0-9]+)*\s+/.test(trimmed);
-
-    return isAllCaps || isTitleCase || startsWithNumber;
-  };
-
-  return elements.map((item) => {
-    if (item.type !== 'paragraph' || typeof item.text !== 'string') {
-      return item;
-    }
-
-    if (!isLikelyHeading(item.text)) {
-      return item;
-    }
-
-    const trimmed = item.text.trim();
-    const startsWithNumber = /^[0-9]+(\.[0-9]+)*\s+/.test(trimmed);
-
-    // Numbered headings get a slightly smaller level
-    const level = startsWithNumber ? 3 : 2;
-
-    return {
-      ...item,
-      type: 'heading',
-      level,
-    };
-  });
-};
-
-// Static privacy policy content rendered in the app
-const STATIC_POLICY_CONTENT = [
-  // Introduction
-  { type: 'heading', level: 2, text: 'Introduction' },
-  {
-    type: 'paragraph',
-    text:
-      'Welcome to HostIQ ("we," "our," or "us"). We are committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application.',
-  },
-  {
-    type: 'paragraph',
-    text:
-      'Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the application.',
-  },
-
-  // Information We Collect
-  { type: 'heading', level: 2, text: 'Information We Collect' },
-  {
-    type: 'paragraph',
-    disableBold: true,
-    text:
-      'We may collect information about you in a variety of ways. The information we may collect via the Application includes:',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Personal Data: Email address, name, and account credentials when you register for an account.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Property Data: Information about your rental properties, including addresses, pricing, and listing details you choose to enter.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Photos and Media: Images you capture or upload for property inspections, only when you explicitly grant camera or photo library access.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Usage Data: Information about how you use our app, including features accessed and time spent.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Device Information: Device type, operating system, and unique device identifiers.',
-  },
-
-  // Location Data
-  { type: 'heading', level: 2, text: 'Location Data' },
-  {
-    type: 'paragraph',
-    text:
-      "We do not track or use your device's precise or approximate location. Instead, we only ask you to manually provide the address of the properties you manage within HostIQ.",
-  },
-
-  // How We Use Your Information
-  { type: 'heading', level: 2, text: 'How We Use Your Information' },
-  {
-    type: 'paragraph',
-    disableBold: true,
-    text: 'We use the information we collect or receive:',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• To provide our services: Managing your properties, generating insights, and enabling inspection features.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• To improve our app: Understanding how users interact with our features to make improvements.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• To communicate with you: Sending important updates about your account or our services.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• To process transactions: Managing subscriptions and in-app purchases.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• To ensure security: Protecting against unauthorized access and maintaining data integrity.',
-  },
-
-  // Device Permissions
-  { type: 'heading', level: 2, text: 'Device Permissions' },
-  {
-    type: 'paragraph',
-    disableBold: true,
-    text: 'Our app may request access to certain features on your device. HostIQ does not request or use your device’s built-in location services; any property addresses are entered by you manually and are not derived from background tracking:',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Camera: To capture inspection photos and videos of your properties. Access is only used when you actively take photos within the app.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Photo Library: To select existing photos for property inspections. We only access photos you explicitly select.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Biometric Authentication: Face ID or fingerprint for secure, convenient login. Biometric data never leaves your device.',
-  },
-  {
-    type: 'paragraph',
-    text:
-      'You can revoke these permissions at any time through your device settings.',
-  },
-
-  // Data Storage and Security
-  { type: 'heading', level: 2, text: 'Data Storage and Security' },
-  {
-    type: 'paragraph',
-    text:
-      'We implement appropriate technical and organizational security measures to protect your personal information. Your data is encrypted in transit and at rest. We use industry-standard protocols to ensure your information remains secure.',
-  },
-  {
-    type: 'paragraph',
-    text:
-      'However, no method of transmission over the Internet or electronic storage is 100% secure. While we strive to protect your personal information, we cannot guarantee absolute security.',
-  },
-
-  // Third-Party Services
-  { type: 'heading', level: 2, text: 'Third-Party Services' },
-  {
-    type: 'paragraph',
-    text:
-      'Our app may contain links to third-party websites or integrate with third-party services. These services have their own privacy policies, and we encourage you to review them. We are not responsible for the privacy practices of third parties.',
-  },
-  {
-    type: 'paragraph',
-    text: 'We may use third-party service providers for:',
-  },
-  {
-    type: 'bullet',
-    text: '• Payment processing (Apple App Store, Google Play Store)',
-  },
-  {
-    type: 'bullet',
-    text: '• Analytics to improve our services',
-  },
-  {
-    type: 'bullet',
-    text: '• Cloud hosting and data storage',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• AI services (such as OpenAI / ChatGPT) to help analyze inspection data and provide insights. When used, these services only receive the minimum necessary information required to provide the requested functionality.',
-  },
-
-  // Data Retention
-  { type: 'heading', level: 2, text: 'Data Retention' },
-  {
-    type: 'paragraph',
-    text:
-      'We retain your personal information only for as long as necessary to fulfill the purposes outlined in this privacy policy, unless a longer retention period is required by law. When you delete your account, we will delete or anonymize your personal data within 30 days.',
-  },
-
-  // Your Privacy Rights
-  { type: 'heading', level: 2, text: 'Your Privacy Rights' },
-  {
-    type: 'paragraph',
-    disableBold: true,
-    text:
-      'Depending on your location, you may have certain rights regarding your personal information:',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Access: Request a copy of the personal data we hold about you.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Correction: Request correction of inaccurate personal data.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Deletion: Request deletion of your personal data.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Portability: Request transfer of your data to another service.',
-  },
-  {
-    type: 'bullet',
-    text:
-      '• Opt-out: Opt out of certain data processing activities.',
-  },
-  {
-    type: 'paragraph',
-    text:
-      'To exercise any of these rights, please contact us using the information below.',
-  },
-
-  // Children's Privacy
-  { type: 'heading', level: 2, text: "Children's Privacy" },
-  {
-    type: 'paragraph',
-    text:
-      'Our application is not intended for children under 13 years of age. We do not knowingly collect personal information from children under 13. If we discover that a child under 13 has provided us with personal information, we will delete it immediately.',
-  },
-
-  // Changes to This Policy
-  { type: 'heading', level: 2, text: 'Changes to This Policy' },
-  {
-    type: 'paragraph',
-    text:
-      'We may update this privacy policy from time to time. The updated version will be indicated by an updated "Effective Date" at the top of this page. We encourage you to review this privacy policy periodically to stay informed about how we are protecting your information.',
-  },
-
-  // Contact Us
-  { type: 'heading', level: 2, text: 'Contact Us' },
-  {
-    type: 'paragraph',
-    text:
-      'If you have questions or concerns about this privacy policy or our practices, please contact us at contact@securestay.ai.',
-  },
-];
-
-// Helper function to render text with bold labels (text before colon)
-const renderTextWithBold = (text, baseStyle, isBullet = false) => {
-  // Pattern: "• Label: description" or "Label: description"
-  // Split on colon but keep the colon with the label part
-  const colonIndex = text.indexOf(':');
-  
-  // If no colon found, render as regular text
-  if (colonIndex === -1) {
-    // Remove bullet character if it's a bullet item (we use visual dot instead)
-    const cleanText = isBullet ? text.replace(/^•\s*/, '') : text;
-    return <Text style={baseStyle}>{cleanText}</Text>;
-  }
-  
-  // Split into label (before colon) and description (after colon)
-  let labelPart = text.substring(0, colonIndex);
-  const descriptionPart = text.substring(colonIndex + 1);
-  
-  // Remove bullet character if it's a bullet item (we use visual dot instead)
-  if (isBullet) {
-    labelPart = labelPart.replace(/^•\s*/, '');
-  }
-  
-  const cleanLabel = labelPart.trim();
-  
-  return (
-    <Text style={baseStyle}>
-      <Text style={[baseStyle, styles.boldText]}>{cleanLabel}:</Text>
-      {descriptionPart && <Text style={baseStyle}>{descriptionPart}</Text>}
-    </Text>
-  );
-};
-
-// (Old HTML parsing logic removed; content is now defined statically below)
-
 export default function PrivacyPolicyScreen() {
-  const [content, setContent] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    try {
-      const adjustedContent = adjustLocationContent(STATIC_POLICY_CONTENT);
-      const enhancedContent = enhanceHeadings(adjustedContent);
-      setContent(enhancedContent);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading privacy policy:', err);
-      setError('Failed to load privacy policy. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4A90E2" />
-          <Text style={styles.loadingText}>Loading Privacy Policy...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <ScrollView 
-          style={styles.scrollView}
-          contentContainerStyle={styles.contentContainer}
-        >
-          <Text style={styles.errorText}>{error}</Text>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView 
@@ -405,65 +17,259 @@ export default function PrivacyPolicyScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title}>Privacy Policy</Text>
-          <View style={styles.titleUnderline} />
-          <Text style={styles.lastUpdated}>Last Updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</Text>
+          <Text style={styles.lastUpdated}>Last Updated: January 2026</Text>
         </View>
 
-        {content.map((item, index) => {
-          if (item.type === 'heading') {
-            const headingStyle = item.level === 1 
-              ? styles.heading1 
-              : item.level === 2 
-              ? styles.heading2 
-              : styles.heading3;
-            
-            const isFirstHeading = index === 0 || content.slice(0, index).every(el => el.type !== 'heading');
-            const containerStyle = isFirstHeading 
-              ? [styles.headingContainer, styles.firstHeadingContainer]
-              : styles.headingContainer;
-            
-            return (
-              <View key={index} style={containerStyle}>
-                <View style={styles.headingWrapper}>
-                  <View style={styles.headingAccent} />
-                  <Text style={headingStyle}>{item.text}</Text>
-                </View>
-              </View>
-            );
-          }
+        <View style={styles.section}>
+          <Text style={styles.heading}>1. Introduction</Text>
+          <Text style={styles.paragraph}>
+            Welcome to HostIQ ("we," "our," or "us"). We are committed to protecting your privacy and ensuring 
+            you have a positive experience on our platform. This Privacy Policy explains how we collect, use, 
+            disclose, and safeguard your information when you use our mobile application and services.
+          </Text>
+          <Text style={styles.paragraph}>
+            By using HostIQ, you agree to the collection and use of information in accordance with this policy. 
+            If you do not agree with our policies and practices, please do not use our services.
+          </Text>
+        </View>
 
-          if (item.type === 'bullet') {
-            return (
-              <View key={index} style={styles.bulletContainer}>
-                <View style={styles.bulletDot} />
-                <View style={styles.bulletContent}>
-                  {renderTextWithBold(item.text, styles.bulletPoint, true)}
-                </View>
-              </View>
-            );
-          }
+        <View style={styles.section}>
+          <Text style={styles.heading}>2. Information We Collect</Text>
+          
+          <Text style={styles.subheading}>2.1 Information You Provide</Text>
+          <Text style={styles.paragraph}>
+            • <Text style={styles.bold}>Account Information:</Text> Name, email address, phone number, and password when you create an account{'\n'}
+            • <Text style={styles.bold}>Profile Information:</Text> Profile photo, role (property owner or cleaner), and other optional profile details{'\n'}
+            • <Text style={styles.bold}>Property Information:</Text> Property addresses, unit details, room templates, and property management data{'\n'}
+            • <Text style={styles.bold}>Inspection Data:</Text> Photos, videos, notes, and other media you upload during inspections{'\n'}
+            • <Text style={styles.bold}>Payment Information:</Text> Billing details and payment method information (processed securely through third-party payment processors)
+          </Text>
 
-          if (item.type === 'paragraph' && item.disableBold) {
-            return (
-              <View key={index} style={styles.paragraphContainer}>
-                <Text style={styles.paragraph}>{item.text}</Text>
-              </View>
-            );
-          }
+          <Text style={styles.subheading}>2.2 Automatically Collected Information</Text>
+          <Text style={styles.paragraph}>
+            • <Text style={styles.bold}>Device Information:</Text> Device type, operating system, unique device identifiers, and mobile network information{'\n'}
+            • <Text style={styles.bold}>Usage Data:</Text> How you interact with the app, features used, time spent, and navigation patterns{'\n'}
+            • <Text style={styles.bold}>IP Address:</Text> We collect IP addresses for security purposes and to prevent fraud. We do not use IP addresses to determine your precise location or track your movements.{'\n'}
+            • <Text style={styles.bold}>Log Data:</Text> Browser type, access times, and pages viewed
+          </Text>
 
-          return (
-            <View key={index} style={styles.paragraphContainer}>
-              {renderTextWithBold(item.text, styles.paragraph)}
-            </View>
-          );
-        })}
+          <Text style={styles.subheading}>2.3 Third-Party Information</Text>
+          <Text style={styles.paragraph}>
+            • Information from property management systems (PMS) you connect, such as Hostify or Hostaway{'\n'}
+            • Information from authentication providers (Google Sign-In, Apple Sign-In){'\n'}
+            • Payment information from payment processors (Stripe, Apple, Google)
+          </Text>
 
-        <View style={styles.footer}>
-          <View style={styles.footerIcon}>
-            <Text style={styles.footerIconText}>✓</Text>
-          </View>
-          <Text style={styles.footerText}>
-            By using HostIQ, you acknowledge that you have read, understood, and agree to this Privacy Policy.
+          <Text style={styles.subheading}>2.4 Location Information</Text>
+          <Text style={styles.paragraph}>
+            <Text style={styles.bold}>We do not collect, use, or track your device's precise or approximate location.</Text> 
+            {'\n\n'}The only location-related information we collect is the addresses of rental properties that you 
+            manually enter into the app. These property addresses are provided by you for the purpose of 
+            property management and are not derived from your device's location services or GPS tracking. 
+            We do not use App Tracking Transparency or request location permissions because we do not track 
+            user locations.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>3. How We Use Your Information</Text>
+          <Text style={styles.paragraph}>We use the information we collect for the following purposes:</Text>
+          <Text style={styles.paragraph}>
+            • <Text style={styles.bold}>Service Delivery:</Text> To provide, maintain, and improve our inspection and property management services{'\n'}
+            • <Text style={styles.bold}>AI Analysis:</Text> To process and analyze inspection media using artificial intelligence for quality assessment{'\n'}
+            • <Text style={styles.bold}>Account Management:</Text> To create and manage your account, authenticate users, and provide customer support{'\n'}
+            • <Text style={styles.bold}>Communication:</Text> To send you service updates, inspection reports, notifications, and respond to your inquiries{'\n'}
+            • <Text style={styles.bold}>Payment Processing:</Text> To process payments, manage subscriptions, and handle billing{'\n'}
+            • <Text style={styles.bold}>Analytics:</Text> To understand how users interact with our services and improve user experience{'\n'}
+            • <Text style={styles.bold}>Security:</Text> To detect, prevent, and address technical issues, fraud, and security threats{'\n'}
+            • <Text style={styles.bold}>Legal Compliance:</Text> To comply with legal obligations and enforce our terms of service
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>4. AI Processing and Media Analysis</Text>
+          <Text style={styles.paragraph}>
+            When you upload photos and videos for inspection analysis, we use artificial intelligence and machine 
+            learning technologies to:
+          </Text>
+          <Text style={styles.paragraph}>
+            • Analyze cleanliness and quality of properties{'\n'}
+            • Detect damage, missing items, and maintenance issues{'\n'}
+            • Generate inspection reports and scores{'\n'}
+            • Provide recommendations for improvements
+          </Text>
+          <Text style={styles.paragraph}>
+            Media files are processed securely and may be stored temporarily for analysis purposes. We do not use 
+            your media for training AI models without your explicit consent.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>5. Information Sharing and Disclosure</Text>
+          <Text style={styles.paragraph}>We do not sell your personal information. We may share your information in the following circumstances:</Text>
+          
+          <Text style={styles.subheading}>5.1 Service Providers</Text>
+          <Text style={styles.paragraph}>
+            We may share information with third-party service providers who perform services on our behalf, including:
+          </Text>
+          <Text style={styles.paragraph}>
+            • Cloud hosting and storage providers{'\n'}
+            • Payment processors{'\n'}
+            • Email service providers{'\n'}
+            • Analytics and monitoring services{'\n'}
+            • AI and machine learning service providers
+          </Text>
+
+          <Text style={styles.subheading}>5.2 Property Management Systems</Text>
+          <Text style={styles.paragraph}>
+            If you connect a PMS account, we may share relevant property and inspection data with the connected 
+            system as necessary to provide integration services.
+          </Text>
+
+          <Text style={styles.subheading}>5.3 Team Members</Text>
+          <Text style={styles.paragraph}>
+            Property owners may share inspection data and property information with team members (cleaners, 
+            managers) they invite to their account.
+          </Text>
+
+          <Text style={styles.subheading}>5.4 Legal Requirements</Text>
+          <Text style={styles.paragraph}>
+            We may disclose information if required by law, court order, or government regulation, or to protect 
+            our rights, property, or safety, or that of our users.
+          </Text>
+
+          <Text style={styles.subheading}>5.5 Business Transfers</Text>
+          <Text style={styles.paragraph}>
+            In the event of a merger, acquisition, or sale of assets, your information may be transferred as part 
+            of that transaction.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>6. Data Security</Text>
+          <Text style={styles.paragraph}>
+            We implement industry-standard security measures to protect your information, including:
+          </Text>
+          <Text style={styles.paragraph}>
+            • Encryption of data in transit using SSL/TLS{'\n'}
+            • Encryption of sensitive data at rest{'\n'}
+            • Secure authentication and authorization mechanisms{'\n'}
+            • Regular security assessments and updates{'\n'}
+            • Access controls and employee training
+          </Text>
+          <Text style={styles.paragraph}>
+            However, no method of transmission over the internet or electronic storage is 100% secure. While we 
+            strive to use commercially acceptable means to protect your information, we cannot guarantee absolute 
+            security.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>7. Data Retention</Text>
+          <Text style={styles.paragraph}>
+            We retain your information for as long as necessary to provide our services and fulfill the purposes 
+            outlined in this policy, unless a longer retention period is required by law. When you delete your 
+            account, we will delete or anonymize your personal information, except where we are required to retain 
+            it for legal, regulatory, or business purposes.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>8. Your Rights and Choices</Text>
+          <Text style={styles.paragraph}>Depending on your location, you may have the following rights regarding your personal information:</Text>
+          <Text style={styles.paragraph}>
+            • <Text style={styles.bold}>Access:</Text> Request access to your personal information{'\n'}
+            • <Text style={styles.bold}>Correction:</Text> Request correction of inaccurate or incomplete information{'\n'}
+            • <Text style={styles.bold}>Deletion:</Text> Request deletion of your personal information{'\n'}
+            • <Text style={styles.bold}>Portability:</Text> Request a copy of your data in a portable format{'\n'}
+            • <Text style={styles.bold}>Opt-Out:</Text> Opt out of certain data processing activities, such as marketing communications{'\n'}
+            • <Text style={styles.bold}>Withdraw Consent:</Text> Withdraw consent for data processing where consent is the legal basis
+          </Text>
+          <Text style={styles.paragraph}>
+            To exercise these rights, please contact us at the email address provided below. We will respond to 
+            your request within a reasonable timeframe.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>9. Children's Privacy</Text>
+          <Text style={styles.paragraph}>
+            Our services are not intended for individuals under the age of 18. We do not knowingly collect 
+            personal information from children. If you believe we have collected information from a child, please 
+            contact us immediately, and we will take steps to delete such information.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>10. International Data Transfers</Text>
+          <Text style={styles.paragraph}>
+            Your information may be transferred to and processed in countries other than your country of residence. 
+            These countries may have data protection laws that differ from those in your country. We take appropriate 
+            measures to ensure your information receives adequate protection in accordance with this Privacy Policy.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>11. Third-Party Links and Services</Text>
+          <Text style={styles.paragraph}>
+            Our services may contain links to third-party websites or integrate with third-party services. We are 
+            not responsible for the privacy practices of these third parties. We encourage you to review their 
+            privacy policies before providing any information.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>12. Changes to This Privacy Policy</Text>
+          <Text style={styles.paragraph}>
+            We may update this Privacy Policy from time to time. We will notify you of any material changes by 
+            posting the new Privacy Policy on this page and updating the "Last Updated" date. We encourage you 
+            to review this Privacy Policy periodically for any changes.
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>13. Contact Us</Text>
+          <Text style={styles.paragraph}>
+            If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, 
+            please contact us at:
+          </Text>
+          <Text style={styles.paragraph}>
+            <Text style={styles.bold}>Email:</Text> privacy@hostiq.app{'\n'}
+            <Text style={styles.bold}>Support:</Text> support@hostiq.app
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>14. California Privacy Rights</Text>
+          <Text style={styles.paragraph}>
+            If you are a California resident, you have additional rights under the California Consumer Privacy Act 
+            (CCPA), including:
+          </Text>
+          <Text style={styles.paragraph}>
+            • The right to know what personal information we collect, use, and disclose{'\n'}
+            • The right to delete personal information we have collected{'\n'}
+            • The right to opt-out of the sale of personal information (we do not sell personal information){'\n'}
+            • The right to non-discrimination for exercising your privacy rights
+          </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.heading}>15. GDPR Rights (European Users)</Text>
+          <Text style={styles.paragraph}>
+            If you are located in the European Economic Area (EEA), you have rights under the General Data Protection 
+            Regulation (GDPR), including:
+          </Text>
+          <Text style={styles.paragraph}>
+            • Right of access to your personal data{'\n'}
+            • Right to rectification of inaccurate data{'\n'}
+            • Right to erasure ("right to be forgotten"){'\n'}
+            • Right to restrict processing{'\n'}
+            • Right to data portability{'\n'}
+            • Right to object to processing{'\n'}
+            • Right to withdraw consent
+          </Text>
+          <Text style={styles.paragraph}>
+            To exercise these rights, please contact us using the information provided in Section 13.
           </Text>
         </View>
       </ScrollView>
@@ -474,27 +280,14 @@ export default function PrivacyPolicyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 2,
-    paddingBottom: 48,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 15,
-    color: '#6B7280',
-    fontWeight: '500',
+    padding: 20,
+    paddingBottom: 40,
   },
   header: {
     marginBottom: 32,
@@ -507,135 +300,37 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A1A1A',
     marginBottom: 12,
-    letterSpacing: -0.5,
-  },
-  titleUnderline: {
-    width: 60,
-    height: 4,
-    backgroundColor: '#4A90E2',
-    borderRadius: 2,
-    marginBottom: 16,
   },
   lastUpdated: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#6B7280',
     fontWeight: '500',
-    letterSpacing: 0.2,
   },
-  headingContainer: {
-    marginTop: 36,
-    marginBottom: 20,
+  section: {
+    marginBottom: 36,
   },
-  firstHeadingContainer: {
-    marginTop: 12,
-  },
-  headingWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headingAccent: {
-    width: 4,
-    height: 24,
-    backgroundColor: '#4A90E2',
-    borderRadius: 2,
-    marginRight: 12,
-  },
-  heading1: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    letterSpacing: -0.3,
-    flex: 1,
-  },
-  heading2: {
+  heading: {
     fontSize: 22,
     fontWeight: '700',
     color: '#1A1A1A',
-    letterSpacing: -0.2,
-    flex: 1,
+    marginBottom: 16,
+    marginTop: 24,
   },
-  heading3: {
-    fontSize: 19,
+  subheading: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#1A1A1A',
-    letterSpacing: -0.1,
-    flex: 1,
-  },
-  paragraphContainer: {
-    marginBottom: 18,
-    paddingLeft: 16,
+    marginTop: 20,
+    marginBottom: 12,
   },
   paragraph: {
     fontSize: 16,
-    lineHeight: 26,
+    lineHeight: 24,
     color: '#374151',
-    letterSpacing: 0.1,
+    marginBottom: 16,
   },
-  bulletContainer: {
-    marginBottom: 12,
-    flexDirection: 'row',
-    paddingLeft: 16,
-  },
-  bulletDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#4A90E2',
-    marginTop: 10,
-    marginRight: 12,
-  },
-  bulletContent: {
-    flex: 1,
-  },
-  bulletPoint: {
-    fontSize: 16,
-    lineHeight: 26,
-    color: '#374151',
-    letterSpacing: 0.1,
-  },
-  boldText: {
-    fontWeight: '700',
+  bold: {
+    fontWeight: '600',
     color: '#1A1A1A',
   },
-  footer: {
-    marginTop: 48,
-    paddingTop: 28,
-    paddingBottom: 8,
-    paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E8E9EB',
-    alignItems: 'center',
-  },
-  footerIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#4A90E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  footerIconText: {
-    fontSize: 20,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  footerText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#6B7280',
-    textAlign: 'center',
-    fontWeight: '500',
-    letterSpacing: 0.2,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#EF4444',
-    textAlign: 'center',
-    marginTop: 20,
-    fontWeight: '500',
-  },
 });
-
