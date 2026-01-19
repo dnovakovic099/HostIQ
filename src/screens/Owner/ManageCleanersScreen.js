@@ -194,13 +194,21 @@ export default function ManageCleanersScreen({ navigation }) {
   const handleRemoveCleaner = (cleaner) => {
     // Check if cleaner has active assignments
     const hasAssignments = (cleaner._count?.assignments || 0) > 0;
-    const warningMessage = hasAssignments 
-      ? `This cleaner has ${cleaner._count?.assignments} active assignment${cleaner._count?.assignments > 1 ? 's' : ''}. You must cancel all assignments before removing them.`
-      : `Are you sure you want to remove ${cleaner.name}?`;
+    
+    // If cleaner has active assignments, show info alert and prevent deletion
+    if (hasAssignments) {
+      Alert.alert(
+        'Cannot Remove Cleaner',
+        `This cleaner has ${cleaner._count?.assignments} active assignment${cleaner._count?.assignments > 1 ? 's' : ''}. You must cancel all assignments before removing them.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
+    // If no assignments, show confirmation dialog
     Alert.alert(
       'Remove Cleaner',
-      warningMessage,
+      `Are you sure you want to remove ${cleaner.name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
