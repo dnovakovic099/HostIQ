@@ -11,20 +11,23 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import colors from '../theme/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const TAB_BAR_HEIGHT = 60; // Reduced height
-const BALL_SIZE = 70; // Reduced ball size proportionally
+const TAB_BAR_HEIGHT = 49;                      // iOS standard tab bar
+const BALL_SIZE = 56;                           // More refined size
 const BALL_RADIUS = BALL_SIZE / 2;
 
+// IMPORTANT: For best App Store approval chances, use SimpleTabBar instead
+// This custom curved tab bar may raise review concerns
 const COLORS = {
-  background: '#7393B3', // Subtle blue - same for both background and ball
-  ballBackground: '#7393B3', // Same subtle blue
-  activeIcon: '#F6F1EA',
-  inactiveIcon: '#F6F1EA',
-  activeText: '#F6F1EA',
-  inactiveText: '#F6F1EA',
+  background: colors.tabBar.background,         // iOS standard
+  ballBackground: colors.primary.main,          // iOS blue
+  activeIcon: '#FFFFFF',
+  inactiveIcon: colors.tabBar.inactive,
+  activeText: '#FFFFFF',
+  inactiveText: colors.tabBar.inactive,
 };
 
 /* =======================
@@ -183,7 +186,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: TAB_BAR_HEIGHT + 34, // Extends below tab bar
-    backgroundColor: '#F8F9FB', // Gray background color used in most pages
+    backgroundColor: colors.background.primary, // Gray background color used in most pages
     zIndex: 0,
   },
   tabBar: {
@@ -194,8 +197,7 @@ const styles = StyleSheet.create({
   },
   ball: {
     position: 'absolute',
-    // Elevated position - moved up for better visibility
-    top: -BALL_RADIUS - 0, 
+    top: -BALL_RADIUS,
     width: BALL_SIZE,
     height: BALL_SIZE,
     borderRadius: BALL_RADIUS,
@@ -203,10 +205,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
+    elevation: 4,
+    shadowColor: colors.shadow.blue,           // Blue shadow for iOS blue ball
+    shadowOpacity: 0.15,                        // More subtle
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
   ballContent: {

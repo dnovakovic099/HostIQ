@@ -10,11 +10,13 @@ import {
   ScrollView,
   Platform,
   SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import subscriptionService from '../../services/subscriptionService';
+import colors from '../../theme/colors';
 
 const COLORS = {
   bg: '#F8FAFC',
@@ -237,7 +239,8 @@ export default function SubscriptionScreen({ navigation }) {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+          colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
@@ -290,7 +293,8 @@ export default function SubscriptionScreen({ navigation }) {
     return (
       <View style={styles.container}>
         <LinearGradient
-          colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+          colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
@@ -352,7 +356,8 @@ export default function SubscriptionScreen({ navigation }) {
     <View style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
@@ -465,8 +470,8 @@ const styles = StyleSheet.create({
   },
   // Header Gradient
   headerWrapper: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     overflow: 'hidden',
   },
   headerGradient: {

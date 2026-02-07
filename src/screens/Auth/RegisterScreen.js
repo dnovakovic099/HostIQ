@@ -208,13 +208,20 @@ export default function RegisterScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
 
-      {/* Dark Gradient Background */}
+      {/* Light Gradient Background */}
       <LinearGradient
-        colors={['#0A1628', '#0F1B2E', '#1A2332']}
+        colors={colors.gradients.headerLight}
         style={styles.gradientBackground}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       />
+
+      {/* Decorative Background Elements */}
+      <View style={styles.decorativeCircle1} />
+      <View style={styles.decorativeCircle2} />
+      <View style={styles.decorativeCircle3} />
 
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <KeyboardAvoidingView
@@ -227,26 +234,39 @@ export default function RegisterScreen({ navigation }) {
             showsVerticalScrollIndicator={false}
           >
             {/* Close Button */}
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => navigation.goBack()}
-            >
-              <Ionicons name="close" size={28} color="#CBD5E1" />
-            </TouchableOpacity>
+            {navigation.canGoBack() && (
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => navigation.goBack()}
+              >
+                <Ionicons name="close" size={28} color={colors.text.secondary} />
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.topSpacer} />
 
             {/* Logo */}
             <View style={styles.logoContainer}>
-              <Image
-                source={require('../../../assets/logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
+              <View style={styles.logoWrapper}>
+                <LinearGradient
+                  colors={colors.gradients.primary}
+                  style={styles.logoGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Image
+                    source={require('../../../assets/logo.png')}
+                    style={styles.logo}
+                    resizeMode="contain"
+                  />
+                </LinearGradient>
+              </View>
               <Text style={styles.title}>Create your account</Text>
               <Text style={styles.subtitle}>Join HostIQ to get started</Text>
             </View>
 
             {/* Role Selection */}
-            <View style={styles.googleRoleSection}>
+            <View style={styles.roleSection}>
               <Text style={styles.label}>I am a:</Text>
               <View style={styles.roleContainer}>
                 <TouchableOpacity
@@ -466,7 +486,7 @@ export default function RegisterScreen({ navigation }) {
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={['#3B82F6', '#2563EB']}
+                  colors={colors.gradients.primaryAlt}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={[
@@ -475,7 +495,7 @@ export default function RegisterScreen({ navigation }) {
                   ]}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color={colors.text.inverse} />
                   ) : (
                     <Text style={styles.createButtonText}>Sign up</Text>
                   )}
@@ -505,7 +525,14 @@ export default function RegisterScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Ionicons name="mail-outline" size={48} color="#3B82F6" />
+              <View style={styles.modalIconWrapper}>
+                <LinearGradient
+                  colors={colors.gradients.primary}
+                  style={styles.modalIconGradient}
+                >
+                  <Ionicons name="mail-outline" size={32} color={colors.text.inverse} />
+                </LinearGradient>
+              </View>
               <Text style={styles.modalTitle}>Verification sent to your account</Text>
               <Text style={styles.modalSubtitle}>
                 Enter code sent to{'\n'}
@@ -541,17 +568,22 @@ export default function RegisterScreen({ navigation }) {
 
               <TouchableOpacity
                 style={[
-                  styles.verifyButton,
+                  styles.verifyButtonWrapper,
                   verificationCode.join('').length !== 6 && styles.verifyButtonDisabled
                 ]}
                 onPress={handleVerifyCode}
                 disabled={loading || verificationCode.join('').length !== 6}
               >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.verifyButtonText}>Verify</Text>
-                )}
+                <LinearGradient
+                  colors={colors.gradients.primary}
+                  style={styles.verifyButton}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.verifyButtonText}>Verify</Text>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
             </View>
 
@@ -576,7 +608,7 @@ export default function RegisterScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A1628',
+    backgroundColor: colors.background.primary,
   },
   gradientBackground: {
     position: 'absolute',
@@ -584,6 +616,34 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     height: height,
+  },
+  // Decorative Elements
+  decorativeCircle1: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: 'rgba(10, 132, 255, 0.08)',
+    top: -100,
+    right: -100,
+  },
+  decorativeCircle2: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(90, 200, 250, 0.06)',
+    bottom: 100,
+    left: -50,
+  },
+  decorativeCircle3: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: 'rgba(10, 132, 255, 0.05)',
+    top: height / 2,
+    right: 30,
   },
   safeArea: {
     flex: 1,
@@ -593,39 +653,68 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     paddingBottom: 80,
   },
   closeButton: {
-    marginTop: 12,
-    marginBottom: 20,
-    alignSelf: 'flex-start',
+    position: 'absolute',
+    top: 12,
+    left: 24,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.background.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.shadow.soft,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  topSpacer: {
+    height: 80,
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 36,
+    marginBottom: 40,
   },
-  logo: {
+  logoWrapper: {
+    marginBottom: 24,
+  },
+  logoGradient: {
     width: 90,
     height: 90,
-    marginBottom: 20,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  logo: {
+    width: 60,
+    height: 60,
+    tintColor: colors.text.inverse,
   },
   title: {
     fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: '700',
+    color: colors.text.primary,
     marginBottom: 8,
     textAlign: 'center',
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#94A3B8',
+    color: colors.text.secondary,
     textAlign: 'center',
-    fontWeight: '400',
+    fontWeight: '500',
   },
-  googleRoleSection: {
+  roleSection: {
     width: '100%',
     marginBottom: 24,
   },
@@ -635,23 +724,27 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   input: {
-    height: 56,
+    height: 54,
     fontSize: 16,
-    color: '#FFFFFF',
-    backgroundColor: 'rgba(30, 41, 59, 0.6)',
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    marginBottom: 14,
+    color: colors.text.primary,
+    backgroundColor: colors.background.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
     borderWidth: 1.5,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
-    fontWeight: '400',
+    borderColor: colors.border.light,
+    fontWeight: '500',
+    shadowColor: colors.shadow.soft,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 12,
-    marginTop: 8,
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   roleContainer: {
     flexDirection: 'row',
@@ -660,16 +753,17 @@ const styles = StyleSheet.create({
   },
   roleButton: {
     flex: 1,
-    height: 56,
+    height: 54,
     borderWidth: 1.5,
-    borderColor: 'rgba(148, 163, 184, 0.3)',
-    borderRadius: 16,
+    borderColor: colors.border.light,
+    borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: 'rgba(30, 41, 59, 0.4)',
+    backgroundColor: colors.background.card,
   },
   roleButtonActive: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderColor: colors.primary.main,
+    borderWidth: 2,
+    backgroundColor: colors.accent.blueLight,
   },
   roleButtonGradient: {
     flex: 1,
@@ -687,27 +781,28 @@ const styles = StyleSheet.create({
   },
   roleButtonText: {
     fontSize: 15,
-    color: '#94A3B8',
+    color: colors.text.tertiary,
     fontWeight: '600',
   },
   roleButtonTextActive: {
-    color: '#3B82F6',
-    fontWeight: '700',
+    color: colors.primary.main,
+    fontWeight: '600',
   },
   buttonContainer: {
     width: '100%',
   },
   createButtonWrapper: {
     marginBottom: 16,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    borderRadius: 12,
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
   createButton: {
-    height: 56,
-    borderRadius: 16,
+    height: 54,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -715,101 +810,120 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   createButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    color: colors.text.inverse,
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.3,
   },
   loginLink: {
     alignItems: 'center',
     paddingVertical: 12,
   },
   loginLinkText: {
-    fontSize: 15,
-    color: '#94A3B8',
-    fontWeight: '400',
+    fontSize: 16,
+    color: colors.text.secondary,
+    fontWeight: '500',
   },
   loginLinkBold: {
-    color: '#60A5FA',
+    color: colors.primary.main,
     fontWeight: '600',
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+    marginVertical: 20,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(148, 163, 184, 0.3)',
+    backgroundColor: colors.border.light,
   },
   dividerText: {
     marginHorizontal: 16,
-    fontSize: 14,
-    color: '#94A3B8',
-    fontWeight: '500',
+    fontSize: 13,
+    color: colors.text.tertiary,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   appleButtonWrapper: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   googleButtonWrapper: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   googleButton: {
-    height: 56,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    height: 52,
+    backgroundColor: colors.background.card,
+    borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
+    borderColor: colors.border.light,
+    shadowColor: colors.shadow.soft,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   googleIcon: {
     marginRight: 12,
   },
   googleButtonText: {
-    color: '#1E293B',
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0.2,
+    letterSpacing: -0.2,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: colors.overlay.medium,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
+    backgroundColor: colors.background.card,
+    borderRadius: 24,
     padding: 24,
     width: '100%',
     maxWidth: 400,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
+    shadowColor: colors.shadow.strong,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
   },
   modalHeader: {
     alignItems: 'center',
     marginBottom: 24,
   },
+  modalIconWrapper: {
+    marginBottom: 16,
+  },
+  modalIconGradient: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginTop: 16,
+    color: colors.text.primary,
     marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: -0.3,
   },
   modalSubtitle: {
     fontSize: 15,
-    color: '#94A3B8',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
   },
   modalEmail: {
-    color: '#60A5FA',
+    color: colors.primary.main,
     fontWeight: '600',
   },
   modalBody: {
@@ -848,37 +962,43 @@ const styles = StyleSheet.create({
   codeContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 12,
+    gap: 10,
     marginBottom: 24,
   },
   codeInput: {
-    width: 50,
-    height: 60,
-    backgroundColor: 'rgba(30, 41, 59, 0.6)',
+    width: 48,
+    height: 56,
+    backgroundColor: colors.background.primary,
     borderWidth: 2,
-    borderColor: 'rgba(148, 163, 184, 0.3)',
+    borderColor: colors.border.light,
     borderRadius: 12,
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     textAlign: 'center',
   },
   codeInputFilled: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderColor: colors.primary.main,
+    backgroundColor: colors.accent.blueLight,
+  },
+  verifyButtonWrapper: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
   verifyButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
   },
   verifyButtonDisabled: {
     opacity: 0.5,
   },
   verifyButtonText: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -887,9 +1007,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resendButtonText: {
-    color: '#60A5FA',
+    color: colors.primary.main,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
 

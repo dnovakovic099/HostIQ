@@ -13,6 +13,7 @@ import {
   TextInput,
   SafeAreaView,
   Dimensions,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -684,11 +685,13 @@ export default function CaptureMediaScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Beautiful Gradient Header */}
       <LinearGradient
-        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0.8 }}
+        end={{ x: 1, y: 1 }}
         style={styles.headerWrapper}
       >
+        <StatusBar barStyle="light-content" />
         <SafeAreaView>
           <View style={styles.headerGradient}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -1135,8 +1138,8 @@ const styles = StyleSheet.create({
   },
   // Beautiful Gradient Header
   headerWrapper: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     overflow: 'hidden',
   },
   headerGradient: {

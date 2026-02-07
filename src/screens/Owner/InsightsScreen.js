@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { FEATURE_FLAGS } from '../../config/constants';
 
 // Import sub-screens as components
 import CleanersTabContent from './InsightsCleanersTab';
@@ -30,7 +31,7 @@ export default function InsightsScreen({ navigation }) {
     if (tabId === activeTab) return;
 
     const tabIndex = TABS.findIndex(t => t.id === tabId);
-    
+
     // Fade out, switch, fade in
     Animated.sequence([
       Animated.timing(fadeAnim, {
@@ -61,49 +62,55 @@ export default function InsightsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Modern Segmented Control */}
-      <View style={styles.tabBarContainer}>
-        <View style={styles.tabBar}>
-          <Animated.View 
-            style={[
-              styles.tabIndicator,
-              { left: indicatorLeft, width: tabWidth }
-            ]} 
-          />
-          {TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab.id}
-              style={styles.tab}
-              onPress={() => handleTabChange(tab.id)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={activeTab === tab.id ? tab.icon : `${tab.icon}-outline`}
-                size={18}
-                color={activeTab === tab.id ? '#FFFFFF' : '#6B7280'}
-                style={styles.tabIcon}
-              />
-              <Text
-                style={[
-                  styles.tabLabel,
-                  activeTab === tab.id && styles.tabLabelActive,
-                ]}
+      {FEATURE_FLAGS.ENABLE_INSIGHTS_PROPERTY_TAB && (
+        <View style={styles.tabBarContainer}>
+          <View style={styles.tabBar}>
+            <Animated.View
+              style={[
+                styles.tabIndicator,
+                { left: indicatorLeft, width: tabWidth }
+              ]}
+            />
+            {TABS.map((tab) => (
+              <TouchableOpacity
+                key={tab.id}
+                style={styles.tab}
+                onPress={() => handleTabChange(tab.id)}
+                activeOpacity={0.7}
               >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Ionicons
+                  name={activeTab === tab.id ? tab.icon : `${tab.icon}-outline`}
+                  size={18}
+                  color={activeTab === tab.id ? '#FFFFFF' : '#6B7280'}
+                  style={styles.tabIcon}
+                />
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    activeTab === tab.id && styles.tabLabelActive,
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </View>
+      )}
 
-      {/* Tab Content */}
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        {activeTab === 'cleaners' ? (
+      {FEATURE_FLAGS.ENABLE_INSIGHTS_PROPERTY_TAB ? (
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          {activeTab === 'cleaners' ? (
+            <CleanersTabContent navigation={navigation} />
+          ) : (
+            <PropertyTabContent navigation={navigation} />
+          )}
+        </Animated.View>
+      ) : (
+        <View style={styles.content}>
           <CleanersTabContent navigation={navigation} />
-        ) : (
-          <PropertyTabContent navigation={navigation} />
-        )}
-      </Animated.View>
+        </View>
+      )}
     </View>
   );
 }
@@ -169,4 +176,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

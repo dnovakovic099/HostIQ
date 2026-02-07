@@ -17,6 +17,12 @@ export const SUBSCRIPTION_CONFIG = {
 
 export const FEATURE_FLAGS = {
   ENABLE_AIRBNB_DISPUTE_REPORT: true,
-  ENABLE_PMS_INTEGRATION: true,
-  ENABLE_ONBOARDING_POPUP: true
+  ENABLE_PMS_INTEGRATION: false,        // DISABLED for App Store
+  ENABLE_ONBOARDING_POPUP: true,
+  // === TEMPORARILY DISABLED FOR APP STORE REVIEW ===
+  ENABLE_PAYMENTS: false,               // Stripe Connect payments
+  ENABLE_SUBSCRIPTIONS: false,          // IAP subscriptions
+  ENABLE_BILLING: false,                // Billing/plans screen
+  ENABLE_PRICING_TAB: false,            // Market analysis/pricing tab
+  ENABLE_INSIGHTS_PROPERTY_TAB: false,  // Property tab in Insights screen
 };

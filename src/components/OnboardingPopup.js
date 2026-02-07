@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import colors from '../theme/colors';
 
 const OnboardingPopup = ({
   visible,
@@ -21,10 +22,10 @@ const OnboardingPopup = ({
       <View style={styles.overlay}>
         <View style={styles.card}>
           <LinearGradient
-            colors={['#548EDD', '#4A7FD4']}
+            colors={[colors.gradients.header[0], colors.gradients.header[1]]}
             style={styles.header}
           >
-            <Ionicons name="hand-right" size={32} color="#FFF" />
+            <Ionicons name="hand-right" size={32} color={colors.text.inverse} />
             <Text style={styles.welcomeText}>Welcome to HostIQ!</Text>
           </LinearGradient>
 
@@ -34,20 +35,20 @@ const OnboardingPopup = ({
             {!hasProperties && (
               <TouchableOpacity style={styles.actionItem} onPress={onAddProperty}>
                 <View style={styles.checkContainer}>
-                  <Ionicons name="square-outline" size={24} color="#548EDD" />
+                  <Ionicons name="square-outline" size={24} color={colors.gradients.header[0]} />
                 </View>
                 <Text style={styles.actionText}>Add your first property</Text>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                <Ionicons name="chevron-forward" size={20} color={colors.ios.gray} />
               </TouchableOpacity>
             )}
 
             {!hasCleaners && (
               <TouchableOpacity style={styles.actionItem} onPress={onAddCleaner}>
                 <View style={styles.checkContainer}>
-                  <Ionicons name="square-outline" size={24} color="#548EDD" />
+                  <Ionicons name="square-outline" size={24} color={colors.gradients.header[0]} />
                 </View>
                 <Text style={styles.actionText}>Invite your cleaning team</Text>
-                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
+                <Ionicons name="chevron-forward" size={20} color={colors.ios.gray} />
               </TouchableOpacity>
             )}
 
@@ -64,14 +65,14 @@ const OnboardingPopup = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(84, 142, 221, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.50)',     // Standard modal overlay
     justifyContent: 'center',
     alignItems: 'center',
   },
   card: {
     width: '85%',
-    backgroundColor: '#FFF',
-    borderRadius: 20,
+    backgroundColor: colors.background.card,
+    borderRadius: 14,                           // iOS modal radius
     overflow: 'hidden',
   },
   header: {
@@ -79,17 +80,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: 28,                               // iOS title 1
     fontWeight: '700',
-    color: '#FFF',
+    color: colors.text.inverse,
     marginTop: 12,
+    letterSpacing: -0.6,                        // Apple-style tight
   },
   content: {
     padding: 24,
   },
   subtitle: {
     fontSize: 16,
-    color: '#3C3C43',
+    color: colors.text.secondary,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -97,7 +99,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: colors.background.primary,
     borderRadius: 12,
     marginBottom: 12,
   },
@@ -108,7 +110,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: colors.text.primary,
   },
   skipButton: {
     marginTop: 16,
@@ -117,7 +119,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 15,
-    color: '#8E8E93',
+    color: colors.ios.gray,
     fontWeight: '500',
   },
 });

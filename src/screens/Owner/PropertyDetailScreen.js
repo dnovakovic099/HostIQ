@@ -18,6 +18,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 import { getRoomSuggestionByType, ROOM_SUGGESTIONS } from '../../config/roomSuggestions';
+import colors from '../../theme/colors';
 
 const COLORS = {
   // Match PropertiesScreen palette
@@ -56,6 +57,13 @@ export default function PropertyDetailScreen({ route, navigation }) {
   const [addingRoom, setAddingRoom] = useState(false);
   const [selectedUnitForRoom, setSelectedUnitForRoom] = useState(null);
 
+  // Cleaner assignment state
+  const [showCleanerPicker, setShowCleanerPicker] = useState(false);
+  const [cleaners, setCleaners] = useState([]);
+  const [loadingCleaners, setLoadingCleaners] = useState(false);
+  const [assigningCleaner, setAssigningCleaner] = useState(false);
+  const [activeAssignments, setActiveAssignments] = useState([]);
+
   useEffect(() => {
     if (isPMS) {
       fetchPMSProperty();
@@ -78,10 +86,44 @@ export default function PropertyDetailScreen({ route, navigation }) {
     try {
       const response = await api.get(`/owner/properties/${propertyId}/units`);
       setUnits(response.data);
+      // Fetch assignments for this property
+      await fetchAssignmentsForUnits();
     } catch (error) {
       Alert.alert('Error', 'Failed to load units');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAssignmentsForUnits = async () => {
+    try {
+      // Use the /owner/assignments endpoint with property_id filter
+      // Fetch both PENDING and IN_PROGRESS assignments for this property
+      const [pendingResponse, inProgressResponse] = await Promise.all([
+        api.get('/owner/assignments', { params: { property_id: propertyId, status: 'PENDING' } }),
+        api.get('/owner/assignments', { params: { property_id: propertyId, status: 'IN_PROGRESS' } }),
+      ]);
+
+      const allFetched = [...(pendingResponse.data || []), ...(inProgressResponse.data || [])];
+
+      // Deduplicate by cleaner (show each cleaner only once)
+      const seenCleaners = new Set();
+      const uniqueAssignments = allFetched.filter(assignment => {
+        if (seenCleaners.has(assignment.cleaner_id)) {
+          return false;
+        }
+        seenCleaners.add(assignment.cleaner_id);
+        return true;
+      }).map(assignment => ({
+        ...assignment,
+        cleanerId: assignment.cleaner_id,
+        cleanerName: assignment.cleaner?.name || 'Unknown',
+        cleanerEmail: assignment.cleaner?.email || '',
+      }));
+
+      setActiveAssignments(uniqueAssignments);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
     }
   };
 
@@ -383,7 +425,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
     const newValue = !property?.five_star_mode;
     Alert.alert(
       newValue ? 'Enable 5-Star Mode?' : 'Disable 5-Star Mode?',
-      newValue 
+      newValue
         ? 'Ultra-strict luxury inspection standards with 150+ checklist items.'
         : 'Return to standard inspection grading.',
       [
@@ -406,6 +448,54 @@ export default function PropertyDetailScreen({ route, navigation }) {
     );
   };
 
+  const openCleanerPicker = async () => {
+    setShowCleanerPicker(true);
+    setLoadingCleaners(true);
+    try {
+      const response = await api.get('/owner/cleaners');
+      setCleaners(response.data || []);
+    } catch (error) {
+      console.error('Error fetching cleaners:', error);
+      Alert.alert('Error', 'Failed to load cleaners');
+    } finally {
+      setLoadingCleaners(false);
+    }
+  };
+
+  const assignCleanerToProperty = async (cleaner) => {
+    if (units.length === 0) {
+      Alert.alert('No Units', 'This property has no units to assign.');
+      return;
+    }
+
+    setAssigningCleaner(true);
+    try {
+      // Assign all units of this property to the selected cleaner
+      const unitIds = units.map(u => u.id);
+      await api.post('/owner/assignments/bulk', {
+        cleaner_id: cleaner.id,
+        unit_ids: unitIds,
+        due_at: new Date().toISOString(),
+      });
+
+      setShowCleanerPicker(false);
+
+      // Refresh units and assignments to show the new assignment
+      await fetchUnits();
+
+      Alert.alert(
+        'Success',
+        `${cleaner.name} has been assigned to ${property?.name}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Assignment error:', error);
+      Alert.alert('Error', error.response?.data?.error || 'Failed to assign cleaner');
+    } finally {
+      setAssigningCleaner(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingView}>
@@ -421,7 +511,8 @@ export default function PropertyDetailScreen({ route, navigation }) {
     <View style={styles.container}>
       {/* Header Gradient - match PropertiesScreen */}
       <LinearGradient
-        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
@@ -429,6 +520,13 @@ export default function PropertyDetailScreen({ route, navigation }) {
         {Platform.OS === 'ios' ? (
           <SafeAreaView>
             <View style={styles.headerGradient}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+              </TouchableOpacity>
               <View style={styles.headerIconWrapper}>
                 <View style={styles.headerIconInner}>
                   <Ionicons name="home" size={28} color="#FFFFFF" />
@@ -446,6 +544,13 @@ export default function PropertyDetailScreen({ route, navigation }) {
           </SafeAreaView>
         ) : (
           <View style={styles.headerGradient}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
                 <Ionicons name="home" size={28} color="#FFFFFF" />
@@ -794,30 +899,95 @@ export default function PropertyDetailScreen({ route, navigation }) {
           )}
         </View>
 
+        {/* Assigned Cleaners */}
+        {!isPMS && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeader}>ASSIGNED CLEANERS</Text>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={openCleanerPicker}
+              >
+                <Ionicons name="add" size={14} color={COLORS.primary} />
+                <Text style={styles.addButtonText}>Assign</Text>
+              </TouchableOpacity>
+            </View>
+
+            {activeAssignments.length === 0 ? (
+              <View style={styles.card}>
+                <View style={styles.emptyInlineCard}>
+                  <Ionicons name="person-outline" size={24} color={COLORS.textTertiary} />
+                  <Text style={styles.emptyInlineText}>No cleaners assigned</Text>
+                  <TouchableOpacity
+                    style={styles.emptyInlineButton}
+                    onPress={openCleanerPicker}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.emptyInlineButtonText}>Assign</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.card}>
+                {activeAssignments.map((assignment, index) => (
+                  <View key={assignment.id || index}>
+                    {index > 0 && <View style={styles.divider} />}
+                    <View style={styles.cleanerRow}>
+                      <LinearGradient
+                        colors={['#548EDD', '#4A7FD4']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.cleanerRowAvatar}
+                      >
+                        <Text style={styles.cleanerRowAvatarText}>
+                          {assignment.cleanerName?.charAt(0)?.toUpperCase() || 'C'}
+                        </Text>
+                      </LinearGradient>
+                      <View style={styles.cleanerRowContent}>
+                        <Text style={styles.cleanerRowName}>{assignment.cleanerName}</Text>
+                        <Text style={styles.cleanerRowEmail}>{assignment.cleanerEmail}</Text>
+                      </View>
+                      <View style={[
+                        styles.statusBadge,
+                        assignment.status === 'IN_PROGRESS' ? styles.statusInProgress : styles.statusPending
+                      ]}>
+                        <View style={[
+                          styles.statusDot,
+                          assignment.status === 'IN_PROGRESS' ? styles.statusDotInProgress : styles.statusDotPending
+                        ]} />
+                        <Text style={[
+                          styles.statusText,
+                          assignment.status === 'IN_PROGRESS' ? styles.statusTextInProgress : styles.statusTextPending
+                        ]}>
+                          {assignment.status === 'IN_PROGRESS' ? 'In Progress' : 'Pending'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Recent Inspections */}
         {!isPMS && (
           <View style={styles.section}>
             <Text style={styles.sectionHeader}>RECENT INSPECTIONS</Text>
-            
+
             {!units.some(u => u.inspections?.[0]) ? (
-              <View style={styles.emptyCard}>
-                <LinearGradient
-                  colors={['#DBEAFE', '#BFDBFE']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.emptyIcon}
-                >
-                  <Ionicons name="clipboard-outline" size={48} color={COLORS.primary} />
-                </LinearGradient>
-                <Text style={styles.emptyTitle}>No Inspections</Text>
-                <Text style={styles.emptyText}>Assign cleaners to start inspecting</Text>
+              <View style={styles.card}>
+                <View style={styles.emptyInlineCard}>
+                  <Ionicons name="clipboard-outline" size={24} color={COLORS.textTertiary} />
+                  <Text style={styles.emptyInlineText}>No inspections yet</Text>
+                </View>
               </View>
             ) : (
               <View style={styles.card}>
                 {units.filter(u => u.inspections?.[0]).map((unit, index) => (
                   <View key={unit.id}>
                     {index > 0 && <View style={styles.divider} />}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.inspectionRow}
                       onPress={() => navigation.navigate('InspectionDetail', { inspectionId: unit.inspections[0].id })}
                       activeOpacity={0.7}
@@ -841,7 +1011,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
                       >
                         <Ionicons name="star" size={14} color={getScoreColor(unit.inspections[0].cleanliness_score)} />
                         <Text style={[
-                          styles.scoreBadgeText, 
+                          styles.scoreBadgeText,
                           { color: getScoreColor(unit.inspections[0].cleanliness_score) }
                         ]}>
                           {unit.inspections[0].cleanliness_score?.toFixed(1) || '—'}
@@ -1148,6 +1318,75 @@ export default function PropertyDetailScreen({ route, navigation }) {
         </View>
       </Modal>
 
+      {/* Cleaner Picker Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showCleanerPicker}
+        onRequestClose={() => setShowCleanerPicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Assign Cleaner</Text>
+              <TouchableOpacity onPress={() => setShowCleanerPicker(false)}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.cleanerList}>
+              {loadingCleaners ? (
+                <View style={styles.cleanerLoading}>
+                  <ActivityIndicator size="large" color={COLORS.primary} />
+                  <Text style={styles.cleanerLoadingText}>Loading cleaners...</Text>
+                </View>
+              ) : cleaners.length === 0 ? (
+                <View style={styles.cleanerEmpty}>
+                  <Ionicons name="people-outline" size={48} color={COLORS.textTertiary} />
+                  <Text style={styles.cleanerEmptyTitle}>No Cleaners</Text>
+                  <Text style={styles.cleanerEmptyText}>
+                    Add cleaners first to assign them to properties
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.cleanerEmptyButton}
+                    onPress={() => {
+                      setShowCleanerPicker(false);
+                      navigation.navigate('Inspections', { screen: 'ManageCleaners' });
+                    }}
+                  >
+                    <Text style={styles.cleanerEmptyButtonText}>Add Cleaners</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                cleaners.map((cleaner) => (
+                  <TouchableOpacity
+                    key={cleaner.id}
+                    style={styles.cleanerOption}
+                    onPress={() => assignCleanerToProperty(cleaner)}
+                    disabled={assigningCleaner}
+                  >
+                    <View style={styles.cleanerAvatar}>
+                      <Text style={styles.cleanerAvatarText}>
+                        {cleaner.name?.charAt(0)?.toUpperCase() || 'C'}
+                      </Text>
+                    </View>
+                    <View style={styles.cleanerInfo}>
+                      <Text style={styles.cleanerName}>{cleaner.name}</Text>
+                      <Text style={styles.cleanerEmail}>{cleaner.email}</Text>
+                    </View>
+                    {assigningCleaner ? (
+                      <ActivityIndicator size="small" color={COLORS.primary} />
+                    ) : (
+                      <Ionicons name="chevron-forward" size={24} color="#ccc" />
+                    )}
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -1159,16 +1398,20 @@ const styles = StyleSheet.create({
   },
   // Header Gradient (match PropertiesScreen)
   headerWrapper: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     overflow: 'hidden',
   },
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 16,
     paddingBottom: 18,
+  },
+  backButton: {
+    marginRight: 4,
+    padding: 4,
   },
   headerIconWrapper: {
     marginRight: 14,
@@ -2028,6 +2271,175 @@ const styles = StyleSheet.create({
   required: {
     color: 'red',
     marginHorizontal: 4,
+  },
+  // Cleaner Picker styles
+  cleanerList: {
+    paddingTop: 8,
+    paddingBottom: 40,
+  },
+  cleanerLoading: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  cleanerLoadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: COLORS.textSecondary,
+  },
+  cleanerEmpty: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  cleanerEmptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  cleanerEmptyText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  cleanerEmptyButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  cleanerEmptyButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  cleanerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+  },
+  cleanerAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  cleanerAvatarText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  cleanerInfo: {
+    flex: 1,
+  },
+  cleanerName: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  cleanerEmail: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+  },
+  // Empty inline card (compact empty state)
+  emptyInlineCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  emptyInlineText: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.textTertiary,
+  },
+  emptyInlineButton: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  emptyInlineButtonText: {
+    color: COLORS.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  // Cleaner row (assigned cleaners list)
+  cleanerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    paddingRight: 16,
+  },
+  cleanerRowAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cleanerRowAvatarText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  cleanerRowContent: {
+    flex: 1,
+  },
+  cleanerRowName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  cleanerRowEmail: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+  },
+  // Status badge
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    gap: 6,
+  },
+  statusPending: {
+    backgroundColor: '#FEF3C7',
+  },
+  statusInProgress: {
+    backgroundColor: '#DBEAFE',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusDotPending: {
+    backgroundColor: '#F59E0B',
+  },
+  statusDotInProgress: {
+    backgroundColor: '#3B82F6',
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  statusTextPending: {
+    color: '#B45309',
+  },
+  statusTextInProgress: {
+    color: '#1D4ED8',
   },
 });
 

@@ -27,7 +27,7 @@ import biometricAuth from '../../services/biometricAuth';
 import colors from '../../theme/colors';
 import { API_URL } from '../../config/api';
 
-const { height } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
 
 // Debug: Log API URL on module load
 console.log('🔍 LoginScreen - API_URL:', API_URL);
@@ -45,12 +45,16 @@ export default function LoginScreen({ navigation }) {
   const codeInputRefs = useRef([]);
   const { login, biometricLogin, signInWithGoogle, signInWithApple, biometricEnabled, resendVerificationEmail, verifyCode } = useAuthStore();
   const autoLoginAttempted = useRef(false);
-  
+
+  // Animated values for delightful entrance
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
   // Check if Google Sign-In is configured
   const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-  const isGoogleSignInConfigured = googleClientId && 
+  const isGoogleSignInConfigured = googleClientId &&
     googleClientId !== 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
-  
+
   // Debug logging
   useEffect(() => {
     console.log('🔍 LoginScreen - Google Sign-In Configuration Check:');
@@ -61,6 +65,21 @@ export default function LoginScreen({ navigation }) {
   useEffect(() => {
     loadSavedCredentials();
     checkBiometric();
+
+    // Entrance animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 20,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   const loadSavedCredentials = async () => {
@@ -125,7 +144,7 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     const result = await resendVerificationEmail(email);
     setLoading(false);
-    
+
     if (result.success) {
       Alert.alert('Success', 'Verification code sent! Please check your email.');
       // Clear code inputs
@@ -138,7 +157,7 @@ export default function LoginScreen({ navigation }) {
   const handleCodeChange = (index, value) => {
     // Only allow digits
     if (value && !/^\d$/.test(value)) return;
-    
+
     const newCode = [...verificationCode];
     newCode[index] = value;
     setVerificationCode(newCode);
@@ -221,8 +240,28 @@ export default function LoginScreen({ navigation }) {
       const result = await signInWithApple();
       setLoading(false);
 
-      if (!result.success && result.error !== 'Sign in was cancelled') {
-        Alert.alert('Sign in with Apple Failed', result.error || 'Please try again');
+      if (!result.success) {
+        // Don't show alert if user cancelled
+        if (result.error === 'Sign in was cancelled') {
+          return;
+        }
+
+        // Handle account doesn't exist case - user needs to register first
+        if (result.error === 'requiresRoleSelection' ||
+            result.error?.toLowerCase().includes('role selection') ||
+            result.error?.toLowerCase().includes('role is required') ||
+            result.error?.toLowerCase().includes('role required')) {
+          Alert.alert(
+            'Account Not Found',
+            'No account exists with this Apple ID. Please sign up first to create an account.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Sign Up', onPress: () => navigation.navigate('Register') }
+            ]
+          );
+        } else {
+          Alert.alert('Sign in with Apple Failed', result.error || 'Please try again');
+        }
       }
     } catch (error) {
       setLoading(false);
@@ -238,77 +277,110 @@ export default function LoginScreen({ navigation }) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* Dark Gradient Background */}
+      {/* Gradient Header */}
       <LinearGradient
-        colors={['#0A1628', '#0F1B2E', '#1A2332']}
-        style={styles.gradientBackground}
-      />
-
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
-          keyboardVerticalOffset={0}
-        >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={styles.content}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              showsVerticalScrollIndicator={false}
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
+        style={styles.headerGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <SafeAreaView edges={['top']}>
+          {/* Close Button */}
+          {navigation.canGoBack() && (
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => navigation.goBack()}
             >
-            {/* Close Button */}
-            {navigation.canGoBack() && (
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => navigation.goBack()}
-              >
-                <Ionicons name="close" size={28} color="#CBD5E1" />
-              </TouchableOpacity>
-            )}
+              <Ionicons name="close" size={24} color={colors.text.inverse} />
+            </TouchableOpacity>
+          )}
 
-            <View style={styles.topSpacer} />
-
-            {/* Logo */}
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../../../assets/logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
-              <Text style={styles.title}>Welcome back</Text>
-              <Text style={styles.subtitle}>Sign in to continue</Text>
-              
-              {/* Demo Credentials */}
-              <View style={styles.demoBox}>
-                <Text style={styles.demoTitle}>Demo Accounts:</Text>
-                <Text style={styles.demoText}>Owner: owner@hostiq.com / password123</Text>
-                <Text style={styles.demoText}>Cleaner: cleaner@hostiq.com / password123</Text>
+          {/* Logo & Title */}
+          <Animated.View
+            style={[
+              styles.headerContent,
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+            ]}
+          >
+            <View style={styles.logoWrapper}>
+              <View style={styles.logoBackground}>
+                <Image
+                  source={require('../../../assets/logo.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </View>
             </View>
+            <Text style={styles.title}>Welcome back</Text>
+            <Text style={styles.subtitle}>Sign in to continue to HostIQ</Text>
+          </Animated.View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      {/* White Form Area */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.formArea}
+        keyboardVerticalOffset={0}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Demo Credentials */}
+            <Animated.View
+              style={[
+                styles.demoBox,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+              ]}
+            >
+              <View style={styles.demoBadge}>
+                <Ionicons name="information-circle" size={14} color={colors.primary.main} />
+                <Text style={styles.demoTitle}>Demo Accounts</Text>
+              </View>
+              <Text style={styles.demoText}>Owner: owner@hostiq.com / password123</Text>
+              <Text style={styles.demoText}>Cleaner: cleaner@hostiq.com / password123</Text>
+            </Animated.View>
 
             {/* Form */}
-            <View style={styles.form}>
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor="#64748B"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoCorrect={false}
-                returnKeyType="next"
-                editable={!loading}
-                selectTextOnFocus={true}
-              />
+            <Animated.View
+              style={[
+                styles.form,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }
+              ]}
+            >
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputIconWrapper}>
+                  <Ionicons name="mail-outline" size={20} color={colors.text.tertiary} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={colors.text.tertiary}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                  editable={!loading}
+                  selectTextOnFocus={true}
+                />
+              </View>
 
-              <View style={styles.passwordContainer}>
+              <View style={styles.inputWrapper}>
+                <View style={styles.inputIconWrapper}>
+                  <Ionicons name="lock-closed-outline" size={20} color={colors.text.tertiary} />
+                </View>
                 <TextInput
                   style={styles.input}
                   placeholder="Password"
-                  placeholderTextColor="#64748B"
+                  placeholderTextColor={colors.text.tertiary}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!passwordVisible}
@@ -325,19 +397,22 @@ export default function LoginScreen({ navigation }) {
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <Ionicons
-                      name={biometricType === 'Face ID' ? 'scan-outline' : 'finger-print-outline'}
+                      name={biometricType === 'Face ID' ? 'scan' : 'finger-print'}
                       size={22}
-                      color="#94A3B8"
+                      color={colors.primary.main}
                     />
                   </TouchableOpacity>
                 )}
               </View>
-            </View>
-
-            <View style={styles.bottomSpacer} />
+            </Animated.View>
 
             {/* Bottom Section */}
-            <View style={styles.bottomSection}>
+            <Animated.View
+              style={[
+                styles.bottomSection,
+                { opacity: fadeAnim }
+              ]}
+            >
               <TouchableOpacity
                 style={styles.loginButtonWrapper}
                 onPress={handleLogin}
@@ -345,7 +420,7 @@ export default function LoginScreen({ navigation }) {
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={['#3B82F6', '#2563EB']}
+                  colors={colors.gradients.primary}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={[
@@ -354,7 +429,7 @@ export default function LoginScreen({ navigation }) {
                   ]}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#FFF" />
+                    <ActivityIndicator color={colors.text.inverse} />
                   ) : (
                     <Text style={styles.loginButtonText}>Log in</Text>
                   )}
@@ -370,31 +445,31 @@ export default function LoginScreen({ navigation }) {
 
               {/* Social Sign-In Buttons */}
               {Platform.OS === 'ios' ? (
-                <View style={styles.googleButtonWrapper}>
+                <View style={styles.socialButtonWrapper}>
                   <AppleAuthentication.AppleAuthenticationButton
                     buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
                     buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                    cornerRadius={16}
-                    style={{ width: '100%', height: 56 }}
+                    cornerRadius={12}
+                    style={{ width: '100%', height: 52 }}
                     onPress={handleAppleSignIn}
                   />
                 </View>
               ) : (
               <TouchableOpacity
-                style={styles.googleButtonWrapper}
+                style={styles.socialButtonWrapper}
                 onPress={handleGoogleSignIn}
                 disabled={loading}
                 activeOpacity={0.85}
               >
                 <View style={styles.googleButton}>
                   {loading ? (
-                    <ActivityIndicator color="#4285F4" />
+                    <ActivityIndicator color={colors.special.googleBlue} />
                   ) : (
                     <>
                         <Ionicons
                           name="logo-google"
                           size={20}
-                          color="#4285F4"
+                          color={colors.special.googleBlue}
                           style={styles.googleIcon}
                         />
                       <Text style={styles.googleButtonText}>Sign in with Google</Text>
@@ -411,14 +486,15 @@ export default function LoginScreen({ navigation }) {
                 activeOpacity={0.85}
               >
                 <View style={styles.signupButton}>
-                  <Text style={styles.signupButtonText}>Sign up</Text>
+                  <Text style={styles.signupButtonText}>
+                    Don't have an account? <Text style={styles.signupButtonBold}>Sign up</Text>
+                  </Text>
                 </View>
               </TouchableOpacity>
-            </View>
-            </ScrollView>
-          </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+            </Animated.View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
       {/* Verification Modal */}
       <Modal
@@ -430,7 +506,14 @@ export default function LoginScreen({ navigation }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Ionicons name="mail-outline" size={48} color="#3B82F6" />
+              <View style={styles.modalIconWrapper}>
+                <LinearGradient
+                  colors={colors.gradients.primary}
+                  style={styles.modalIconGradient}
+                >
+                  <Ionicons name="mail-outline" size={32} color={colors.text.inverse} />
+                </LinearGradient>
+              </View>
               <Text style={styles.modalTitle}>Verification sent to your account</Text>
               <Text style={styles.modalSubtitle}>
                 Enter code sent to{'\n'}
@@ -466,17 +549,22 @@ export default function LoginScreen({ navigation }) {
 
               <TouchableOpacity
                 style={[
-                  styles.verifyButton,
+                  styles.verifyButtonWrapper,
                   verificationCode.join('').length !== 6 && styles.verifyButtonDisabled
                 ]}
                 onPress={handleVerifyCode}
                 disabled={loading || verificationCode.join('').length !== 6}
               >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.verifyButtonText}>Verify</Text>
-                )}
+                <LinearGradient
+                  colors={colors.gradients.primary}
+                  style={styles.verifyButton}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.verifyButtonText}>Verify</Text>
+                  )}
+                </LinearGradient>
               </TouchableOpacity>
             </View>
 
@@ -501,105 +589,122 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A1628',
+    backgroundColor: colors.background.primary,
   },
-  gradientBackground: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: height,
+  // Header Gradient
+  headerGradient: {
+    paddingBottom: 32,
   },
-  safeArea: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: 32,
+  headerContent: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 20,
   },
   closeButton: {
     position: 'absolute',
-    top: 12,
-    left: 32,
+    top: 8,
+    left: 16,
     zIndex: 10,
-  },
-  topSpacer: {
-    flex: 0.5,
-  },
-  logoContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 32,
+  },
+  logoWrapper: {
+    marginBottom: 16,
+  },
+  logoBackground: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 24,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
+    width: 50,
+    height: 50,
+    tintColor: colors.text.inverse,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text.inverse,
+    marginBottom: 6,
     textAlign: 'center',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#94A3B8',
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    fontWeight: '400',
-    marginBottom: 20,
+    fontWeight: '500',
+  },
+  // Form Area
+  formArea: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
   form: {
     width: '100%',
   },
-  input: {
-    height: 56,
-    fontSize: 16,
-    color: '#FFFFFF',
-    backgroundColor: 'rgba(30, 41, 59, 0.8)',
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    marginBottom: 14,
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 54,
+    backgroundColor: colors.background.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 12,
     borderWidth: 1.5,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
-    fontWeight: '400',
+    borderColor: colors.border.light,
+    shadowColor: colors.shadow.soft,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  passwordContainer: {
-    position: 'relative',
+  inputIconWrapper: {
+    marginRight: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text.primary,
+    fontWeight: '500',
   },
   biometricIcon: {
-    position: 'absolute',
-    right: 16,
-    top: 16,
+    marginLeft: 12,
+    padding: 4,
   },
   bottomSpacer: {
-    height: 40,
+    height: 32,
   },
   bottomSection: {
     width: '100%',
   },
   loginButtonWrapper: {
-    marginBottom: 14,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    marginBottom: 16,
+    borderRadius: 12,
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
   loginButton: {
-    height: 56,
-    borderRadius: 16,
+    height: 54,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -607,28 +712,32 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   loginButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    color: colors.text.inverse,
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.3,
   },
   signupButtonWrapper: {
     marginBottom: 20,
+    marginTop: 8,
   },
   signupButton: {
-    height: 56,
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(59, 130, 246, 0.4)',
+    height: 54,
+    backgroundColor: colors.background.card,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.border.light,
     justifyContent: 'center',
     alignItems: 'center',
   },
   signupButtonText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    color: colors.text.secondary,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  signupButtonBold: {
+    color: colors.primary.main,
+    fontWeight: '600',
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -638,84 +747,112 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(148, 163, 184, 0.3)',
+    backgroundColor: colors.border.light,
   },
   dividerText: {
     marginHorizontal: 16,
-    fontSize: 14,
-    color: '#94A3B8',
-    fontWeight: '500',
+    fontSize: 13,
+    color: colors.text.tertiary,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
-  googleButtonWrapper: {
-    marginBottom: 14,
+  socialButtonWrapper: {
+    marginBottom: 12,
   },
   googleButton: {
-    height: 56,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    height: 52,
+    backgroundColor: colors.background.card,
+    borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(148, 163, 184, 0.2)',
+    borderColor: colors.border.light,
+    shadowColor: colors.shadow.soft,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
   },
   googleIcon: {
     marginRight: 12,
   },
   googleButtonText: {
-    color: '#1E293B',
+    color: colors.text.primary,
     fontSize: 16,
     fontWeight: '600',
-    letterSpacing: 0.2,
+    letterSpacing: -0.2,
   },
   demoBox: {
+    backgroundColor: colors.accent.blueLight,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.primary.lighter,
+  },
+  demoBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 16,
-    marginTop: 8,
+    marginBottom: 6,
+    gap: 6,
   },
   demoTitle: {
     fontSize: 13,
-    color: '#CBD5E1',
+    color: colors.primary.main,
     fontWeight: '600',
-    marginBottom: 6,
   },
   demoText: {
-    fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '400',
+    fontSize: 11,
+    color: colors.text.secondary,
+    fontWeight: '500',
     marginBottom: 2,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: colors.overlay.medium,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
+    backgroundColor: colors.background.card,
+    borderRadius: 24,
     padding: 24,
     width: '100%',
     maxWidth: 400,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.3)',
+    shadowColor: colors.shadow.strong,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 8,
   },
   modalHeader: {
     alignItems: 'center',
     marginBottom: 24,
   },
+  modalIconWrapper: {
+    marginBottom: 16,
+  },
+  modalIconGradient: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginTop: 16,
+    color: colors.text.primary,
     marginBottom: 8,
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   modalSubtitle: {
     fontSize: 15,
-    color: '#94A3B8',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -724,72 +861,57 @@ const styles = StyleSheet.create({
   },
   modalText: {
     fontSize: 14,
-    color: '#CBD5E1',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
   },
   modalEmail: {
-    color: '#60A5FA',
+    color: colors.primary.main,
     fontWeight: '600',
   },
   modalActions: {
     gap: 12,
   },
-  modalButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  modalButtonSecondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: 'rgba(148, 163, 184, 0.3)',
-  },
-  modalButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalButtonTextSecondary: {
-    color: '#94A3B8',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   codeContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 12,
+    gap: 10,
     marginBottom: 24,
   },
   codeInput: {
-    width: 50,
-    height: 60,
-    backgroundColor: 'rgba(30, 41, 59, 0.6)',
+    width: 48,
+    height: 56,
+    backgroundColor: colors.background.primary,
     borderWidth: 2,
-    borderColor: 'rgba(148, 163, 184, 0.3)',
+    borderColor: colors.border.light,
     borderRadius: 12,
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.text.primary,
     textAlign: 'center',
   },
   codeInputFilled: {
-    borderColor: '#3B82F6',
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    borderColor: colors.primary.main,
+    backgroundColor: colors.accent.blueLight,
+  },
+  verifyButtonWrapper: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
   verifyButton: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 8,
   },
   verifyButtonDisabled: {
     opacity: 0.5,
   },
   verifyButtonText: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -798,9 +920,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   resendButtonText: {
-    color: '#60A5FA',
+    color: colors.primary.main,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
-

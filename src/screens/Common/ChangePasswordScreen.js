@@ -10,12 +10,14 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../api/client';
+import colors from '../../theme/colors';
 
 export default function ChangePasswordScreen({ navigation }) {
   const { user } = useAuthStore();
@@ -89,8 +91,10 @@ export default function ChangePasswordScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <StatusBar barStyle="light-content" />
       <LinearGradient
-        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.headerWrapper}
@@ -339,8 +343,8 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   headerWrapper: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     overflow: 'hidden',
   },
   headerGradient: {

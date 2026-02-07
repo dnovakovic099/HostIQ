@@ -22,32 +22,33 @@ import UsageIndicator from '../../components/UsageIndicator';
 import OnboardingPopup from '../../components/OnboardingPopup';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { useAuthStore } from '../../store/authStore';
+import colors from '../../theme/colors';
 
 const { width } = Dimensions.get('window');
 
-// Modern premium color palette
+// Use centralized colors - Apple HIG aligned
 const COLORS = {
-    background: '#F1F5F9',
-    card: '#FFFFFF',
-    cardBorder: 'rgba(15, 23, 42, 0.08)',
-    cardShadow: 'rgba(15, 23, 42, 0.1)',
+    background: colors.background.primary,      // iOS system background
+    card: colors.background.card,
+    cardBorder: colors.shadow.cardBorder,
+    cardShadow: colors.shadow.card,
     text: {
-        primary: '#0F172A',
-        secondary: '#64748B',
-        tertiary: '#94A3B8',
+        primary: colors.text.primary,           // True black
+        secondary: colors.text.secondary,       // iOS secondary label
+        tertiary: colors.text.tertiary,         // iOS tertiary label
     },
-    accent: '#3B82F6',
-    border: '#0c4b8fff',
-    accentLight: 'rgba(59, 130, 246, 0.1)',
-    success: '#10B981',
-    successLight: 'rgba(16, 185, 129, 0.1)',
-    warning: '#F59E0B',
-    warningLight: 'rgba(245, 158, 11, 0.1)',
-    error: '#EF4444',
-    errorBin: '#FF3B30',
-    errorLight: 'rgba(239, 68, 68, 0.1)',
-    divider: '#E2E8F0',
-    overlay: 'rgba(15, 23, 42, 0.4)',
+    accent: colors.accent.blue,
+    border: colors.special.borderDark,
+    accentLight: colors.accent.blueLight,
+    success: colors.status.success,
+    successLight: colors.accent.successLight,
+    warning: colors.status.warning,
+    warningLight: colors.accent.warningLight,
+    error: colors.status.error,
+    errorBin: colors.status.error,
+    errorLight: colors.accent.errorLight,
+    divider: colors.border.divider,             // iOS separator
+    overlay: colors.overlay.slate,
 };
 
 export default function OwnerDashboardScreen({ navigation }) {
@@ -194,18 +195,18 @@ export default function OwnerDashboardScreen({ navigation }) {
         const isAppFailed = errorMsg.includes('blurred') || errorMsg.includes('technical');
 
         if (status === 'FAILED' || isAppFailed) {
-            return { label: 'Failed', color: '#FF3B30' };
+            return { label: 'Failed', color: colors.status.error };
         }
         if (status === 'COMPLETE' && isReady === false) {
-            return { label: 'Cleaning Failed', color: '#FF3B30' };
+            return { label: 'Cleaning Failed', color: colors.status.error };
         }
         if (status === 'COMPLETE') {
-            return { label: 'Complete', color: '#34C759' };
+            return { label: 'Complete', color: colors.status.success };
         }
         if (status === 'PROCESSING') {
-            return { label: 'Processing', color: '#FF9500' };
+            return { label: 'Processing', color: colors.status.warning };
         }
-        return { label: status, color: '#8E8E93' };
+        return { label: status, color: colors.ios.gray };
     };
 
     const formatDate = (date) => {
@@ -270,6 +271,7 @@ export default function OwnerDashboardScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle="light-content" />
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
@@ -280,20 +282,21 @@ export default function OwnerDashboardScreen({ navigation }) {
                 {/* Welcome Header with Integrated Quick Actions */}
                 <View style={styles.headerContainer}>
                     <LinearGradient
-                        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+                        colors={colors.gradients.dashboardHeader}
+                        locations={colors.gradients.dashboardHeaderLocations}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={[styles.welcomeSection, { paddingTop: insets.top + 12 }]}
                     >
                         {/* Animated decorative elements */}
                         <View style={styles.decorativeCircle1}>
-                            <Ionicons name="home" size={100} color="rgba(66, 165, 245, 0.22)" />
+                            <Ionicons name="home" size={100} color={colors.decorative.icon1} />
                         </View>
                         <View style={styles.decorativeCircle2}>
-                            <Ionicons name="business" size={70} color="rgba(66, 165, 245, 0.22)" />
+                            <Ionicons name="business" size={70} color={colors.decorative.icon1} />
                         </View>
                         <View style={styles.decorativeCircle3}>
-                            <Ionicons name="bed" size={50} color="rgba(33, 150, 243, 0.20)" />
+                            <Ionicons name="bed" size={50} color={colors.decorative.icon2} />
                         </View>
 
                         <View style={styles.welcomeContent}>
@@ -321,12 +324,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={['#7EC8E3', '#5BB5D9']}
+                                        colors={colors.gradients.quickActionTeal}
                                         style={styles.quickActionCircle}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
                                     >
-                                        <Ionicons name="home" size={22} color="#FFFFFF" />
+                                        <Ionicons name="home" size={22} color={colors.text.inverse} />
                                     </LinearGradient>
                                     <Text style={styles.quickActionText}>Property</Text>
                                 </TouchableOpacity>
@@ -337,12 +340,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={['#6FA0CC', '#5A8FBD']}
+                                        colors={colors.gradients.quickActionBlue}
                                         style={styles.quickActionCircle}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
                                     >
-                                        <Ionicons name="people" size={20} color="#FFFFFF" />
+                                        <Ionicons name="people" size={20} color={colors.text.inverse} />
                                     </LinearGradient>
                                     <Text style={styles.quickActionText}>Team</Text>
                                 </TouchableOpacity>
@@ -355,12 +358,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={['#93C5FD', '#7BB3F5']}
+                                        colors={colors.gradients.quickActionLightBlue}
                                         style={styles.quickActionCircle}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
                                     >
-                                        <Ionicons name="card" size={20} color="#FFFFFF" />
+                                        <Ionicons name="card" size={20} color={colors.text.inverse} />
                                     </LinearGradient>
                                     <Text style={styles.quickActionText}>Plans</Text>
                                 </TouchableOpacity>
@@ -372,12 +375,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={['#8BB3D6', '#7AA3C6']}
+                                        colors={colors.gradients.quickActionSkyBlue}
                                         style={styles.quickActionCircle}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
                                     >
-                                        <Ionicons name="analytics" size={20} color="#FFFFFF" />
+                                        <Ionicons name="analytics" size={20} color={colors.text.inverse} />
                                     </LinearGradient>
                                     <Text style={styles.quickActionText}>Issues</Text>
                                 </TouchableOpacity>
@@ -391,7 +394,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                     lowRatingProperties.length > 0 && (
                         <View style={styles.section}>
                             <LinearGradient
-                                colors={['#FEF2F2', '#FFFFFF']}
+                                colors={colors.gradients.lightRed}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                                 style={styles.alertCard}
@@ -402,7 +405,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={['#FEE2E2', '#FECACA']}
+                                        colors={colors.gradients.lightRedAlt}
                                         style={styles.alertIconWrapper}
                                     >
                                         <Ionicons name="warning-outline" size={20} color={COLORS.error} />
@@ -514,7 +517,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                                             onPress={() => navigation.navigate('AirbnbDisputeReport', { inspectionId: inspection.id })}
                                             activeOpacity={0.6}
                                         >
-                                            <Ionicons name="document-text-outline" size={16} color="#007AFF" />
+                                            <Ionicons name="document-text-outline" size={16} color={colors.ios.blue} />
                                             <Text style={styles.disputeButtonText}>Airbnb Dispute Report</Text>
                                         </TouchableOpacity>
                                     )}
@@ -543,7 +546,7 @@ export default function OwnerDashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: colors.background.primary,
     },
     scrollContent: {
         paddingBottom: 20,
@@ -582,17 +585,37 @@ const styles = StyleSheet.create({
     welcomeGreeting: {
         fontSize: 28,
         fontWeight: '400',
-        color: '#FFFFFF',
+        color: colors.text.inverse,
     },
     welcomeName: {
         fontSize: 28,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: colors.text.inverse,
     },
     welcomeSubtitle: {
         fontSize: 15,
         fontWeight: '500',
-        color: '#FFFFFF',
+        color: colors.text.inverse,
+        marginTop: 4,
+        zIndex: 20,
+    },
+    // Light theme header text styles (matching login screen)
+    welcomeGreetingLight: {
+        fontSize: 32,
+        fontWeight: '300',
+        color: colors.text.primary,
+        letterSpacing: -0.5,
+    },
+    welcomeNameLight: {
+        fontSize: 32,
+        fontWeight: '700',
+        color: colors.primary.main,
+        letterSpacing: -0.5,
+    },
+    welcomeSubtitleLight: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: colors.text.secondary,
         marginTop: 4,
         zIndex: 20,
     },
@@ -601,7 +624,7 @@ const styles = StyleSheet.create({
         width: 220,
         height: 220,
         borderRadius: 110,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        backgroundColor: 'rgba(10, 132, 255, 0.08)',
         top: -60,
         right: -50,
         justifyContent: 'center',
@@ -613,7 +636,7 @@ const styles = StyleSheet.create({
         width: 180,
         height: 180,
         borderRadius: 90,
-        backgroundColor: 'rgba(255, 255, 255, 0.04)',
+        backgroundColor: 'rgba(90, 200, 250, 0.06)',
         bottom: -10,
         left: -40,
         justifyContent: 'center',
@@ -625,7 +648,7 @@ const styles = StyleSheet.create({
         width: 120,
         height: 120,
         borderRadius: 60,
-        backgroundColor: 'rgba(255, 255, 255, 0.03)',
+        backgroundColor: 'rgba(10, 132, 255, 0.05)',
         top: 60,
         right: 80,
         justifyContent: 'center',
@@ -638,17 +661,17 @@ const styles = StyleSheet.create({
         marginTop: 40,
     },
     sectionTitle: {
-        fontSize: 22,
-        fontWeight: '800',
+        fontSize: 28,                           // iOS title 1
+        fontWeight: '700',                      // Bold, not extra bold
         color: COLORS.text.primary,
-        letterSpacing: -0.6,
+        letterSpacing: -0.8,                    // Apple-style tight
     },
     sectionTitleUnderline: {
-        width: 60,
-        height: 4,
+        width: 48,                              // Slightly smaller
+        height: 3,
         backgroundColor: COLORS.accent,
-        borderRadius: 2,
-        marginTop: 6,
+        borderRadius: 1.5,
+        marginTop: 4,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -673,23 +696,23 @@ const styles = StyleSheet.create({
         left: 16,
         right: 16,
         backgroundColor: COLORS.card,
-        borderRadius: 20,
-        paddingVertical: 18,
-        paddingHorizontal: 10,
+        borderRadius: 16,                       // Reduced for refinement
+        paddingVertical: 16,                    // 8pt grid
+        paddingHorizontal: 12,
         zIndex: 10,
         ...Platform.select({
             ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.15,
-                shadowRadius: 20,
+                shadowColor: colors.shadow.black,
+                shadowOffset: { width: 0, height: 4 },  // Reduced elevation
+                shadowOpacity: 0.08,                     // More subtle
+                shadowRadius: 12,
             },
             android: {
-                elevation: 8,
+                elevation: 4,
             },
         }),
-        borderWidth: 1,
-        borderColor: 'rgba(15, 23, 42, 0.06)',
+        borderWidth: 0.5,                       // Hairline
+        borderColor: colors.border.light,
     },
     quickActions: {
         gap: 0,
@@ -716,21 +739,21 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     quickActionCircle: {
-        width: 55,
-        height: 55,
-        borderRadius: 16,
+        width: 56,                              // Even dimension
+        height: 56,
+        borderRadius: 14,                       // More refined
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 6,
+        marginBottom: 8,
         ...Platform.select({
             ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.18,
-                shadowRadius: 6,
+                shadowColor: colors.shadow.black,
+                shadowOffset: { width: 0, height: 2 },  // Subtle elevation
+                shadowOpacity: 0.10,                     // More refined
+                shadowRadius: 4,
             },
             android: {
-                elevation: 3,
+                elevation: 2,
             },
         }),
     },
@@ -832,14 +855,14 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.card,
         borderRadius: 12,
         marginBottom: 12,
-        borderWidth: 1,
+        borderWidth: 0.5,                       // Hairline
         borderColor: COLORS.divider,
         ...Platform.select({
             ios: {
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 2,
+                shadowColor: colors.shadow.black,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.04,             // Very subtle
+                shadowRadius: 4,
             },
             android: {
                 elevation: 1,
@@ -869,15 +892,15 @@ const styles = StyleSheet.create({
         position: 'absolute',
         right: 14,
         bottom: 14,
-        backgroundColor: 'rgba(15, 23, 42, 0.85)',
+        backgroundColor: colors.overlay.slateStrong,
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderColor: colors.overlay.white,
     },
     morePhotosText: {
-        color: '#FFF',
+        color: colors.text.inverse,
         fontSize: 14,
         fontWeight: '800',
         letterSpacing: 0.3,
@@ -939,26 +962,26 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 6,
-        backgroundColor: 'rgba(255, 59, 48, 0.1)',
+        backgroundColor: colors.accent.errorLightAlt,
         alignSelf: 'flex-start',
     },
     attentionDot: {
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: '#FF3B30',
+        backgroundColor: colors.status.error,
         marginRight: 6,
     },
     attentionText: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#FF3B30',
+        color: colors.status.error,
     },
     disputeButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(0, 122, 255, 0.1)',
+        backgroundColor: colors.accent.infoLight,
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderRadius: 8,
@@ -969,7 +992,7 @@ const styles = StyleSheet.create({
     disputeButtonText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#007AFF',
+        color: colors.ios.blue,
         letterSpacing: -0.2,
     },
     cardBottomRow: {

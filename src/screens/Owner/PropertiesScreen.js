@@ -17,19 +17,20 @@ import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
+import colors from '../../theme/colors';
 
 const COLORS = {
-  bg: '#F8FAFC',
-  card: '#FFFFFF',
-  primary: '#548EDD', // HostIQ Brand Color
-  pms: '#548EDD', // HostIQ Blue for PMS badges
-  text: '#1F2937',
-  textSecondary: '#6B7280',
-  textMuted: '#9CA3AF',
-  border: '#E5E7EB',
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
+  bg: colors.background.primary,
+  card: colors.background.card,
+  primary: colors.primary.main,
+  pms: colors.primary.main,
+  text: colors.text.primary,
+  textSecondary: colors.text.secondary,
+  textMuted: colors.text.tertiary,
+  border: colors.border.light,
+  success: colors.status.success,
+  warning: colors.status.warning,
+  error: colors.status.error,
 };
 
 export default function PropertiesScreen({ navigation }) {
@@ -156,7 +157,7 @@ export default function PropertiesScreen({ navigation }) {
         {/* Header */}
         <View style={styles.cardHeader}>
           <LinearGradient
-            colors={['#EFF6FF', '#DBEAFE']}
+            colors={colors.gradients.lightBlue}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.propertyIcon}
@@ -167,12 +168,12 @@ export default function PropertiesScreen({ navigation }) {
           <View style={styles.cardHeaderContent}>
             {isPMS && (
               <LinearGradient
-                colors={['#548EDD', '#4A7FD4']}
+                colors={colors.gradients.primary}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.pmsBadge}
               >
-                <Ionicons name="cloud" size={10} color="#FFFFFF" />
+                <Ionicons name="cloud" size={10} color={colors.text.inverse} />
                 <Text style={styles.pmsBadgeText}>{item.pmsProvider}</Text>
               </LinearGradient>
             )}
@@ -217,7 +218,7 @@ export default function PropertiesScreen({ navigation }) {
   const renderEmpty = () => (
     <View style={styles.emptyState}>
       <LinearGradient
-        colors={['#DBEAFE', '#BFDBFE']}
+        colors={colors.gradients.lightBlue}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.emptyIcon}
@@ -234,12 +235,12 @@ export default function PropertiesScreen({ navigation }) {
         activeOpacity={0.8}
       >
         <LinearGradient
-          colors={['#548EDD', '#4A7FD4']}
+          colors={colors.gradients.primary}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.emptyButtonGradient}
         >
-          <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+          <Ionicons name="add-circle-outline" size={20} color={colors.text.inverse} />
           <Text style={styles.emptyButtonText}>Add Property</Text>
         </LinearGradient>
       </TouchableOpacity>
@@ -261,7 +262,8 @@ export default function PropertiesScreen({ navigation }) {
     <View style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
@@ -351,12 +353,12 @@ export default function PropertiesScreen({ navigation }) {
         activeOpacity={0.9}
       >
         <LinearGradient
-          colors={['#548EDD', '#4A7FD4']}
+          colors={colors.gradients.primary}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabGradient}
         >
-          <Ionicons name="add" size={28} color="#FFF" />
+          <Ionicons name="add" size={28} color={colors.text.inverse} />
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -376,8 +378,8 @@ const styles = StyleSheet.create({
   },
   // Header Gradient
   headerWrapper: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     overflow: 'hidden',
   },
   headerGradient: {
@@ -463,13 +465,13 @@ const styles = StyleSheet.create({
     borderColor: '#E0E7FF',
     ...Platform.select({
       ios: {
-        shadowColor: '#548EDD',
+        shadowColor: colors.shadow.black,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
+        shadowOpacity: 0.04,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 2,
+        elevation: 1,
       },
     }),
   },
@@ -512,7 +514,7 @@ const styles = StyleSheet.create({
   pmsBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -581,7 +583,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#548EDD',
+        shadowColor: colors.primary.main,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
@@ -609,7 +611,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#548EDD',
+        shadowColor: colors.primary.main,
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -630,7 +632,7 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFF',
+    color: colors.text.inverse,
   },
   noResults: {
     alignItems: 'center',
@@ -649,7 +651,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     ...Platform.select({
       ios: {
-        shadowColor: '#548EDD',
+        shadowColor: colors.primary.main,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,

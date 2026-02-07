@@ -47,11 +47,11 @@ export default function SubscriptionButton({ onPurchaseComplete, style, textStyl
       disabled={isLoading}
     >
       {isLoading ? (
-        <ActivityIndicator color="#FFFFFF" />
+        <ActivityIndicator color={colors.text.inverse} />
       ) : (
         <>
           <Text style={[styles.buttonText, textStyle]}>{priceText}</Text>
-          <Ionicons name="arrow-forward" size={20} color="#FFFFFF" style={styles.icon} />
+          <Ionicons name="arrow-forward" size={20} color={colors.text.inverse} style={styles.icon} />
         </>
       )}
     </TouchableOpacity>
@@ -63,22 +63,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary?.main || '#007AFF',
+    backgroundColor: colors.primary.main,
     paddingVertical: 14,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 10,                           // iOS standard
     gap: 8,
   },
   disabled: {
-    backgroundColor: '#CCCCCC',
+    backgroundColor: colors.button.disabled,
+    opacity: 0.4,
   },
   loading: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
+    color: colors.text.inverse,
+    fontSize: 17,                               // iOS body
+    fontWeight: '600',                          // Semibold
+    letterSpacing: -0.4,                        // Apple-style
   },
   icon: {
     marginLeft: 4,

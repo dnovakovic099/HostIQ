@@ -3,22 +3,23 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import api from '../api/client';
 import { SUBSCRIPTION_CONFIG } from '../config/constants';
+import colors from '../theme/colors';
 
-// iOS system colors
+// Use centralized colors
 const COLORS = {
-  primary: '#007AFF',
-  primaryLight: '#E3F2FF',
+  primary: colors.primary.main,
+  primaryLight: colors.background.lightBlue,
   text: {
-    primary: '#000000',
-    secondary: '#3C3C43',
-    tertiary: '#8E8E93',
+    primary: colors.text.primary,
+    secondary: colors.text.secondary,
+    tertiary: colors.ios.gray,
   },
-  success: '#34C759',
-  warning: '#FF9500',
-  warningLight: '#FFF4E5',
-  error: '#FF3B30',
-  errorLight: '#FFEBE9',
-  progressBg: '#E5E5EA',
+  success: colors.status.success,
+  warning: colors.status.warning,
+  warningLight: colors.accent.warningLightAlt,
+  error: colors.status.error,
+  errorLight: colors.background.lightRed,
+  progressBg: colors.border.light,
 };
 
 export default function UsageIndicator({ navigation, compact = false }) {
@@ -114,7 +115,7 @@ export default function UsageIndicator({ navigation, compact = false }) {
             {usage.images_processed} / {freeImageLimit} used
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color="#C6C6C8" />
+        <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
       </View>
 
       <View style={styles.progressBarBg}>
@@ -153,8 +154,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconContainer: {
-    width: 44,
-    height: 44,
+    width: 40,                                  // More refined
+    height: 40,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -164,15 +165,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 17,                               // iOS body
+    fontWeight: '600',                          // Semibold
     color: COLORS.text.primary,
     letterSpacing: -0.4,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 15,                               // iOS subheadline
     color: COLORS.text.secondary,
-    marginTop: 1,
+    marginTop: 2,
   },
   progressBarBg: {
     height: 6,

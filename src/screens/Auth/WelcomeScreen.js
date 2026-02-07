@@ -94,26 +94,20 @@ export default function WelcomeScreen({ navigation }) {
   const signupButtonFloat = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Entrance animation sequence
+    // Entrance animation sequence - Apple-style smooth and refined
     Animated.sequence([
-      // Logo dramatic entrance with rotation
+      // Logo elegant entrance (no rotation - too gimmicky)
       Animated.parallel([
         Animated.spring(logoScale, {
           toValue: 1,
-          tension: 40,
-          friction: 6,
+          tension: 50,
+          friction: 8,
           useNativeDriver: true,
         }),
         Animated.timing(logoOpacity, {
           toValue: 1,
-          duration: 800,
+          duration: 600,
           easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoRotate, {
-          toValue: 1,
-          duration: 800,
-          easing: Easing.out(Easing.back(1.2)),
           useNativeDriver: true,
         }),
       ]),
@@ -206,23 +200,7 @@ export default function WelcomeScreen({ navigation }) {
       ])
     ).start();
 
-    // Continuous color pulsing for logo
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(logoColorPulse, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false, // Color animations can't use native driver
-        }),
-        Animated.timing(logoColorPulse, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: false,
-        }),
-      ])
-    ).start();
+    // Remove color pulsing - too distracting for Apple aesthetic
 
     // Continuous floating animation for login button
     Animated.loop(
@@ -263,17 +241,7 @@ export default function WelcomeScreen({ navigation }) {
 
   const logoTranslateY = logoFloat.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -15],
-  });
-
-  const logoRotation = logoRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const logoTintColor = logoColorPulse.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: ['#38BDF8', '#8B5CF6', '#EC4899'], // Cyan -> Purple -> Pink (neon gradient)
+    outputRange: [0, -8],                    // Reduced movement for subtlety
   });
 
   const loginButtonTranslateY = loginButtonFloat.interpolate({
@@ -290,10 +258,12 @@ export default function WelcomeScreen({ navigation }) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       
-      {/* Dark Gradient Background */}
+      {/* Refined Gradient Background - Subtle, Apple-quality */}
       <LinearGradient
-        colors={['#0A1628', '#0F1B2E', '#1A2332']}
+        colors={colors.gradients.dark}
         style={styles.gradientBackground}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
       />
 
       {/* Floating Particles - Removed */}
@@ -309,18 +279,14 @@ export default function WelcomeScreen({ navigation }) {
                 transform: [
                   { scale: logoScale },
                   { translateY: logoTranslateY },
-                  { rotate: logoRotation },
                 ],
               }}
             >
-              <Animated.Image 
-            source={require('../../../assets/logo.png')} 
-                style={[
-                  styles.logo,
-                  { tintColor: logoTintColor },
-                ]}
-            resizeMode="contain"
-          />
+              <Image
+                source={require('../../../assets/logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </Animated.View>
             
             <Animated.Text
@@ -380,7 +346,7 @@ export default function WelcomeScreen({ navigation }) {
                 activeOpacity={0.85}
               >
                 <LinearGradient
-                  colors={['#3B82F6', '#2563EB']}
+                  colors={colors.gradients.primaryAlt}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
             style={styles.loginButton}
@@ -418,7 +384,7 @@ export default function WelcomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A1628',
+    backgroundColor: colors.gradients.dark[0],
   },
   gradientBackground: {
     position: 'absolute',
@@ -455,79 +421,79 @@ const styles = StyleSheet.create({
     marginTop: 80,
   },
   logo: {
-    width: 140,
-    height: 140,
-    marginBottom: 50,
+    width: 120,                               // Slightly smaller, more refined
+    height: 120,
+    marginBottom: 40,
   },
   title: {
-    fontSize: 46,
-    fontWeight: '900',
+    fontSize: 40,                             // SF Pro Display Large Title
+    fontWeight: '700',                        // Bold not Black (900)
     color: '#FFFFFF',
-    marginBottom: 36,
+    marginBottom: 24,                         // 8pt grid
     textAlign: 'center',
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,                      // Tighter for premium feel
   },
   subtitle: {
-    fontSize: 17,
-    color: '#94A3B8',
+    fontSize: 17,                             // iOS body text
+    color: 'rgba(255, 255, 255, 0.75)',      // Better contrast
     textAlign: 'center',
-    lineHeight: 28,
-    paddingHorizontal: 35,
+    lineHeight: 24,                           // Improved readability
+    paddingHorizontal: 32,                    // 8pt grid
     fontWeight: '400',
-    marginBottom: 18,
+    marginBottom: 16,
   },
   callToAction: {
-    fontSize: 18,
-    color: '#CBD5E1',
+    fontSize: 17,
+    color: 'rgba(255, 255, 255, 0.85)',
     textAlign: 'center',
-    fontWeight: '500',
-    marginTop: 10,
+    fontWeight: '600',                        // Semibold
+    marginTop: 8,
   },
   spacer: {
     flex: 1,
   },
   buttonContainer: {
     width: '100%',
-    paddingBottom: 60,
-    paddingHorizontal: 12,
+    paddingBottom: 48,                        // 8pt grid
+    paddingHorizontal: 16,                    // 8pt grid
   },
   loginButtonWrapper: {
-    marginBottom: 14,
-    shadowColor: '#3B82F6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 8,
+    marginBottom: 12,
+    shadowColor: colors.shadow.blue,
+    shadowOffset: { width: 0, height: 4 },   // Reduced shadow
+    shadowOpacity: 0.15,                      // Much more subtle
+    shadowRadius: 8,
+    elevation: 4,
   },
   loginButton: {
-    height: 56,
-    borderRadius: 16,
+    height: 50,                               // Standard iOS button
+    borderRadius: 12,                         // Slightly smaller radius
     justifyContent: 'center',
     alignItems: 'center',
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontSize: 17,                             // iOS standard
+    fontWeight: '600',                        // Semibold
+    letterSpacing: -0.4,                      // Apple-style tracking
   },
   signupButtonWrapper: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   signupButton: {
-    height: 56,
-    backgroundColor: 'transparent',
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(59, 130, 246, 0.4)',
+    height: 50,
+    backgroundColor: 'rgba(255, 255, 255, 0.10)', // Subtle fill
+    borderRadius: 12,
+    borderWidth: 1,                           // Hairline border
+    borderColor: 'rgba(255, 255, 255, 0.30)', // More visible border
     justifyContent: 'center',
     alignItems: 'center',
   },
   signupButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.4,
   },
 });
 

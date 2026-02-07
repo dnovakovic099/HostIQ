@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/client';
+import { FEATURE_FLAGS } from '../config/constants';
 import SimpleTabBar from '../components/SimpleTabBar';
 import CleanerStack from './CleanerStack';
 import OwnerStack from './OwnerStack';
@@ -108,16 +109,20 @@ function InsightsStack() {
         component={InsightsScreen}
         options={{ title: 'Insights' }}
       />
-      <Stack.Screen 
-        name="PayCleaner" 
-        component={PayCleanerScreen}
-        options={{ title: 'Pay Cleaner' }}
-      />
-      <Stack.Screen 
-        name="PaymentHistory" 
-        component={PaymentHistoryScreen}
-        options={{ title: 'Payment History' }}
-      />
+      {FEATURE_FLAGS.ENABLE_PAYMENTS && (
+        <Stack.Screen
+          name="PayCleaner"
+          component={PayCleanerScreen}
+          options={{ title: 'Pay Cleaner' }}
+        />
+      )}
+      {FEATURE_FLAGS.ENABLE_PAYMENTS && (
+        <Stack.Screen
+          name="PaymentHistory"
+          component={PaymentHistoryScreen}
+          options={{ title: 'Payment History' }}
+        />
+      )}
       <Stack.Screen 
         name="Issues" 
         component={IssuesScreen}
@@ -208,7 +213,8 @@ export default function MainTabs() {
   useEffect(() => {
     const checkPMSStatus = async () => {
       if (!isOwner) return;
-      
+      if (!FEATURE_FLAGS.ENABLE_PMS_INTEGRATION) return;
+
       try {
         // Check for PMS integrations
         const response = await api.get('/pms/integrations');
@@ -284,11 +290,13 @@ export default function MainTabs() {
             component={InsightsStack}
             options={{ title: 'Insights' }}
           />
-          <Tab.Screen 
-            name="Pricing" 
-            component={PricingStack}
-            options={{ title: 'Pricing' }}
-          />
+          {FEATURE_FLAGS.ENABLE_PRICING_TAB && (
+            <Tab.Screen
+              name="Pricing"
+              component={PricingStack}
+              options={{ title: 'Pricing' }}
+            />
+          )}
           {/*
             Temporarily hide the Subscription tab from the bottom bar.
             To re-enable, remove this comment block and restore the Tab.Screen.

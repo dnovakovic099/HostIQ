@@ -14,6 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
+import { FEATURE_FLAGS } from '../../config/constants';
 
 const COLORS = {
   background: '#F1F5F9',
@@ -231,39 +232,45 @@ export default function InsightsCleanersTab({ navigation }) {
     });
   };
 
-  const renderQuickActions = () => (
-    <View style={styles.quickActionsContainer}>
-      <TouchableOpacity
-        style={styles.quickAction}
-        onPress={() => navigation.navigate('PayCleaner')}
-        activeOpacity={0.8}
-      >
-        <View style={[styles.quickActionIcon, { backgroundColor: COLORS.successSoft }]}>
-          <Ionicons name="wallet" size={20} color={COLORS.success} />
-        </View>
-        <View style={styles.quickActionContent}>
-          <Text style={styles.quickActionTitle}>Pay Cleaner</Text>
-          <Text style={styles.quickActionDesc}>Send payments</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-      </TouchableOpacity>
+  const renderQuickActions = () => {
+    if (!FEATURE_FLAGS.ENABLE_PAYMENTS) {
+      return null;
+    }
 
-      <TouchableOpacity
-        style={styles.quickAction}
-        onPress={() => navigation.navigate('PaymentHistory')}
-        activeOpacity={0.8}
-      >
-        <View style={[styles.quickActionIcon, { backgroundColor: COLORS.accentSoft }]}>
-          <Ionicons name="receipt" size={20} color={COLORS.accent} />
-        </View>
-        <View style={styles.quickActionContent}>
-          <Text style={styles.quickActionTitle}>Payment History</Text>
-          <Text style={styles.quickActionDesc}>View transactions</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-      </TouchableOpacity>
-    </View>
-  );
+    return (
+      <View style={styles.quickActionsContainer}>
+        <TouchableOpacity
+          style={styles.quickAction}
+          onPress={() => navigation.navigate('PayCleaner')}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.quickActionIcon, { backgroundColor: COLORS.successSoft }]}>
+            <Ionicons name="wallet" size={20} color={COLORS.success} />
+          </View>
+          <View style={styles.quickActionContent}>
+            <Text style={styles.quickActionTitle}>Pay Cleaner</Text>
+            <Text style={styles.quickActionDesc}>Send payments</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.quickAction}
+          onPress={() => navigation.navigate('PaymentHistory')}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.quickActionIcon, { backgroundColor: COLORS.accentSoft }]}>
+            <Ionicons name="receipt" size={20} color={COLORS.accent} />
+          </View>
+          <View style={styles.quickActionContent}>
+            <Text style={styles.quickActionTitle}>Payment History</Text>
+            <Text style={styles.quickActionDesc}>View transactions</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const renderSummary = () => {
     if (!summary) return null;

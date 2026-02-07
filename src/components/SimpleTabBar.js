@@ -2,12 +2,14 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import colors from '../theme/colors';
 
+// Apple HIG Tab Bar Colors
 const COLORS = {
-  background: '#FFFFFF',
-  active: '#007AFF',
-  inactive: '#8E8E93',
-  border: '#E5E5EA',
+  background: colors.tabBar.background,         // iOS standard tab bar
+  active: colors.tabBar.active,                 // iOS system blue
+  inactive: colors.tabBar.inactive,             // iOS gray
+  border: colors.tabBar.border,                 // iOS separator
 };
 
 export default function SimpleTabBar({ state, descriptors, navigation }) {
@@ -35,8 +37,21 @@ export default function SimpleTabBar({ state, descriptors, navigation }) {
           const isFocused = state.index === index;
 
           const onPress = () => {
-            if (!isFocused) {
-              navigation.navigate(route.name);
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!event.defaultPrevented) {
+              if (isFocused) {
+                // If already on this tab, reset to the root screen (iOS standard behavior)
+                navigation.navigate(route.name, {
+                  screen: route.state?.routeNames?.[0],
+                });
+              } else {
+                navigation.navigate(route.name);
+              }
             }
           };
 
@@ -69,24 +84,24 @@ export default function SimpleTabBar({ state, descriptors, navigation }) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.background,
-    borderTopWidth: 0.5,
+    borderTopWidth: 0.5,                        // Hairline border
     borderTopColor: COLORS.border,
   },
   tabBar: {
     flexDirection: 'row',
-    minHeight: 50,
+    minHeight: 49,                              // iOS standard tab bar height
     backgroundColor: COLORS.background,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: 6,                              // Tighter spacing
+    paddingBottom: 2,
   },
   label: {
-    fontSize: 10,
-    marginTop: 2,
+    fontSize: 10,                               // iOS tab bar label
+    marginTop: 1,
     fontWeight: '500',
     lineHeight: 12,
     includeFontPadding: false,

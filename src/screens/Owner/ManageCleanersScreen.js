@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
+import colors from '../../theme/colors';
 
 export default function ManageCleanersScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -329,7 +330,8 @@ export default function ManageCleanersScreen({ navigation }) {
     <View style={styles.container}>
       {/* Header Gradient */}
       <LinearGradient
-        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
@@ -337,6 +339,13 @@ export default function ManageCleanersScreen({ navigation }) {
         {Platform.OS === 'ios' ? (
           <SafeAreaView>
             <View style={styles.headerGradient}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+              </TouchableOpacity>
               <View style={styles.headerIconWrapper}>
                 <View style={styles.headerIconInner}>
                   <Ionicons name="people" size={28} color="#FFFFFF" />
@@ -352,6 +361,13 @@ export default function ManageCleanersScreen({ navigation }) {
           </SafeAreaView>
         ) : (
           <View style={styles.headerGradient}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
                 <Ionicons name="people" size={28} color="#FFFFFF" />
@@ -545,16 +561,20 @@ const styles = StyleSheet.create({
   },
   // Header Gradient
   headerWrapper: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     overflow: 'hidden',
   },
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 16,
     paddingBottom: 18,
+  },
+  backButton: {
+    marginRight: 4,
+    padding: 4,
   },
   headerIconWrapper: {
     marginRight: 14,

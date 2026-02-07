@@ -10,13 +10,17 @@ import {
   Platform,
   TouchableOpacity,
   RefreshControl,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
+import colors from '../../theme/colors';
 
 export default function CleanerAssignmentsScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { cleanerId, cleanerName, assignments: passedAssignments } = route.params;
   const [assignments, setAssignments] = useState(passedAssignments || []);
   const [loading, setLoading] = useState(true);
@@ -387,11 +391,13 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       {/* Header */}
+      <StatusBar barStyle="light-content" />
       <LinearGradient
-        colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
         <SafeAreaView>
           <View style={styles.headerContent}>
@@ -458,8 +464,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   headerWrapper: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     overflow: 'hidden',
   },
   headerContent: {

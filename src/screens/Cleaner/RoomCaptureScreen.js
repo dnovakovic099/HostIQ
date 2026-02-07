@@ -14,19 +14,23 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Camera } from 'expo-camera';
 import api from '../../api/client';
 import { API_URL } from '../../config/api';
 import { getRoomSuggestionByType } from '../../config/roomSuggestions';
+import colors from '../../theme/colors';
 
 const { width } = Dimensions.get('window');
 
 export default function RoomCaptureScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const {
     room,
     assignment,
@@ -200,11 +204,13 @@ export default function RoomCaptureScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       {/* Header */}
+      <StatusBar barStyle="light-content" />
       <LinearGradient
-        colors={['#DBEAFE', '#93C5FD']}
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0.8 }}
-        style={styles.headerWrapper}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
         <SafeAreaView>
           <View style={styles.headerGradient}>
@@ -389,8 +395,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
   headerWrapper: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     overflow: 'hidden',
   },
   headerGradient: {

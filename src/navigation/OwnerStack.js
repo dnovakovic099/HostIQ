@@ -4,6 +4,7 @@ import { View, Text, Platform, StyleSheet, TouchableOpacity, SafeAreaView } from
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FEATURE_FLAGS } from '../config/constants';
 import OwnerDashboardScreen from '../screens/Owner/OwnerDashboardScreen';
 import PropertiesScreen from '../screens/Owner/PropertiesScreen';
 import PropertyDetailScreen from '../screens/Owner/PropertyDetailScreen';
@@ -213,26 +214,34 @@ export default function OwnerStack() {
         component={TeamScreen}
         options={{ title: 'Team Management' }}
       />
-      <Stack.Screen 
-        name="Billing" 
-        component={BillingScreen}
-        options={{ title: 'Billing & Plans' }}
-      />
-      <Stack.Screen 
-        name="SubscriptionManagement" 
-        component={SubscriptionManagementScreen}
-        options={{ title: 'Subscriptions' }}
-      />
-      <Stack.Screen 
-        name="Subscription" 
-        component={SubscriptionScreen}
-        options={{ title: 'Choose Subscription' }}
-      />
-      <Stack.Screen 
-        name="PMSSettings" 
-        component={PMSSettingsScreen}
-        options={{ title: 'PMS Integration' }}
-      />
+      {FEATURE_FLAGS.ENABLE_BILLING && (
+        <Stack.Screen
+          name="Billing"
+          component={BillingScreen}
+          options={{ title: 'Billing & Plans' }}
+        />
+      )}
+      {FEATURE_FLAGS.ENABLE_SUBSCRIPTIONS && (
+        <Stack.Screen
+          name="SubscriptionManagement"
+          component={SubscriptionManagementScreen}
+          options={{ title: 'Subscriptions' }}
+        />
+      )}
+      {FEATURE_FLAGS.ENABLE_SUBSCRIPTIONS && (
+        <Stack.Screen
+          name="Subscription"
+          component={SubscriptionScreen}
+          options={{ title: 'Choose Subscription' }}
+        />
+      )}
+      {FEATURE_FLAGS.ENABLE_PMS_INTEGRATION && (
+        <Stack.Screen
+          name="PMSSettings"
+          component={PMSSettingsScreen}
+          options={{ title: 'PMS Integration' }}
+        />
+      )}
       <Stack.Screen 
         name="Issues" 
         component={IssuesScreen}

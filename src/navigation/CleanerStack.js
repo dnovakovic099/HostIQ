@@ -1,5 +1,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import { FEATURE_FLAGS } from '../config/constants';
 import CleanerHistoryScreen from '../screens/Cleaner/CleanerHistoryScreen';
 import CreateInspectionScreen from '../screens/Cleaner/CreateInspectionScreen';
 import CaptureMediaScreen from '../screens/Cleaner/CaptureMediaScreen';
@@ -80,16 +81,20 @@ export default function CleanerStack() {
         component={CleanerReportsScreen}
         options={{ title: 'My Reports' }}
       />
-      <Stack.Screen 
-        name="PaymentSettings" 
-        component={PaymentSettingsScreen}
-        options={{ title: 'Payment Settings' }}
-      />
-      <Stack.Screen 
-        name="PaymentHistory" 
-        component={PaymentHistoryScreen}
-        options={{ title: 'Payment History' }}
-      />
+      {FEATURE_FLAGS.ENABLE_PAYMENTS && (
+        <Stack.Screen
+          name="PaymentSettings"
+          component={PaymentSettingsScreen}
+          options={{ title: 'Payment Settings' }}
+        />
+      )}
+      {FEATURE_FLAGS.ENABLE_PAYMENTS && (
+        <Stack.Screen
+          name="PaymentHistory"
+          component={PaymentHistoryScreen}
+          options={{ title: 'Payment History' }}
+        />
+      )}
       <Stack.Screen 
         name="InventoryUpdate" 
         component={InventoryUpdateScreen}
