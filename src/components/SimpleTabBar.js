@@ -4,18 +4,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../theme/colors';
 
-// Apple HIG Tab Bar Colors
+// Clean iOS-style Tab Bar Colors
 const COLORS = {
-  background: colors.tabBar.background,         // iOS standard tab bar
-  active: colors.tabBar.active,                 // iOS system blue
-  inactive: colors.tabBar.inactive,             // iOS gray
-  border: colors.tabBar.border,                 // iOS separator
+  background: '#F8F8F8',                        // Light gray background (iOS standard)
+  active: '#007AFF',                            // iOS blue for active
+  inactive: '#3C3C43',                          // Dark gray/black for inactive
+  border: '#E5E5E5',                            // Subtle gray border
 };
 
 export default function SimpleTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
 
   const getIconName = (routeName, focused) => {
+    // Filled icons for active, outline for inactive (iOS standard)
     const icons = {
       HomeTab: focused ? 'home' : 'home-outline',
       Inspections: focused ? 'clipboard' : 'clipboard-outline',

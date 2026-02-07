@@ -17,7 +17,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
+import colors from '../../theme/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -39,6 +41,7 @@ const COLORS = {
 };
 
 export default function CleanerHistoryScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [inspections, setInspections] = useState([]);
   const [filteredInspections, setFilteredInspections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +51,7 @@ export default function CleanerHistoryScreen({ navigation }) {
   const [properties, setProperties] = useState([]);
   const [stats, setStats] = useState({ total: 0, passed: 0, failed: 0, pending: 0 });
   const [userName, setUserName] = useState('Cleaner');
-  
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useFocusEffect(
@@ -352,7 +355,22 @@ export default function CleanerHistoryScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
+
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}
+      >
+        <View style={styles.headerContent}>
+          <Text style={styles.welcomeGreeting}>Hello!</Text>
+          <Text style={styles.welcomeName}>{userName}</Text>
+        </View>
+      </LinearGradient>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -360,26 +378,6 @@ export default function CleanerHistoryScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.accent} />
         }
       >
-        {/* Welcome Header */}
-        <LinearGradient
-          colors={['#EBF4FF', '#F8FBFF', COLORS.background]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.welcomeSection}
-        >
-          {/* Decorative circles */}
-          <View style={styles.decorativeCircle1} />
-          <View style={styles.decorativeCircle2} />
-
-          {/* Cleaner-themed icons */}
-          <Ionicons name="home" size={80} color="rgba(37, 86, 165, 0.05)" style={styles.decorativeIcon1} />
-          <Ionicons name="build" size={60} color="rgba(16, 125, 89, 0.04)" style={styles.decorativeIcon2} />
-
-          <View style={styles.welcomeContent}>
-            <Text style={styles.welcomeGreeting}>Hello! </Text>
-            <Text style={styles.welcomeName}>{userName}</Text>
-          </View>
-        </LinearGradient>
 
         {/* Stats Grid */}
         <View style={styles.statsSection}>
@@ -587,6 +585,14 @@ const styles = StyleSheet.create({
   },
 
   // Welcome Header
+  headerGradient: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
   welcomeSection: {
     paddingHorizontal: 24,
     paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 40 : 60,
@@ -628,14 +634,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   welcomeGreeting: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '300',
-    color: COLORS.text.secondary,
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginRight: 6,
   },
   welcomeName: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
-    color: COLORS.text.primary,
+    color: '#FFFFFF',
   },
 
   // Stats Section
