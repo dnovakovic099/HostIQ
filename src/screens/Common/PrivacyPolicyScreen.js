@@ -17,7 +17,7 @@ export default function PrivacyPolicyScreen() {
       >
         <View style={styles.header}>
           <Text style={styles.title}>Privacy Policy</Text>
-          <Text style={styles.lastUpdated}>Last Updated: January 2026</Text>
+          <Text style={styles.lastUpdated}>Last Updated: February 2026</Text>
         </View>
 
         <View style={styles.section}>
@@ -41,8 +41,7 @@ export default function PrivacyPolicyScreen() {
             • <Text style={styles.bold}>Account Information:</Text> Name, email address, phone number, and password when you create an account{'\n'}
             • <Text style={styles.bold}>Profile Information:</Text> Profile photo, role (property owner or cleaner), and other optional profile details{'\n'}
             • <Text style={styles.bold}>Property Information:</Text> Property addresses, unit details, room templates, and property management data{'\n'}
-            • <Text style={styles.bold}>Inspection Data:</Text> Photos, videos, notes, and other media you upload during inspections{'\n'}
-            • <Text style={styles.bold}>Payment Information:</Text> Billing details and payment method information (processed securely through third-party payment processors)
+            • <Text style={styles.bold}>Inspection Data:</Text> Photos, videos, notes, and other media you upload during inspections
           </Text>
 
           <Text style={styles.subheading}>2.2 Automatically Collected Information</Text>
@@ -55,9 +54,7 @@ export default function PrivacyPolicyScreen() {
 
           <Text style={styles.subheading}>2.3 Third-Party Information</Text>
           <Text style={styles.paragraph}>
-            • Information from property management systems (PMS) you connect, such as Hostify or Hostaway{'\n'}
-            • Information from authentication providers (Google Sign-In, Apple Sign-In){'\n'}
-            • Payment information from payment processors (Stripe, Apple, Google)
+            • Information from authentication providers (Google Sign-In, Apple Sign-In)
           </Text>
 
           <Text style={styles.subheading}>2.4 Location Information</Text>
@@ -79,7 +76,6 @@ export default function PrivacyPolicyScreen() {
             • <Text style={styles.bold}>AI Analysis:</Text> To process and analyze inspection media using artificial intelligence for quality assessment{'\n'}
             • <Text style={styles.bold}>Account Management:</Text> To create and manage your account, authenticate users, and provide customer support{'\n'}
             • <Text style={styles.bold}>Communication:</Text> To send you service updates, inspection reports, notifications, and respond to your inquiries{'\n'}
-            • <Text style={styles.bold}>Payment Processing:</Text> To process payments, manage subscriptions, and handle billing{'\n'}
             • <Text style={styles.bold}>Analytics:</Text> To understand how users interact with our services and improve user experience{'\n'}
             • <Text style={styles.bold}>Security:</Text> To detect, prevent, and address technical issues, fraud, and security threats{'\n'}
             • <Text style={styles.bold}>Legal Compliance:</Text> To comply with legal obligations and enforce our terms of service
@@ -114,31 +110,24 @@ export default function PrivacyPolicyScreen() {
           </Text>
           <Text style={styles.paragraph}>
             • Cloud hosting and storage providers{'\n'}
-            • Payment processors{'\n'}
             • Email service providers{'\n'}
             • Analytics and monitoring services{'\n'}
             • AI and machine learning service providers
           </Text>
 
-          <Text style={styles.subheading}>5.2 Property Management Systems</Text>
-          <Text style={styles.paragraph}>
-            If you connect a PMS account, we may share relevant property and inspection data with the connected 
-            system as necessary to provide integration services.
-          </Text>
-
-          <Text style={styles.subheading}>5.3 Team Members</Text>
+          <Text style={styles.subheading}>5.2 Team Members</Text>
           <Text style={styles.paragraph}>
             Property owners may share inspection data and property information with team members (cleaners, 
             managers) they invite to their account.
           </Text>
 
-          <Text style={styles.subheading}>5.4 Legal Requirements</Text>
+          <Text style={styles.subheading}>5.3 Legal Requirements</Text>
           <Text style={styles.paragraph}>
-            We may disclose information if required by law, court order, or government regulation, or to protect 
+            We may disclose information if required by law, court order, or government regulation, or to protect
             our rights, property, or safety, or that of our users.
           </Text>
 
-          <Text style={styles.subheading}>5.5 Business Transfers</Text>
+          <Text style={styles.subheading}>5.4 Business Transfers</Text>
           <Text style={styles.paragraph}>
             In the event of a merger, acquisition, or sale of assets, your information may be transferred as part 
             of that transaction.

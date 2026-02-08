@@ -162,34 +162,10 @@ export default function TermsOfServiceScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>8. Payment Terms</Text>
+          <Text style={styles.sectionTitle}>8. Pricing and Payment</Text>
           <Text style={styles.paragraph}>
-            If you purchase any paid features or subscriptions:
+            HostIQ is currently available for free during our early access period. All features are provided at no cost to help you evaluate the platform. If we introduce paid features or subscriptions in the future, we will notify you in advance and provide clear pricing information before any charges apply.
           </Text>
-          <View style={styles.bulletRow}>
-            <View style={styles.bulletDot} />
-            <Text style={styles.bulletText}>
-              Payment will be charged to your payment method at confirmation of purchase
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <View style={styles.bulletDot} />
-            <Text style={styles.bulletText}>
-              Subscriptions automatically renew unless auto-renew is turned off at least 24 hours before the end of the current period
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <View style={styles.bulletDot} />
-            <Text style={styles.bulletText}>
-              Your account will be charged for renewal within 24 hours prior to the end of the current period
-            </Text>
-          </View>
-          <View style={styles.bulletRow}>
-            <View style={styles.bulletDot} />
-            <Text style={styles.bulletText}>
-              You can manage and cancel your subscriptions by going to your account settings
-            </Text>
-          </View>
         </View>
 
         <View style={styles.section}>
@@ -237,7 +213,7 @@ export default function TermsOfServiceScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>15. Contact Information</Text>
           <Text style={styles.paragraph}>
-            If you have any questions about these Terms of Service, please contact us through the App's support features or via email at support@hostiq.com.
+            If you have any questions about these Terms of Service, please contact us at contact@securestay.ai.
           </Text>
         </View>
 
