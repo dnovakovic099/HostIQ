@@ -24,10 +24,15 @@ const COLORS = {
   textPrimary: '#0F172A',
   textSecondary: '#64748B',
   textMuted: '#94A3B8',
-  accent: '#3B82F6',
-  accentSoft: '#EFF6FF',
-  success: '#10B981',
-  successSoft: 'rgba(16, 185, 129, 0.08)',
+  // Gradient theme colors
+  gradientBlue: '#1E3AFF',
+  gradientMediumBlue: '#215EEA',
+  gradientTeal: '#2CB5E9',
+  gradientGreen: '#33D39C',
+  accent: '#215EEA',
+  accentSoft: 'rgba(33, 94, 234, 0.1)',
+  success: '#33D39C',
+  successSoft: 'rgba(51, 211, 156, 0.1)',
   warning: '#F59E0B',
   warningSoft: 'rgba(245, 158, 11, 0.08)',
   error: '#EF4444',
@@ -219,8 +224,9 @@ export default function InsightsCleanersTab({ navigation }) {
   };
 
   const getPassRateColor = (rate) => {
-    if (rate >= 90) return COLORS.success;
-    if (rate >= 70) return COLORS.warning;
+    if (rate >= 90) return COLORS.gradientGreen;
+    if (rate >= 70) return COLORS.gradientTeal;
+    if (rate >= 50) return COLORS.warning;
     return COLORS.error;
   };
 
@@ -334,7 +340,7 @@ export default function InsightsCleanersTab({ navigation }) {
 
         <View style={styles.assignmentsRow}>
           <View style={styles.assignmentPill}>
-            <Ionicons name="calendar-outline" size={14} color={COLORS.accent} />
+            <Ionicons name="calendar-outline" size={14} color={COLORS.gradientMediumBlue} />
             <Text style={styles.assignmentText}>
               {assignmentCount} {assignmentCount === 1 ? 'assignment' : 'assignments'}
             </Text>
@@ -364,7 +370,7 @@ export default function InsightsCleanersTab({ navigation }) {
 
         <View style={styles.cardFooter}>
           <Text style={styles.viewReportsText}>View Inspections</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.accent} />
+          <Ionicons name="chevron-forward" size={16} color={COLORS.gradientMediumBlue} />
         </View>
       </TouchableOpacity>
     );
@@ -491,7 +497,7 @@ export default function InsightsCleanersTab({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="people-outline" size={48} color={COLORS.accent} />
+              <Ionicons name="people-outline" size={48} color={COLORS.gradientMediumBlue} />
             </View>
             <Text style={styles.emptyTitle}>No Cleaners Yet</Text>
             <Text style={styles.emptyText}>
@@ -577,6 +583,7 @@ const styles = StyleSheet.create({
   summaryCard: {
     backgroundColor: COLORS.card,
     marginHorizontal: 16,
+    marginTop: 16,
     paddingVertical: 16,
     paddingHorizontal: 18,
     borderRadius: 16,
@@ -666,13 +673,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: COLORS.accentSoft,
+    backgroundColor: 'rgba(44, 181, 233, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   avatarText: {
-    color: COLORS.accent,
+    color: COLORS.gradientTeal,
     fontSize: 18,
     fontWeight: '700',
   },
@@ -696,7 +703,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: COLORS.accentSoft,
+    backgroundColor: 'rgba(33, 94, 234, 0.1)',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 10,
@@ -705,7 +712,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.accent,
+    color: COLORS.gradientMediumBlue,
   },
   trendBadge: {
     width: 32,
@@ -770,7 +777,7 @@ const styles = StyleSheet.create({
   },
   viewReportsText: {
     fontSize: 14,
-    color: COLORS.accent,
+    color: COLORS.gradientMediumBlue,
     fontWeight: '600',
     marginRight: 4,
   },
@@ -784,7 +791,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 20,
-    backgroundColor: COLORS.accentSoft,
+    backgroundColor: 'rgba(33, 94, 234, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,

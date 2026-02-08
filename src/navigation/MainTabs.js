@@ -104,10 +104,10 @@ function InsightsStack() {
         headerBackTitleVisible: false,
       }}
     >
-      <Stack.Screen 
-        name="InsightsTabs" 
+      <Stack.Screen
+        name="InsightsTabs"
         component={InsightsScreen}
-        options={{ title: 'Insights' }}
+        options={{ headerShown: false }}
       />
       {FEATURE_FLAGS.ENABLE_PAYMENTS && (
         <Stack.Screen

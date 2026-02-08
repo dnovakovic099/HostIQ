@@ -324,7 +324,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={colors.gradients.quickActionTeal}
+                                        colors={['#2CB5E9', '#215EEA']}
                                         style={styles.quickActionCircle}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
@@ -340,7 +340,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={colors.gradients.quickActionBlue}
+                                        colors={['#215EEA', '#1E3AFF']}
                                         style={styles.quickActionCircle}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
@@ -350,32 +350,13 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     <Text style={styles.quickActionText}>Team</Text>
                                 </TouchableOpacity>
 
-                                {/* Plans quick action temporarily disabled to prevent navigation to Subscriptions */}
-                                {/*
-                                <TouchableOpacity
-                                    style={styles.quickActionBtn}
-                                    onPress={() => navigation.navigate('SubscriptionManagement')}
-                                    activeOpacity={0.7}
-                                >
-                                    <LinearGradient
-                                        colors={colors.gradients.quickActionLightBlue}
-                                        style={styles.quickActionCircle}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                    >
-                                        <Ionicons name="card" size={20} color={colors.text.inverse} />
-                                    </LinearGradient>
-                                    <Text style={styles.quickActionText}>Plans</Text>
-                                </TouchableOpacity>
-                                */}
-
                                 <TouchableOpacity
                                     style={styles.quickActionBtn}
                                     onPress={() => navigation.navigate('Insights')}
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={colors.gradients.quickActionSkyBlue}
+                                        colors={['#33D39C', '#2CB5E9']}
                                         style={styles.quickActionCircle}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
@@ -443,19 +424,19 @@ export default function OwnerDashboardScreen({ navigation }) {
                     {recentInspections.length > 0 && (
                         <View style={styles.statsRow}>
                             <View style={styles.statItem}>
-                                <Text style={styles.statValue}>{totalInspections}</Text>
+                                <Text style={[styles.statValue, { color: '#1E3AFF' }]}>{totalInspections}</Text>
                                 <Text style={styles.statLabel}>TOTAL</Text>
                             </View>
                             <View style={styles.statItem}>
-                                <Text style={[styles.statValue, { color: COLORS.accent }]}>{avgScore}</Text>
+                                <Text style={[styles.statValue, { color: '#215EEA' }]}>{avgScore}</Text>
                                 <Text style={styles.statLabel}>AVG SCORE</Text>
                             </View>
                             <View style={styles.statItem}>
-                                <Text style={[styles.statValue, { color: COLORS.success }]}>{completedInspections}</Text>
+                                <Text style={[styles.statValue, { color: '#33D39C' }]}>{completedInspections}</Text>
                                 <Text style={styles.statLabel}>COMPLETE</Text>
                             </View>
                             <View style={styles.statItem}>
-                                <Text style={[styles.statValue, { color: COLORS.warning }]}>{processingInspections}</Text>
+                                <Text style={[styles.statValue, { color: '#2CB5E9' }]}>{processingInspections}</Text>
                                 <Text style={styles.statLabel}>PROCESSING</Text>
                             </View>
                         </View>
@@ -669,7 +650,7 @@ const styles = StyleSheet.create({
     sectionTitleUnderline: {
         width: 48,                              // Slightly smaller
         height: 3,
-        backgroundColor: COLORS.accent,
+        backgroundColor: '#215EEA',
         borderRadius: 1.5,
         marginTop: 4,
     },
@@ -947,7 +928,7 @@ const styles = StyleSheet.create({
     simpleScore: {
         fontSize: 20,
         fontWeight: '700',
-        color: COLORS.accent,
+        color: '#215EEA',
         letterSpacing: -0.5,
     },
     metaInfo: {

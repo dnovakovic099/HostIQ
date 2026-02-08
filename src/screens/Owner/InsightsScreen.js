@@ -7,9 +7,13 @@ import {
   Animated,
   Dimensions,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FEATURE_FLAGS } from '../../config/constants';
+import colors from '../../theme/colors';
 
 // Import sub-screens as components
 import CleanersTabContent from './InsightsCleanersTab';
@@ -22,7 +26,16 @@ const TABS = [
   { id: 'property', label: 'Property', icon: 'business' },
 ];
 
+// Gradient theme colors
+const GRADIENT_COLORS = {
+  blue: '#1E3AFF',
+  mediumBlue: '#215EEA',
+  teal: '#2CB5E9',
+  green: '#33D39C',
+};
+
 export default function InsightsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('cleaners');
   const slideAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -62,6 +75,43 @@ export default function InsightsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      {/* Header Gradient - Same style as Properties screen */}
+      <LinearGradient
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+      >
+        {Platform.OS === 'ios' ? (
+          <SafeAreaView>
+            <View style={styles.headerContent}>
+              <View style={styles.headerIconWrapper}>
+                <View style={styles.headerIconInner}>
+                  <Ionicons name="bar-chart" size={28} color="#FFFFFF" />
+                </View>
+              </View>
+              <View style={styles.headerTextWrapper}>
+                <Text style={styles.headerTitle}>Insights</Text>
+                <Text style={styles.headerSubtitle}>Track team performance</Text>
+              </View>
+            </View>
+          </SafeAreaView>
+        ) : (
+          <View style={styles.headerContent}>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="bar-chart" size={28} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>Insights</Text>
+              <Text style={styles.headerSubtitle}>Track team performance</Text>
+            </View>
+          </View>
+        )}
+      </LinearGradient>
+
       {FEATURE_FLAGS.ENABLE_INSIGHTS_PROPERTY_TAB && (
         <View style={styles.tabBarContainer}>
           <View style={styles.tabBar}>
@@ -120,6 +170,46 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
+  // Header - Same style as Properties screen
+  headerWrapper: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 18,
+  },
+  headerIconWrapper: {
+    marginRight: 14,
+  },
+  headerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 4,
+    letterSpacing: 0.3,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.9,
+  },
   tabBarContainer: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -139,11 +229,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     bottom: 4,
-    backgroundColor: '#4A90E2',
+    backgroundColor: GRADIENT_COLORS.mediumBlue,
     borderRadius: 10,
     ...Platform.select({
       ios: {
-        shadowColor: '#4A90E2',
+        shadowColor: GRADIENT_COLORS.mediumBlue,
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 4,

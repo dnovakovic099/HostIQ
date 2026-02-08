@@ -23,7 +23,7 @@ import colors from '../../theme/colors';
 
 const { width } = Dimensions.get('window');
 
-// Modern color palette matching OwnerDashboard
+// Modern color palette matching OwnerDashboard with gradient colors
 const COLORS = {
   background: '#F1F5F9',
   card: '#FFFFFF',
@@ -33,8 +33,13 @@ const COLORS = {
     secondary: '#64748B',
     tertiary: '#94A3B8',
   },
-  accent: '#3B82F6',
-  success: '#10B981',
+  // Gradient theme colors
+  gradientBlue: '#1E3AFF',
+  gradientMediumBlue: '#215EEA',
+  gradientTeal: '#2CB5E9',
+  gradientGreen: '#33D39C',
+  accent: '#215EEA',
+  success: '#33D39C',
   warning: '#F59E0B',
   error: '#EF4444',
   divider: '#E2E8F0',
@@ -193,22 +198,22 @@ export default function CleanerHistoryScreen({ navigation }) {
     const isAppFailed = errorMsg.includes('blurred') || errorMsg.includes('technical');
 
     if (status === 'FAILED' || isAppFailed) {
-      return { label: 'Failed', bg: '#FEF2F2', color: '#DC2626', icon: 'close-circle' };
+      return { label: 'Failed', bg: '#FEF2F2', color: COLORS.error, icon: 'close-circle' };
     }
     if (status === 'REJECTED') {
       return { label: 'Rejected', bg: '#FFF7ED', color: '#EA580C', icon: 'close-circle' };
     }
     if (status === 'COMPLETE' && isGuestReady === false) {
-      return { label: 'Needs Review', bg: '#FFFBEB', color: '#D97706', icon: 'alert-circle' };
+      return { label: 'Needs Review', bg: '#FFFBEB', color: COLORS.warning, icon: 'alert-circle' };
     }
     if (status === 'COMPLETE') {
-      return { label: 'Passed', bg: '#F0FDF4', color: '#16A34A', icon: 'checkmark-circle' };
+      return { label: 'Passed', bg: 'rgba(51, 211, 156, 0.1)', color: COLORS.gradientGreen, icon: 'checkmark-circle' };
     }
     if (status === 'PENDING') {
-      return { label: 'Ready', bg: '#EFF6FF', color: '#2563EB', icon: 'play-circle' };
+      return { label: 'Ready', bg: 'rgba(33, 94, 234, 0.1)', color: COLORS.gradientMediumBlue, icon: 'play-circle' };
     }
     if (status === 'IN_PROGRESS' || status === 'PROCESSING') {
-      return { label: 'Processing', bg: '#E3F2FD', color: '#4A90E2', icon: 'sync' };
+      return { label: 'Processing', bg: 'rgba(44, 181, 233, 0.1)', color: COLORS.gradientTeal, icon: 'sync' };
     }
     return { label: status, bg: '#F3F4F6', color: '#6B7280', icon: 'ellipse' };
   };
@@ -318,14 +323,14 @@ export default function CleanerHistoryScreen({ navigation }) {
 
           <View style={styles.actionArrow}>
             <Text style={styles.actionLabel}>{isAssignment ? 'Start' : 'View'}</Text>
-            <Ionicons name="chevron-forward" size={16} color="#4A90E2" />
+            <Ionicons name="chevron-forward" size={16} color={COLORS.gradientMediumBlue} />
           </View>
         </View>
 
         {/* Processing Indicator */}
         {(item.status === 'PROCESSING' || item.status === 'IN_PROGRESS') && (
           <View style={styles.processingRow}>
-            <ActivityIndicator size="small" color="#4A90E2" />
+            <ActivityIndicator size="small" color={COLORS.gradientTeal} />
             <Text style={styles.processingText}>AI analyzing photos...</Text>
           </View>
         )}
@@ -385,15 +390,15 @@ export default function CleanerHistoryScreen({ navigation }) {
             <View style={[styles.statCard, { backgroundColor: COLORS.card }]}>
               <View style={styles.statContent}>
                 <View style={styles.statTextContainer}>
-                  <Text style={styles.statValue}>{stats.total}</Text>
+                  <Text style={[styles.statValue, { color: COLORS.gradientBlue }]}>{stats.total}</Text>
                   <Text style={styles.statLabel}>Total Cleanings</Text>
                   <Text style={styles.statDescription}>All assignments</Text>
                 </View>
                 <LinearGradient
-                  colors={['rgba(59, 130, 246, 0.1)', 'rgba(59, 130, 246, 0.05)']}
+                  colors={['rgba(30, 58, 255, 0.12)', 'rgba(30, 58, 255, 0.05)']}
                   style={styles.statIconWrapper}
                 >
-                  <Ionicons name="calendar" size={20} color={COLORS.accent} />
+                  <Ionicons name="calendar" size={20} color={COLORS.gradientBlue} />
                 </LinearGradient>
               </View>
             </View>
@@ -401,15 +406,15 @@ export default function CleanerHistoryScreen({ navigation }) {
             <View style={[styles.statCard, { backgroundColor: COLORS.card }]}>
               <View style={styles.statContent}>
                 <View style={styles.statTextContainer}>
-                  <Text style={[styles.statValue, { color: COLORS.success }]}>{stats.passed}</Text>
+                  <Text style={[styles.statValue, { color: COLORS.gradientGreen }]}>{stats.passed}</Text>
                   <Text style={styles.statLabel}>Passed</Text>
                   <Text style={styles.statDescription}>Guest-ready</Text>
                 </View>
                 <LinearGradient
-                  colors={['rgba(16, 185, 129, 0.1)', 'rgba(16, 185, 129, 0.05)']}
+                  colors={['rgba(51, 211, 156, 0.12)', 'rgba(51, 211, 156, 0.05)']}
                   style={styles.statIconWrapper}
                 >
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.success} />
+                  <Ionicons name="checkmark-circle" size={20} color={COLORS.gradientGreen} />
                 </LinearGradient>
               </View>
             </View>
@@ -422,7 +427,7 @@ export default function CleanerHistoryScreen({ navigation }) {
                   <Text style={styles.statDescription}>Not guest-ready</Text>
                 </View>
                 <LinearGradient
-                  colors={['rgba(245, 158, 11, 0.1)', 'rgba(245, 158, 11, 0.05)']}
+                  colors={['rgba(245, 158, 11, 0.12)', 'rgba(245, 158, 11, 0.05)']}
                   style={styles.statIconWrapper}
                 >
                   <Ionicons name="construct-outline" size={20} color={COLORS.warning} />
@@ -433,15 +438,15 @@ export default function CleanerHistoryScreen({ navigation }) {
             <View style={[styles.statCard, { backgroundColor: COLORS.card }]}>
               <View style={styles.statContent}>
                 <View style={styles.statTextContainer}>
-                  <Text style={[styles.statValue, { color: COLORS.accent }]}>{stats.pending}</Text>
+                  <Text style={[styles.statValue, { color: COLORS.gradientTeal }]}>{stats.pending}</Text>
                   <Text style={styles.statLabel}>Pending</Text>
                   <Text style={styles.statDescription}>To be done</Text>
                 </View>
                 <LinearGradient
-                  colors={['rgba(59, 130, 246, 0.1)', 'rgba(59, 130, 246, 0.05)']}
+                  colors={['rgba(44, 181, 233, 0.12)', 'rgba(44, 181, 233, 0.05)']}
                   style={styles.statIconWrapper}
                 >
-                  <Ionicons name="time" size={20} color={COLORS.accent} />
+                  <Ionicons name="time" size={20} color={COLORS.gradientTeal} />
                 </LinearGradient>
               </View>
             </View>
@@ -451,14 +456,14 @@ export default function CleanerHistoryScreen({ navigation }) {
         {/* Quick Actions */}
         <View style={styles.quickActionsContainer}>
           <View style={styles.quickActions}>
-          <TouchableOpacity
+            <TouchableOpacity
               style={styles.quickActionBtn}
               onPress={() => navigation.navigate('CreateInspection')}
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={['#7F9AC0', '#5F7FA3']}
-               style={styles.quickActionCircle}
+                colors={['#215EEA', '#1E3AFF']}
+                style={styles.quickActionCircle}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
@@ -471,37 +476,34 @@ export default function CleanerHistoryScreen({ navigation }) {
               onPress={() => navigation.navigate('CleanerReports')}
               activeOpacity={0.8}
             >
-              <View style={[styles.quickActionCircle, { backgroundColor: '#A8D5E2' }]}>
-                <Ionicons name="stats-chart" size={24} color="#2C6B7F" />
-              </View>
+              <LinearGradient
+                colors={['#2CB5E9', '#215EEA']}
+                style={styles.quickActionCircle}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name="stats-chart" size={24} color="#FFFFFF" />
+              </LinearGradient>
               <Text style={styles.quickActionText}>Reports</Text>
             </TouchableOpacity>
-
-            {/* <TouchableOpacity
-              style={styles.quickActionBtn}
-              onPress={() => navigation.navigate('PaymentSettings')}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.quickActionCircle, { backgroundColor: '#C4E8C2' }]}>
-                <Ionicons name="wallet" size={22} color="#3A7B37" />
-              </View>
-              <Text style={styles.quickActionText}>Payments</Text>
-            </TouchableOpacity> */}
 
             <TouchableOpacity
               style={styles.quickActionBtn}
               onPress={() => setShowPropertyDropdown(true)}
               activeOpacity={0.8}
             >
-              <View style={[styles.quickActionCircle, { backgroundColor: '#C4D7FF' }]}>
-                <Ionicons name="funnel" size={22} color="#4A6FA5" />
-              </View>
+              <LinearGradient
+                colors={['#33D39C', '#2CB5E9']}
+                style={styles.quickActionCircle}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name="funnel" size={22} color="#FFFFFF" />
+              </LinearGradient>
               <Text style={styles.quickActionText}>
                 {selectedProperty === 'all' ? 'Filter' : 'Filtered'}
               </Text>
             </TouchableOpacity>
-
-           
           </View>
         </View>
 
@@ -518,7 +520,11 @@ export default function CleanerHistoryScreen({ navigation }) {
             renderEmpty()
           ) : (
             <Animated.View style={{ opacity: fadeAnim }}>
-              {filteredInspections.map(item => renderCard({ item }))}
+              {filteredInspections.map(item => (
+                <React.Fragment key={`${item.type}-${item.id}`}>
+                  {renderCard({ item })}
+                </React.Fragment>
+              ))}
             </Animated.View>
           )}
         </View>
@@ -547,7 +553,7 @@ export default function CleanerHistoryScreen({ navigation }) {
               <Text style={[styles.modalOptionText, selectedProperty === 'all' && styles.modalOptionTextActive]}>
                 All Properties
               </Text>
-              {selectedProperty === 'all' && <Ionicons name="checkmark" size={20} color="#4A90E2" />}
+              {selectedProperty === 'all' && <Ionicons name="checkmark" size={20} color="#215EEA" />}
             </TouchableOpacity>
 
             {properties.map(prop => (
@@ -559,7 +565,7 @@ export default function CleanerHistoryScreen({ navigation }) {
                 <Text style={[styles.modalOptionText, selectedProperty === prop && styles.modalOptionTextActive]}>
                   {prop}
                 </Text>
-                {selectedProperty === prop && <Ionicons name="checkmark" size={20} color="#4A90E2" />}
+                {selectedProperty === prop && <Ionicons name="checkmark" size={20} color="#215EEA" />}
               </TouchableOpacity>
             ))}
           </View>
@@ -648,7 +654,7 @@ const styles = StyleSheet.create({
   // Stats Section
   statsSection: {
     paddingHorizontal: 16,
-    marginTop: -16,
+    marginTop: 16,
     marginBottom: 16,
   },
   statsGrid: {
@@ -756,7 +762,7 @@ const styles = StyleSheet.create({
   sectionTitleUnderline: {
     width: 40,
     height: 3,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.gradientMediumBlue,
     borderRadius: 2,
     marginTop: 4,
   },
@@ -876,7 +882,7 @@ const styles = StyleSheet.create({
   actionLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.accent,
+    color: COLORS.gradientMediumBlue,
   },
   viewButton: {
     flexDirection: 'row',
@@ -915,7 +921,7 @@ const styles = StyleSheet.create({
   },
   processingText: {
     fontSize: 12,
-    color: COLORS.accent,
+    color: COLORS.gradientTeal,
     fontWeight: '500',
   },
   // Empty State
@@ -991,6 +997,6 @@ const styles = StyleSheet.create({
   },
   modalOptionTextActive: {
     fontWeight: '600',
-    color: '#4A90E2',
+    color: '#215EEA',
   },
 });
