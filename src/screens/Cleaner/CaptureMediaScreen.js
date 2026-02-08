@@ -31,12 +31,14 @@ import shadows from '../../theme/shadows';
 const COLORS = {
   bg: '#F8FAFC',
   card: '#FFFFFF',
-  primary: '#548EDD', // HostIQ Brand Color
+  primary: '#215EEA', // Gradient theme blue
+  primaryDark: '#1E3AFF',
+  teal: '#2CB5E9',
   text: '#1F2937',
   textSecondary: '#6B7280',
   textMuted: '#9CA3AF',
   border: '#E5E7EB',
-  success: '#10B981',
+  success: '#33D39C',
   warning: '#F59E0B',
   error: '#EF4444',
 };
@@ -563,7 +565,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const getRoomColor = (roomId) => {
     if (!roomId) return '#94A3B8'; // Gray for unassigned
     const index = rooms.findIndex(r => r.id === roomId);
-    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+    const colors = ['#3B82F6', '#33D39C', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
     return colors[index % colors.length];
   };
 
@@ -779,7 +781,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
                   <Text style={styles.modernRoomName}>{room.name}</Text>
                   {isComplete && (
                     <View style={styles.completeBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                      <Ionicons name="checkmark-circle" size={16} color="#33D39C" />
                       <Text style={styles.completeBadgeText}>{roomPhotos.length} photo{roomPhotos.length > 1 ? 's' : ''}</Text>
                     </View>
                   )}
@@ -796,7 +798,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
                 <Text style={styles.roomCardActionText}>
                   {isComplete ? 'View & Edit Photos' : 'Add Photos'}
                 </Text>
-                <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
               </View>
             </TouchableOpacity>
           );
@@ -873,7 +875,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
                       <Text style={styles.valuableItemName}>{item.name}</Text>
                       {hasPhoto && (
                         <View style={styles.valuableItemCompleteBadge}>
-                          <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+                          <Ionicons name="checkmark-circle" size={16} color="#33D39C" />
                           <Text style={styles.valuableItemCompleteText}>Verified</Text>
                         </View>
                       )}
@@ -1304,7 +1306,7 @@ const styles = StyleSheet.create({
   completeBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#33D39C',
   },
   modernRoomTips: {
     fontSize: 13,
@@ -1689,8 +1691,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   submitButtonDisabled: {
-    backgroundColor: '#CBD5F5',
-    opacity: 0.6,
+    backgroundColor: 'rgba(33, 94, 234, 0.4)',
     shadowOpacity: 0,
   },
   submitButtonText: {
@@ -1995,7 +1996,7 @@ const styles = StyleSheet.create({
   valuableItemCompleteText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#33D39C',
   },
   valuableItemRoom: {
     fontSize: 13,

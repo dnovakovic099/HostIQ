@@ -197,7 +197,7 @@ export default function RoomCaptureScreen({ route, navigation }) {
   };
 
   const getRoomColor = (roomId) => {
-    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+    const colors = ['#3B82F6', '#33D39C', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
     return colors[0]; // Use first color for single room
   };
 
@@ -218,11 +218,11 @@ export default function RoomCaptureScreen({ route, navigation }) {
               onPress={() => navigation.goBack()}
               style={styles.backButton}
             >
-              <Ionicons name="arrow-back" size={24} color="#4A90E2" />
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
-                <Ionicons name={getRoomIcon(room.type)} size={28} color="#4A90E2" />
+                <Ionicons name={getRoomIcon(room.type)} size={28} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
@@ -426,13 +426,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F172A',
+    color: '#FFFFFF',
     marginBottom: 4,
     letterSpacing: 0.3,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#475569',
+    color: 'rgba(255, 255, 255, 0.9)',
     fontWeight: '500',
   },
   keyboardAvoidingView: {
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   saveButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#215EEA',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     gap: 8,
-    shadowColor: '#34C759',
+    shadowColor: '#215EEA',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
