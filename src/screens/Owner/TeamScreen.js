@@ -70,7 +70,7 @@ export default function TeamScreen() {
           <Ionicons
             name={item.role === 'CLEANER' ? 'person' : 'briefcase'}
             size={24}
-            color="#4A90E2"
+            color="#215EEA"
           />
         </View>
         <View style={styles.inviteInfo}>
@@ -104,7 +104,7 @@ export default function TeamScreen() {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#215EEA" />
       </View>
     );
   }
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   inviteButton: {
     flexDirection: 'row',
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -386,8 +386,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   roleButtonActive: {
-    borderColor: '#4A90E2',
-    backgroundColor: '#4A90E2',
+    borderColor: '#215EEA',
+    backgroundColor: '#215EEA',
   },
   roleButtonText: {
     fontSize: 16,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   modalButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',

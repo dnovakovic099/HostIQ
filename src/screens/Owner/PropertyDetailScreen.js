@@ -30,7 +30,7 @@ const COLORS = {
   textSecondary: '#6B7280',
   textTertiary: '#9CA3AF',
   border: '#E5E7EB',
-  green: '#10B981',
+  green: '#33D39C',
   orange: '#F59E0B',
   red: '#EF4444',
 };
@@ -1090,7 +1090,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
                 >
                   <View style={styles.roomTypeLeft}>
                     <View style={styles.roomTypeIconContainer}>
-                      <Ionicons name={suggestion.icon} size={28} color="#4A90E2" />
+                      <Ionicons name={suggestion.icon} size={28} color="#215EEA" />
                     </View>
                     <View>
                       <Text style={styles.roomTypeLabel}>{suggestion.label}</Text>
@@ -1279,7 +1279,7 @@ export default function PropertyDetailScreen({ route, navigation }) {
                               style={styles.quickAddChip}
                               onPress={() => insertExampleTip(tip)}
                             >
-                              <Ionicons name="add-circle-outline" size={14} color="#4A90E2" />
+                              <Ionicons name="add-circle-outline" size={14} color="#215EEA" />
                               <Text style={styles.quickAddChipText} numberOfLines={1}>
                                 {tip}
                               </Text>
@@ -2143,12 +2143,12 @@ const styles = StyleSheet.create({
   },
   quickAddChipText: {
     fontSize: 12,
-    color: '#4A90E2',
+    color: '#215EEA',
     marginLeft: 4,
     fontWeight: '500',
   },
   saveButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     borderRadius: 12,
     height: 52,
     justifyContent: 'center',
@@ -2216,7 +2216,7 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#34C759',
+    color: '#33D39C',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
@@ -2429,7 +2429,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F59E0B',
   },
   statusDotInProgress: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#215EEA',
   },
   statusText: {
     fontSize: 12,

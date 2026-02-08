@@ -72,14 +72,14 @@ export default function CleanerPerformanceScreen({ navigation }) {
   };
 
   const getPassRateColor = (rate) => {
-    if (rate >= 90) return '#10B981';
+    if (rate >= 90) return '#33D39C';
     if (rate >= 70) return '#F59E0B';
     return '#EF4444';
   };
 
   const getTrendIcon = (trend) => {
     switch (trend) {
-      case 'improving': return { name: 'trending-up', color: '#10B981' };
+      case 'improving': return { name: 'trending-up', color: '#33D39C' };
       case 'declining': return { name: 'trending-down', color: '#EF4444' };
       default: return { name: 'remove', color: '#6B7280' };
     }
@@ -130,7 +130,7 @@ export default function CleanerPerformanceScreen({ navigation }) {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: '#10B981' }]}>{item.passedCount || 0}</Text>
+            <Text style={[styles.statValue, { color: '#33D39C' }]}>{item.passedCount || 0}</Text>
             <Text style={styles.statLabel}>Passed</Text>
           </View>
           <View style={styles.statDivider} />
@@ -270,7 +270,7 @@ export default function CleanerPerformanceScreen({ navigation }) {
                   <Text style={styles.countLabel}>Total</Text>
                 </View>
                 <View style={[styles.countItem, { backgroundColor: '#ECFDF5' }]}>
-                  <Text style={[styles.countValue, { color: '#10B981' }]}>{selectedReport.passedCount}</Text>
+                  <Text style={[styles.countValue, { color: '#33D39C' }]}>{selectedReport.passedCount}</Text>
                   <Text style={styles.countLabel}>Passed</Text>
                 </View>
                 <View style={[styles.countItem, { backgroundColor: '#FEF2F2' }]}>
@@ -344,7 +344,7 @@ export default function CleanerPerformanceScreen({ navigation }) {
             {selectedReport.improvements && selectedReport.improvements.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="trending-up" size={20} color="#3B82F6" />
+                  <Ionicons name="trending-up" size={20} color="#215EEA" />
                   <Text style={styles.sectionTitle}>Suggested Improvements</Text>
                 </View>
                 {selectedReport.improvements.map((improvement, index) => (
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#215EEA',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12

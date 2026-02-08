@@ -565,7 +565,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const getRoomColor = (roomId) => {
     if (!roomId) return '#94A3B8'; // Gray for unassigned
     const index = rooms.findIndex(r => r.id === roomId);
-    const colors = ['#3B82F6', '#33D39C', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+    const colors = ['#215EEA', '#33D39C', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
     return colors[index % colors.length];
   };
 
@@ -738,7 +738,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
             colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.08)']}
             style={styles.roomsHeaderIcon}
           >
-            <Ionicons name="bed" size={20} color="#3B82F6" />
+            <Ionicons name="bed" size={20} color="#215EEA" />
           </LinearGradient>
           <Text style={styles.roomsOverviewTitle}>Rooms to Clean</Text>
           <View style={styles.roomsCountBadge}>
@@ -1490,7 +1490,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   roomPhotoCount: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#215EEA',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
@@ -1527,7 +1527,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 10,
     borderBottomWidth: 2,
-    borderBottomColor: '#3B82F6',
+    borderBottomColor: '#215EEA',
   },
   editTipsTextContainer: {
     flex: 1,

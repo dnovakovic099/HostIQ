@@ -147,7 +147,7 @@ export default function PaymentSettingsScreen({ navigation }) {
     switch (status) {
       case 'ACTIVE':
         return {
-          color: '#10B981',
+          color: '#33D39C',
           bgColor: '#ECFDF5',
           icon: 'checkmark-circle',
           label: 'Active',
@@ -232,15 +232,15 @@ export default function PaymentSettingsScreen({ navigation }) {
           
           <View style={styles.benefitsList}>
             <View style={styles.benefitItem}>
-              <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+              <Ionicons name="checkmark-circle" size={20} color="#33D39C" />
               <Text style={styles.benefitText}>Fast direct deposits</Text>
             </View>
             <View style={styles.benefitItem}>
-              <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+              <Ionicons name="checkmark-circle" size={20} color="#33D39C" />
               <Text style={styles.benefitText}>Secure bank-level encryption</Text>
             </View>
             <View style={styles.benefitItem}>
-              <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+              <Ionicons name="checkmark-circle" size={20} color="#33D39C" />
               <Text style={styles.benefitText}>Track all payments in one place</Text>
             </View>
           </View>
@@ -298,7 +298,7 @@ export default function PaymentSettingsScreen({ navigation }) {
                 <Ionicons 
                   name={account.chargesEnabled ? 'checkmark-circle' : 'ellipse-outline'} 
                   size={18} 
-                  color={account.chargesEnabled ? '#10B981' : '#D1D5DB'} 
+                  color={account.chargesEnabled ? '#33D39C' : '#D1D5DB'} 
                 />
                 <Text style={styles.featureText}>Charges enabled</Text>
               </View>
@@ -306,7 +306,7 @@ export default function PaymentSettingsScreen({ navigation }) {
                 <Ionicons 
                   name={account.payoutsEnabled ? 'checkmark-circle' : 'ellipse-outline'} 
                   size={18} 
-                  color={account.payoutsEnabled ? '#10B981' : '#D1D5DB'} 
+                  color={account.payoutsEnabled ? '#33D39C' : '#D1D5DB'} 
                 />
                 <Text style={styles.featureText}>Payouts enabled</Text>
               </View>
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#10B981'
+    color: '#33D39C'
   },
   statLabel: {
     fontSize: 13,

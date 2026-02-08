@@ -126,7 +126,7 @@ export default function ChangePasswordScreen({ navigation }) {
           {isGoogleUser ? (
             <View style={styles.infoCard}>
               <View style={styles.infoIconContainer}>
-                <Ionicons name="information-circle" size={56} color="#4A90E2" />
+                <Ionicons name="information-circle" size={56} color="#215EEA" />
               </View>
               <Text style={styles.infoTitle}>Password Change Not Available</Text>
               <Text style={styles.infoText}>
@@ -148,7 +148,7 @@ export default function ChangePasswordScreen({ navigation }) {
 
               <View style={styles.form}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="lock-closed" size={20} color="#4A90E2" />
+                  <Ionicons name="lock-closed" size={20} color="#215EEA" />
                   <Text style={styles.sectionTitle}>Password Information</Text>
                 </View>
 
@@ -217,7 +217,7 @@ export default function ChangePasswordScreen({ navigation }) {
                         <Ionicons
                           name={passwordRequirements.minLength ? 'checkmark-circle' : 'ellipse-outline'}
                           size={16}
-                          color={passwordRequirements.minLength ? '#10B981' : '#9CA3AF'}
+                          color={passwordRequirements.minLength ? '#33D39C' : '#9CA3AF'}
                         />
                         <Text style={[
                           styles.requirementText,
@@ -230,7 +230,7 @@ export default function ChangePasswordScreen({ navigation }) {
                         <Ionicons
                           name={passwordRequirements.different ? 'checkmark-circle' : 'ellipse-outline'}
                           size={16}
-                          color={passwordRequirements.different ? '#10B981' : '#9CA3AF'}
+                          color={passwordRequirements.different ? '#33D39C' : '#9CA3AF'}
                         />
                         <Text style={[
                           styles.requirementText,
@@ -280,7 +280,7 @@ export default function ChangePasswordScreen({ navigation }) {
                       <Ionicons
                         name={passwordRequirements.match ? 'checkmark-circle' : 'close-circle'}
                         size={16}
-                        color={passwordRequirements.match ? '#10B981' : '#EF4444'}
+                        color={passwordRequirements.match ? '#33D39C' : '#EF4444'}
                       />
                       <Text style={[
                         styles.requirementText,
@@ -293,7 +293,7 @@ export default function ChangePasswordScreen({ navigation }) {
                 </View>
 
                 <View style={styles.securityTip}>
-                  <Ionicons name="shield-checkmark" size={18} color="#4A90E2" />
+                  <Ionicons name="shield-checkmark" size={18} color="#215EEA" />
                   <Text style={styles.securityTipText}>
                     <Text style={styles.securityTipBold}>Security Tip:</Text> Use a combination of letters, numbers, and special characters for better security.
                   </Text>
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   requirementTextMet: {
-    color: '#10B981',
+    color: '#33D39C',
   },
   requirementTextError: {
     color: '#EF4444',
@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 24,
     borderLeftWidth: 3,
-    borderLeftColor: '#4A90E2',
+    borderLeftColor: '#215EEA',
   },
   securityTipText: {
     flex: 1,
@@ -509,12 +509,12 @@ const styles = StyleSheet.create({
   saveButton: {
     height: 56,
     borderRadius: 12,
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
     flexDirection: 'row',
-    shadowColor: '#4A90E2',
+    shadowColor: '#215EEA',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

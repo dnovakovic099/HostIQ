@@ -287,7 +287,7 @@ export default function ListingOptimizationScreen({ navigation }) {
       case 'BLOCKER': return '#DC2626';
       case 'HIGH': return '#EA580C';
       case 'MEDIUM': return '#F59E0B';
-      case 'LOW': return '#10B981';
+      case 'LOW': return '#33D39C';
       default: return '#6B7280';
     }
   };
@@ -306,7 +306,7 @@ export default function ListingOptimizationScreen({ navigation }) {
     switch (status) {
       case 'DETECTED': return '#EF4444';
       case 'REVIEWING': return '#F59E0B';
-      case 'RESOLVED': return '#10B981';
+      case 'RESOLVED': return '#33D39C';
       case 'FALSE_POSITIVE': return '#6B7280';
       default: return '#6B7280';
     }
@@ -1302,7 +1302,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                         <Text style={styles.statLabel}>Blockers</Text>
                       </View>
                       <View style={styles.statItem}>
-                        <Text style={[styles.statNumber, { color: '#10B981' }]}>
+                        <Text style={[styles.statNumber, { color: '#33D39C' }]}>
                           {stats.byStatus?.RESOLVED || 0}
                         </Text>
                         <Text style={styles.statLabel}>Resolved</Text>
@@ -1430,7 +1430,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                 }}
               >
                 <View style={styles.sectionHeaderLeft}>
-                  <Ionicons name="cash-outline" size={24} color="#10B981" />
+                  <Ionicons name="cash-outline" size={24} color="#33D39C" />
                   <Text style={styles.sectionHeaderTitle}>Pricing Analytics</Text>
                 </View>
                 <Ionicons
@@ -1657,7 +1657,7 @@ export default function ListingOptimizationScreen({ navigation }) {
             >
               <View style={styles.navigationCardContent}>
                 <View style={[styles.navigationCardIcon, { backgroundColor: '#ECFDF5' }]}>
-                  <Ionicons name="card" size={24} color="#10B981" />
+                  <Ionicons name="card" size={24} color="#33D39C" />
                 </View>
                 <View style={styles.navigationCardText}>
                   <Text style={styles.navigationCardTitle}>Pay Cleaners</Text>
@@ -1742,7 +1742,7 @@ export default function ListingOptimizationScreen({ navigation }) {
                 {selectedIssue.status === 'DETECTED' && (
                   <View style={styles.issueModalActions}>
                     <TouchableOpacity
-                      style={[styles.issueModalButton, { backgroundColor: '#10B981' }]}
+                      style={[styles.issueModalButton, { backgroundColor: '#33D39C' }]}
                       onPress={() => {
                         updateIssueStatus(selectedIssue.id, 'RESOLVED');
                         setIssueModalVisible(false);
@@ -2995,7 +2995,7 @@ const styles = StyleSheet.create({
   priceValue: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#10B981',
+    color: '#33D39C',
     letterSpacing: -1,
     marginBottom: 4,
   },
@@ -3021,7 +3021,7 @@ const styles = StyleSheet.create({
   },
   pricingValue: {
     fontSize: 17,
-    color: '#10B981',
+    color: '#33D39C',
     fontWeight: '600',
     letterSpacing: -0.4,
   },

@@ -42,7 +42,7 @@ function PropertiesStack() {
           borderBottomWidth: 0.5,
           borderBottomColor: '#E5E5EA',
         },
-        headerTintColor: '#4A90E2',
+        headerTintColor: '#215EEA',
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 17,
@@ -95,7 +95,7 @@ function InsightsStack() {
           borderBottomWidth: 0.5,
           borderBottomColor: '#E5E5EA',
         },
-        headerTintColor: '#4A90E2',
+        headerTintColor: '#215EEA',
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 17,
@@ -152,7 +152,7 @@ function PricingStack() {
           borderBottomWidth: 0.5,
           borderBottomColor: '#E5E5EA',
         },
-        headerTintColor: '#4A90E2',
+        headerTintColor: '#215EEA',
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 17,
@@ -185,7 +185,7 @@ function SubscriptionStack() {
           borderBottomWidth: 0.5,
           borderBottomColor: '#E5E5EA',
         },
-        headerTintColor: '#4A90E2',
+        headerTintColor: '#215EEA',
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 17,

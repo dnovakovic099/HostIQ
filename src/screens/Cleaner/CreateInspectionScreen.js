@@ -167,7 +167,7 @@ export default function CreateInspectionScreen({ navigation }) {
             activeOpacity={0.8}
           >
             <View style={styles.modeIconContainer}>
-                      <Ionicons name="business" size={28} color="#3B82F6" />
+                      <Ionicons name="business" size={28} color="#215EEA" />
             </View>
             <Text style={styles.modeButtonTitle}>Select Property</Text>
             <Text style={styles.modeButtonDescription}>
@@ -184,7 +184,7 @@ export default function CreateInspectionScreen({ navigation }) {
             activeOpacity={0.8}
           >
             <View style={[styles.modeIconContainer, styles.modeIconContainerSecondary]}>
-                      <Ionicons name="create-outline" size={28} color="#3B82F6"  />
+                      <Ionicons name="create-outline" size={28} color="#215EEA"  />
             </View>
             <Text style={styles.modeButtonTitle}>Custom Property</Text>
             <Text style={styles.modeButtonDescription}>
@@ -207,13 +207,13 @@ export default function CreateInspectionScreen({ navigation }) {
         <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
           {loading ? (
             <View style={styles.loaderContainer}>
-              <ActivityIndicator size="large" color="#3B82F6" />
+              <ActivityIndicator size="large" color="#215EEA" />
               <Text style={styles.loaderText}>Loading properties...</Text>
             </View>
           ) : !selectedProperty ? (
             <View>
               <View style={styles.sectionHeader}>
-                <Ionicons name="business-outline" size={20} color="#3B82F6" />
+                <Ionicons name="business-outline" size={20} color="#215EEA" />
                 <Text style={styles.sectionHeaderText}>Choose a property</Text>
               </View>
               {properties.length === 0 ? (
@@ -231,7 +231,7 @@ export default function CreateInspectionScreen({ navigation }) {
                     activeOpacity={0.7}
                   >
                     <View style={styles.listItemIcon}>
-                      <Ionicons name="business" size={20} color="#3B82F6" />
+                      <Ionicons name="business" size={20} color="#215EEA" />
                     </View>
                     <View style={styles.listItemContent}>
                       <Text style={styles.listItemTitle}>{property.name}</Text>
@@ -254,7 +254,7 @@ export default function CreateInspectionScreen({ navigation }) {
 
               {units.length > 1 && (
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="home-outline" size={20} color="#3B82F6" />
+                  <Ionicons name="home-outline" size={20} color="#215EEA" />
                   <Text style={styles.sectionHeaderText}>Choose a unit</Text>
                 </View>
               )}
@@ -283,7 +283,7 @@ export default function CreateInspectionScreen({ navigation }) {
                       <Ionicons 
                         name={selectedUnit?.id === unit.id ? "home" : "home-outline"} 
                         size={20} 
-                        color={selectedUnit?.id === unit.id ? "#3B82F6" : "#3B82F6"} 
+                        color={selectedUnit?.id === unit.id ? "#215EEA" : "#215EEA"} 
                       />
                     </View>
                     <View style={styles.listItemContent}>
@@ -304,7 +304,7 @@ export default function CreateInspectionScreen({ navigation }) {
                     </View>
                     {selectedUnit?.id === unit.id && (
                       <View style={styles.checkmarkContainer}>
-                        <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                        <Ionicons name="checkmark-circle" size={24} color="#33D39C" />
                       </View>
                     )}
                   </TouchableOpacity>
@@ -315,7 +315,7 @@ export default function CreateInspectionScreen({ navigation }) {
                 <View style={styles.roomTipsSection}>
                   <View style={styles.roomTipsHeader}>
                     <View style={styles.roomTipsIconContainer}>
-                      <Ionicons name="information-circle" size={18} color="#3B82F6" />
+                      <Ionicons name="information-circle" size={18} color="#215EEA" />
                     </View>
                     <View style={styles.roomTipsHeaderText}>
                       <Text style={styles.roomTipsTitle}>Room Guidelines</Text>
@@ -374,7 +374,7 @@ export default function CreateInspectionScreen({ navigation }) {
       >
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderIconContainer}>
-            <Ionicons name="business-outline" size={20} color="#3B82F6" />
+            <Ionicons name="business-outline" size={20} color="#215EEA" />
           </View>
           <Text style={styles.sectionHeaderText}>Property Details</Text>
         </View>
@@ -409,7 +409,7 @@ export default function CreateInspectionScreen({ navigation }) {
 
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderIconContainer}>
-            <Ionicons name="home-outline" size={20} color="#3B82F6" />
+            <Ionicons name="home-outline" size={20} color="#215EEA" />
           </View>
           <Text style={styles.sectionHeaderText}>Unit Details</Text>
         </View>
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   buttonPrimary: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#215EEA',
   },
   buttonDisabled: {
     backgroundColor: '#D1D5DB',
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   },
   listItemSelected: {
     borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
+    borderLeftColor: '#215EEA',
   },
   listItemIcon: {
     width: 40,
@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#3B82F6',
+    borderLeftColor: '#215EEA',
   },
   roomTipHeader: {
     flexDirection: 'row',

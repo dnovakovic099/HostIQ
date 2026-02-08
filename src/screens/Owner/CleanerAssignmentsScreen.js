@@ -66,13 +66,13 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
       case 'PENDING':
         return '#FFB000'; // Orange
       case 'SCHEDULED':
-        return '#3B82F6'; // Blue
+        return '#215EEA'; // Blue
       case 'IN_PROGRESS':
       case 'STARTED':
         return '#F59E0B'; // Orange
       case 'COMPLETED':
       case 'APPROVED':
-        return '#10B981'; // Green
+        return '#33D39C'; // Green
       case 'SUBMITTED':
         return '#8B5CF6'; // Purple
       case 'CANCELLED':
@@ -327,7 +327,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
 
         <View style={styles.detailsRow}>
           <View style={styles.detailItem}>
-            <Ionicons name="location" size={16} color="#4A90E2" />
+            <Ionicons name="location" size={16} color="#215EEA" />
             <Text style={styles.detailText} numberOfLines={1}>
               {item.unit?.property?.address || 'No address'}
             </Text>
@@ -336,7 +336,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
 
         <View style={styles.detailsRow}>
           <View style={styles.detailItem}>
-            <Ionicons name="calendar" size={16} color="#4A90E2" />
+            <Ionicons name="calendar" size={16} color="#215EEA" />
             <Text style={styles.detailText}>
               Due: {formatDate(item.due_at || item.scheduled_for)}
             </Text>
@@ -346,7 +346,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
         {item.created_at && (
           <View style={styles.detailsRow}>
             <View style={styles.detailItem}>
-              <Ionicons name="time" size={16} color="#4A90E2" />
+              <Ionicons name="time" size={16} color="#215EEA" />
               <Text style={styles.detailTextSmall}>
                 Assigned: {formatDate(item.created_at)}
               </Text>
@@ -361,7 +361,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
               style={[styles.actionButton, styles.viewButton]}
               onPress={() => handleViewInspection(item)}
             >
-              <Ionicons name="document-text" size={18} color="#4A90E2" />
+              <Ionicons name="document-text" size={18} color="#215EEA" />
               <Text style={styles.actionButtonText}>View Report</Text>
             </TouchableOpacity>
           )}
@@ -383,7 +383,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#215EEA" />
       </View>
     );
   }
@@ -427,8 +427,8 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => fetchCleanerAssignments(false)}
-            tintColor="#4A90E2"
-            colors={['#4A90E2']}
+            tintColor="#215EEA"
+            colors={['#215EEA']}
           />
         }
         ListEmptyComponent={
@@ -439,7 +439,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
               end={{ x: 1, y: 1 }}
               style={styles.emptyIcon}
             >
-              <Ionicons name="calendar-outline" size={48} color="#4A90E2" />
+              <Ionicons name="calendar-outline" size={48} color="#215EEA" />
             </LinearGradient>
             <Text style={styles.emptyText}>No assignments yet</Text>
             <Text style={styles.emptySubtext}>
@@ -512,7 +512,7 @@ const styles = StyleSheet.create({
     borderColor: '#E0E7FF',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#215EEA',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -606,7 +606,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4A90E2',
+    color: '#215EEA',
   },
   empty: {
     alignItems: 'center',
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#3B82F6',
+        shadowColor: '#215EEA',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,

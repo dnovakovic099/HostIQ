@@ -15,7 +15,7 @@ export const colors = {
   },
 
   secondary: {
-    main: '#34C759',           // iOS system green
+    main: '#33D39C',           // iOS system green
     light: '#5DD97C',
     dark: '#28A745',
     vibrant: '#32D74B',        // More vibrant green
@@ -76,7 +76,7 @@ export const colors = {
   // STATUS COLORS - iOS system semantic colors
   // ============================================
   status: {
-    success: '#34C759',            // iOS green
+    success: '#33D39C',            // iOS green
     successDark: '#28A745',
     warning: '#FF9500',            // iOS orange
     error: '#FF3B30',              // iOS red
@@ -120,7 +120,7 @@ export const colors = {
 
 
     dashboardHeaderLocations: [0, 0.3, 0.7, 1],  // Control color stop positions
-    success: ['#34C759', '#30B350'],
+    success: ['#33D39C', '#30B350'],
     warning: ['#FF9500', '#FF8A00'],
     error: ['#FF3B30', '#FF2D20'],
     lightBlue: ['#F0F9FF', '#E3F2FD'],     // Light blue background
@@ -147,7 +147,7 @@ export const colors = {
     blueLight: 'rgba(0, 122, 255, 0.10)',      // Subtle 10% opacity
     blueMedium: 'rgba(0, 122, 255, 0.15)',
     blueStrong: 'rgba(0, 122, 255, 0.25)',
-    success: '#34C759',
+    success: '#33D39C',
     successLight: 'rgba(52, 199, 89, 0.10)',
     warning: '#FF9500',
     warningLight: 'rgba(255, 149, 0, 0.10)',
@@ -204,7 +204,7 @@ export const colors = {
   // ============================================
   ios: {
     blue: '#007AFF',
-    green: '#34C759',
+    green: '#33D39C',
     indigo: '#5856D6',
     orange: '#FF9500',
     pink: '#FF2D55',
@@ -244,7 +244,7 @@ export const colors = {
   // ============================================
   blue: {
     400: '#60A5FA',
-    500: '#3B82F6',
+    500: '#215EEA',
     600: '#2563EB',
   },
 

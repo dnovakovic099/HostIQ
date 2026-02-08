@@ -31,7 +31,7 @@ const COLORS = {
   textSecondary: '#6B7280',
   textMuted: '#9CA3AF',
   border: '#E5E7EB',
-  success: '#10B981',
+  success: '#33D39C',
   warning: '#F59E0B',
   error: '#EF4444',
 };
@@ -501,11 +501,11 @@ export default function ValuableItemsScreen({ route, navigation }) {
                 ) : (
                   <View style={styles.photoButtons}>
                     <TouchableOpacity style={styles.photoButton} onPress={takePhoto}>
-                      <Ionicons name="camera" size={24} color="#4A90E2" />
+                      <Ionicons name="camera" size={24} color="#215EEA" />
                       <Text style={styles.photoButtonText}>Camera</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-                      <Ionicons name="images" size={24} color="#4A90E2" />
+                      <Ionicons name="images" size={24} color="#215EEA" />
                       <Text style={styles.photoButtonText}>Gallery</Text>
                     </TouchableOpacity>
                   </View>

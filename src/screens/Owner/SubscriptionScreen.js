@@ -26,7 +26,7 @@ const COLORS = {
   textSecondary: '#6B7280',
   textMuted: '#9CA3AF',
   border: '#E5E7EB',
-  success: '#10B981',
+  success: '#33D39C',
   warning: '#F59E0B',
   error: '#EF4444',
 };
@@ -184,7 +184,7 @@ export default function SubscriptionScreen({ navigation }) {
               <View key={index} style={styles.featureRow}>
                 <View style={styles.checkIconContainer}>
               <LinearGradient
-                colors={['#10B981', '#059669']}
+                colors={['#33D39C', '#059669']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.checkIcon}
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#10B981',
+        shadowColor: '#33D39C',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 4,

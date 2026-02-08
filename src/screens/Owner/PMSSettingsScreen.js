@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   emptyButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: 12,
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   connectButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     padding: 18,
     borderRadius: 12,
     alignItems: 'center',
@@ -493,7 +493,7 @@ const styles = StyleSheet.create({
   },
   integrationStatus: {
     fontSize: 14,
-    color: '#10B981',
+    color: '#33D39C',
     fontWeight: '500',
   },
   integrationStats: {
@@ -518,12 +518,12 @@ const styles = StyleSheet.create({
   syncButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#4A90E2',
+    color: '#215EEA',
     marginLeft: spacing.xs,
   },
   syncStatusText: {
     fontSize: 12,
-    color: '#4A90E2',
+    color: '#215EEA',
     marginLeft: spacing.xs,
     flex: 1,
   },

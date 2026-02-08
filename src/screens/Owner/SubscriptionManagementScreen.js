@@ -288,7 +288,7 @@ export default function SubscriptionManagementScreen({ navigation }) {
           <Ionicons 
             name={isAtLimit ? "alert-circle" : "image-outline"} 
             size={28} 
-            color={isAtLimit ? "#F44336" : "#4A90E2"} 
+            color={isAtLimit ? "#F44336" : "#215EEA"} 
           />
           <Text style={styles.usageTitle}>Free Image Usage</Text>
         </View>
@@ -306,7 +306,7 @@ export default function SubscriptionManagementScreen({ navigation }) {
               styles.progressBar, 
               { 
                 width: `${percentage}%`,
-                backgroundColor: isAtLimit ? '#F44336' : isNearLimit ? '#FF9800' : '#4A90E2'
+                backgroundColor: isAtLimit ? '#F44336' : isNearLimit ? '#FF9800' : '#215EEA'
               }
             ]} 
           />
@@ -350,7 +350,7 @@ export default function SubscriptionManagementScreen({ navigation }) {
           </View>
           {hasSubscription && (
             <View style={styles.activeBadge}>
-              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+              <Ionicons name="checkmark-circle" size={20} color="#33D39C" />
               <Text style={styles.activeBadgeText}>Active</Text>
             </View>
           )}
@@ -374,15 +374,15 @@ export default function SubscriptionManagementScreen({ navigation }) {
             <View style={styles.benefitsBox}>
               <Text style={styles.benefitsTitle}>Subscribe for unlimited access:</Text>
               <View style={styles.benefitRow}>
-                <Ionicons name="checkmark" size={16} color="#34C759" />
+                <Ionicons name="checkmark" size={16} color="#33D39C" />
                 <Text style={styles.benefitText}>Unlimited image processing</Text>
               </View>
               <View style={styles.benefitRow}>
-                <Ionicons name="checkmark" size={16} color="#34C759" />
+                <Ionicons name="checkmark" size={16} color="#33D39C" />
                 <Text style={styles.benefitText}>AI-powered inspections</Text>
               </View>
               <View style={styles.benefitRow}>
-                <Ionicons name="checkmark" size={16} color="#34C759" />
+                <Ionicons name="checkmark" size={16} color="#33D39C" />
                 <Text style={styles.benefitText}>Priority support</Text>
               </View>
             </View>
@@ -402,7 +402,7 @@ export default function SubscriptionManagementScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#215EEA" />
         <Text style={styles.loadingText}>Loading subscriptions...</Text>
       </View>
     );
@@ -444,7 +444,7 @@ export default function SubscriptionManagementScreen({ navigation }) {
       </View>
 
       <View style={styles.infoBox}>
-        <Ionicons name="information-circle-outline" size={24} color="#4A90E2" />
+        <Ionicons name="information-circle-outline" size={24} color="#215EEA" />
         <View style={styles.infoTextContainer}>
           <Text style={styles.infoTitle}>How it works</Text>
           <Text style={styles.infoText}>
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
   activeBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#34C759',
+    color: '#33D39C',
     letterSpacing: -0.1,
   },
   subscriptionDetails: {

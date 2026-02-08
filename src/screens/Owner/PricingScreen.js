@@ -32,7 +32,7 @@ const SubscriptionUpsellScreen = ({ onSubscribe }) => {
         style={styles.upsellHeader}
       >
         <View style={styles.upsellIconContainer}>
-          <Ionicons name="analytics" size={48} color="#4A90E2" />
+          <Ionicons name="analytics" size={48} color="#215EEA" />
         </View>
         <Text style={styles.upsellTitle}>AI-Powered Pricing</Text>
         <Text style={styles.upsellSubtitle}>
@@ -45,7 +45,7 @@ const SubscriptionUpsellScreen = ({ onSubscribe }) => {
         
         <View style={styles.featureRow}>
           <View style={styles.featureIcon}>
-            <Ionicons name="trending-up" size={20} color="#4A90E2" />
+            <Ionicons name="trending-up" size={20} color="#215EEA" />
           </View>
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Real-Time Market Analysis</Text>
@@ -65,7 +65,7 @@ const SubscriptionUpsellScreen = ({ onSubscribe }) => {
 
         <View style={styles.featureRow}>
           <View style={styles.featureIcon}>
-            <Ionicons name="calendar" size={20} color="#10B981" />
+            <Ionicons name="calendar" size={20} color="#33D39C" />
           </View>
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Availability-Based Pricing</Text>
@@ -693,7 +693,7 @@ export default function PricingScreen() {
     >
       <View style={styles.imageContainer}>
         <Image 
-          source={{ uri: comp.image || 'https://via.placeholder.com/400x300?text=No+Image' }} 
+          source={{ uri: comp.image || 'https://placehold.co/400x300?text=No+Image' }} 
           style={styles.cardImage}
           resizeMode="cover"
         />
@@ -935,7 +935,7 @@ export default function PricingScreen() {
           .map((comp, idx) => (
             <View key={idx} style={styles.miniCompCard}>
               <Image 
-                source={{ uri: comp.image || 'https://via.placeholder.com/80x80' }} 
+                source={{ uri: comp.image || 'https://placehold.co/80x80' }} 
                 style={styles.miniCompImage}
               />
               <View style={styles.miniCompInfo}>
@@ -1347,7 +1347,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   pricingBadge: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#33D39C',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1376,7 +1376,7 @@ const styles = StyleSheet.create({
   },
   priceSavings: {
     fontSize: 13,
-    color: '#10B981',
+    color: '#33D39C',
     marginBottom: 24,
   },
   subscribeButton: {
@@ -2296,7 +2296,7 @@ const styles = StyleSheet.create({
   },
   aiLogoContainer: {
     marginBottom: 40,
-    shadowColor: '#3B82F6',
+    shadowColor: '#215EEA',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 30,
@@ -2327,7 +2327,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#215EEA',
   },
 });
 

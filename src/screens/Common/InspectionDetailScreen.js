@@ -559,9 +559,9 @@ export default function InspectionDetailScreen({ route, navigation }) {
                 </View>
                 
                 <View style={styles.headerRightSection}>
-                  <View style={[styles.statBadge, { backgroundColor: '#EFF6FF', borderColor: '#3B82F6' }]}>
-                    <Ionicons name="star" size={14} color="#3B82F6" />
-                    <Text style={[styles.statValue, { color: '#3B82F6' }]}>{roomScore.toFixed(1)}</Text>
+                  <View style={[styles.statBadge, { backgroundColor: '#EFF6FF', borderColor: '#215EEA' }]}>
+                    <Ionicons name="star" size={14} color="#215EEA" />
+                    <Text style={[styles.statValue, { color: '#215EEA' }]}>{roomScore.toFixed(1)}</Text>
                   </View>
                   <View style={[styles.statBadgeCompact, { 
                     backgroundColor: statusDisplay.backgroundColor,
@@ -580,21 +580,21 @@ export default function InspectionDetailScreen({ route, navigation }) {
                 <View style={styles.headerActionsInCard}>
                   {status === 'COMPLETE' && (
                     <TouchableOpacity
-                      style={[styles.actionBtnCompact, { borderColor: '#10B981' }]}
+                      style={[styles.actionBtnCompact, { borderColor: '#33D39C' }]}
                       onPress={() => navigation.navigate('CleaningReport', { inspectionId })}
                     >
-                      <Ionicons name="document-text" size={16} color="#10B981" />
-                      <Text style={[styles.actionBtnTextCompact, { color: '#10B981' }]}>Report</Text>
+                      <Ionicons name="document-text" size={16} color="#33D39C" />
+                      <Text style={[styles.actionBtnTextCompact, { color: '#33D39C' }]}>Report</Text>
                     </TouchableOpacity>
                   )}
 
                   {userRole === 'CLEANER' && statusDisplay.canEdit && (
                     <TouchableOpacity
-                      style={[styles.actionBtnCompact, { borderColor: '#3B82F6' }]}
+                      style={[styles.actionBtnCompact, { borderColor: '#215EEA' }]}
                       onPress={handleEditInspection}
                     >
-                      <Ionicons name="create" size={16} color="#3B82F6" />
-                      <Text style={[styles.actionBtnTextCompact, { color: '#3B82F6' }]}>Edit</Text>
+                      <Ionicons name="create" size={16} color="#215EEA" />
+                      <Text style={[styles.actionBtnTextCompact, { color: '#215EEA' }]}>Edit</Text>
                     </TouchableOpacity>
                   )}
 
@@ -1271,13 +1271,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0FDF4',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#10B981',
+    borderColor: '#33D39C',
     gap: 8,
   },
   shareReportButtonCardText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#33D39C',
   },
 
   // CARD
@@ -1474,8 +1474,8 @@ const styles = StyleSheet.create({
     minWidth: 140,
   },
   roomTabSelected: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
+    backgroundColor: '#215EEA',
+    borderColor: '#215EEA',
   },
   roomTabText: {
     fontSize: 15,

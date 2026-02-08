@@ -327,7 +327,7 @@ export default function RoomTemplatesScreen({ navigation }) {
                         <Ionicons 
                           name={type.icon} 
                           size={24} 
-                          color="#4A90E2"
+                          color="#215EEA"
                         />
                       </View>
                       <Text style={[
@@ -337,7 +337,7 @@ export default function RoomTemplatesScreen({ navigation }) {
                         {type.label}
                       </Text>
                       {roomType === type.value && (
-                        <Ionicons name="checkmark" size={20} color="#4A90E2" />
+                        <Ionicons name="checkmark" size={20} color="#215EEA" />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#34C759',
+    color: '#33D39C',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   inlinePickerOptionTextSelected: {
-    color: '#4A90E2',
+    color: '#215EEA',
     fontWeight: '600',
   },
 });

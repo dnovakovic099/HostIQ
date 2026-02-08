@@ -282,7 +282,7 @@ export default function RegisterScreen({ navigation }) {
                       <Ionicons
                         name="person-outline"
                         size={20}
-                        color="#3B82F6"
+                        color="#215EEA"
                       />
                       <Text style={styles.roleButtonTextActive}>Cleaner</Text>
                     </View>
@@ -311,7 +311,7 @@ export default function RegisterScreen({ navigation }) {
                       <Ionicons
                         name="business-outline"
                         size={20}
-                        color="#3B82F6"
+                        color="#215EEA"
                       />
                       <Text style={styles.roleButtonTextActive}>Owner</Text>
                     </View>
@@ -430,7 +430,7 @@ export default function RegisterScreen({ navigation }) {
                       <Ionicons
                         name="person-outline"
                         size={20}
-                        color="#3B82F6"
+                        color="#215EEA"
                       />
                       <Text style={styles.roleButtonTextActive}>Cleaner</Text>
                     </View>
@@ -459,7 +459,7 @@ export default function RegisterScreen({ navigation }) {
                       <Ionicons
                         name="business-outline"
                         size={20}
-                        color="#3B82F6"
+                        color="#215EEA"
                       />
                       <Text style={styles.roleButtonTextActive}>Owner</Text>
                     </View>
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   modalButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#215EEA',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',

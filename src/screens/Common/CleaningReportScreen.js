@@ -64,8 +64,8 @@ const fixImageUrl = (url) => {
 };
 
 const GRADE_COLORS = {
-  'A+': '#10B981',
-  'A': '#10B981',
+  'A+': '#33D39C',
+  'A': '#33D39C',
   'A-': '#34D399',
   'B+': '#F59E0B',
   'B': '#F59E0B',
@@ -391,7 +391,7 @@ export default function CleaningReportScreen({ route, navigation }) {
         {/* Header Card */}
         <View style={styles.headerCard}>
           <View style={styles.verifiedBadge}>
-            <Ionicons name="shield-checkmark" size={16} color="#10B981" />
+            <Ionicons name="shield-checkmark" size={16} color="#33D39C" />
             <Text style={styles.verifiedText}>Verified Cleaning Report</Text>
           </View>
           
@@ -467,7 +467,7 @@ export default function CleaningReportScreen({ route, navigation }) {
             <Text style={styles.sectionTitle}>Highlights</Text>
             {report.highlights.slice(0, 5).map((highlight, index) => (
               <View key={index} style={styles.highlightItem}>
-                <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                <Ionicons name="checkmark-circle" size={18} color="#33D39C" />
                 <Text style={styles.highlightText}>{highlight}</Text>
               </View>
             ))}
@@ -530,7 +530,7 @@ export default function CleaningReportScreen({ route, navigation }) {
 
         {/* Verification Footer */}
         <View style={styles.verificationFooter}>
-          <Ionicons name="shield-checkmark" size={24} color="#10B981" />
+          <Ionicons name="shield-checkmark" size={24} color="#33D39C" />
           <View style={styles.verificationText}>
             <Text style={styles.verificationTitle}>Verified by HostIQ</Text>
             <Text style={styles.verificationSubtitle}>
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#10B98115',
+    backgroundColor: '#33D39C15',
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   verifiedText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#33D39C',
   },
   propertyName: {
     fontSize: 24,
@@ -833,7 +833,7 @@ const styles = StyleSheet.create({
   verificationFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#10B98110',
+    backgroundColor: '#33D39C10',
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -845,7 +845,7 @@ const styles = StyleSheet.create({
   verificationTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#10B981',
+    color: '#33D39C',
   },
   verificationSubtitle: {
     fontSize: 13,
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#10B981',
+    backgroundColor: '#33D39C',
     borderRadius: 12,
     padding: 16,
     gap: 8,

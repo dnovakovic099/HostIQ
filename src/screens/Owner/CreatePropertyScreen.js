@@ -378,7 +378,7 @@ export default function CreatePropertyScreen({ navigation }) {
                       <Ionicons
                         name={getRoomIcon(room.room_type)}
                         size={24}
-                        color="#4A90E2"
+                        color="#215EEA"
                       />
                     </View>
                     <View style={styles.roomSummaryInfo}>
@@ -393,7 +393,7 @@ export default function CreatePropertyScreen({ navigation }) {
                       onPress={() => setEditingRoom(room)}
                       style={styles.iconButton}
                     >
-                      <Ionicons name="create-outline" size={22} color="#4A90E2" />
+                      <Ionicons name="create-outline" size={22} color="#215EEA" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => deleteRoom(room.id)}
@@ -460,7 +460,7 @@ export default function CreatePropertyScreen({ navigation }) {
               <Ionicons
                 name={getRoomIcon(room.room_type)}
                 size={20}
-                color="#4A90E2"
+                color="#215EEA"
                 style={styles.reviewRoomIcon}
               />
               <Text style={styles.reviewRoomName}>{room.name}</Text>
@@ -497,7 +497,7 @@ export default function CreatePropertyScreen({ navigation }) {
             style={[styles.footerButton, styles.backButton]}
             onPress={handleBack}
           >
-            <Ionicons name="arrow-back" size={20} color="#4A90E2" />
+            <Ionicons name="arrow-back" size={20} color="#215EEA" />
             <Text style={styles.backButtonText}>Back</Text>
           </TouchableOpacity>
         )}
@@ -553,7 +553,7 @@ export default function CreatePropertyScreen({ navigation }) {
                 >
                   <View style={styles.roomTypeLeft}>
                     <View style={styles.roomTypeIconContainer}>
-                      <Ionicons name={suggestion.icon} size={28} color="#4A90E2" />
+                      <Ionicons name={suggestion.icon} size={28} color="#215EEA" />
                     </View>
                     <View>
                       <Text style={styles.roomTypeLabel}>{suggestion.label}</Text>
@@ -714,7 +714,7 @@ export default function CreatePropertyScreen({ navigation }) {
                               style={styles.quickAddChip}
                               onPress={() => insertExampleTip(tip)}
                             >
-                              <Ionicons name="add-circle-outline" size={14} color="#4A90E2" />
+                              <Ionicons name="add-circle-outline" size={14} color="#215EEA" />
                               <Text style={styles.quickAddChipText} numberOfLines={1}>
                                 {tip}
                               </Text>
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
   },
   progressLineFill: {
     height: '100%',
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#215EEA',
     borderRadius: 2,
     minWidth: 0,
   },
@@ -802,12 +802,12 @@ const styles = StyleSheet.create({
   },
   progressDotActive: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#10B981',
+    borderColor: '#33D39C',
   },
   progressDotCurrent: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-    shadowColor: '#3B82F6',
+    backgroundColor: '#215EEA',
+    borderColor: '#215EEA',
+    shadowColor: '#215EEA',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   progressLabelActive: {
-    color: '#3B82F6',
+    color: '#215EEA',
     fontWeight: '700',
   },
   content: {
@@ -981,11 +981,11 @@ const styles = StyleSheet.create({
   addRoomButton: {
     flexDirection: 'row',
     height: 54,
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#4A90E2',
+    shadowColor: '#215EEA',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -1012,7 +1012,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   badge: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -1084,7 +1084,7 @@ const styles = StyleSheet.create({
   reviewRoomTipsLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#4A90E2',
+    color: '#215EEA',
     marginBottom: 6,
   },
   reviewRoomTipsText: {
@@ -1123,12 +1123,12 @@ const styles = StyleSheet.create({
     borderColor: '#d0e7ff',
   },
   backButtonText: {
-    color: '#4A90E2',
+    color: '#215EEA',
     fontSize: 16,
     fontWeight: '600',
   },
   nextButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
   },
   nextButtonText: {
     color: '#fff',
@@ -1248,12 +1248,12 @@ const styles = StyleSheet.create({
   },
   quickAddChipText: {
     fontSize: 12,
-    color: '#4A90E2',
+    color: '#215EEA',
     marginLeft: 4,
     fontWeight: '500',
   },
   saveButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     borderRadius: 12,
     height: 52,
     justifyContent: 'center',
@@ -1322,7 +1322,7 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#34C759',
+    color: '#33D39C',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },

@@ -22,9 +22,9 @@ const COLORS = {
   textPrimary: '#0F172A',
   textSecondary: '#64748B',
   textMuted: '#94A3B8',
-  accent: '#3B82F6',
+  accent: '#215EEA',
   accentSoft: '#EFF6FF',
-  success: '#10B981',
+  success: '#33D39C',
   successSoft: 'rgba(16, 185, 129, 0.08)',
   warning: '#F59E0B',
   warningSoft: 'rgba(245, 158, 11, 0.08)',
@@ -172,7 +172,7 @@ export default function PayCleanerScreen({ navigation, route }) {
           )}
         </View>
         {hasPaymentAccount && (
-          <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+          <Ionicons name="checkmark-circle" size={24} color="#33D39C" />
         )}
       </TouchableOpacity>
     );
@@ -229,7 +229,7 @@ export default function PayCleanerScreen({ navigation, route }) {
                 </View>
                 {selectedCleaner.paymentAccount?.isActive ? (
                   <View style={styles.activeBadge}>
-                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                    <Ionicons name="checkmark-circle" size={16} color="#33D39C" />
                     <Text style={styles.activeBadgeText}>Bank Linked</Text>
                   </View>
                 ) : (

@@ -286,7 +286,7 @@ export default function InspectionReportsScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#215EEA" />
       </View>
     );
   }

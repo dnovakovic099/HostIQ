@@ -79,14 +79,14 @@ export default function CleanerReportsScreen({ navigation }) {
 
   const getTrendIcon = (trend) => {
     switch (trend) {
-      case 'improving': return { name: 'trending-up', color: '#10B981' };
+      case 'improving': return { name: 'trending-up', color: '#33D39C' };
       case 'declining': return { name: 'trending-down', color: '#EF4444' };
       default: return { name: 'remove', color: '#6B7280' };
     }
   };
 
   const getPassRateColor = (rate) => {
-    if (rate >= 90) return '#10B981';
+    if (rate >= 90) return '#33D39C';
     if (rate >= 70) return '#F59E0B';
     return '#EF4444';
   };
@@ -199,7 +199,7 @@ export default function CleanerReportsScreen({ navigation }) {
                   <Text style={styles.countLabel}>Total</Text>
                 </View>
                 <View style={[styles.countItem, { backgroundColor: '#ECFDF5' }]}>
-                  <Text style={[styles.countValue, { color: '#10B981' }]}>{selectedReport.passedCount}</Text>
+                  <Text style={[styles.countValue, { color: '#33D39C' }]}>{selectedReport.passedCount}</Text>
                   <Text style={styles.countLabel}>Passed</Text>
                 </View>
                 <View style={[styles.countItem, { backgroundColor: '#FEF2F2' }]}>
@@ -224,12 +224,12 @@ export default function CleanerReportsScreen({ navigation }) {
             {selectedReport.strengths && selectedReport.strengths.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="star" size={20} color="#10B981" />
+                  <Ionicons name="star" size={20} color="#33D39C" />
                   <Text style={styles.sectionTitle}>Strengths</Text>
                 </View>
                 {selectedReport.strengths.map((strength, index) => (
                   <View key={index} style={styles.listItem}>
-                    <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                    <Ionicons name="checkmark-circle" size={18} color="#33D39C" />
                     <Text style={styles.listItemText}>{strength}</Text>
                   </View>
                 ))}
@@ -240,7 +240,7 @@ export default function CleanerReportsScreen({ navigation }) {
             {selectedReport.improvements && selectedReport.improvements.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="trending-up" size={20} color="#3B82F6" />
+                  <Ionicons name="trending-up" size={20} color="#215EEA" />
                   <Text style={styles.sectionTitle}>Areas for Improvement</Text>
                 </View>
                 {selectedReport.improvements.map((improvement, index) => (
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   },
   unreadCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6'
+    borderLeftColor: '#215EEA'
   },
   reportHeader: {
     flexDirection: 'row',
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
     fontWeight: '700'
   },
   newBadge: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#215EEA',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,

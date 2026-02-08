@@ -83,7 +83,7 @@ export default function AcceptInviteScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#215EEA" />
       </View>
     );
   }
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
   property: {
     fontSize: 14,
-    color: '#4A90E2',
+    color: '#215EEA',
     marginTop: 5,
   },
   form: {
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   },
   button: {
     height: 50,
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',

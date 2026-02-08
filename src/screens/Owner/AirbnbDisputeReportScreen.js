@@ -45,7 +45,7 @@ const COLORS = {
     secondary: '#48484A',
     tertiary: '#8E8E93',
   },
-  success: '#34C759',
+  success: '#33D39C',
   successLight: '#E8F9ED',
   warning: '#FF9500',
   warningLight: '#FFF4E6',
@@ -325,7 +325,7 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
               <div class="room">
                 <div class="room-header">
                   <span class="room-name">${room.room_name}</span>
-                  <span class="room-score" style="color: ${room.cleanliness_score >= 7 ? '#34C759' : room.cleanliness_score >= 5 ? '#FF9500' : '#FF3B30'}">
+                  <span class="room-score" style="color: ${room.cleanliness_score >= 7 ? '#33D39C' : room.cleanliness_score >= 5 ? '#FF9500' : '#FF3B30'}">
                     ${room.cleanliness_score}/10
                   </span>
                 </div>
@@ -496,7 +496,7 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
           }
           .room-status.ready {
             background: #E8F9ED;
-            color: #34C759;
+            color: #33D39C;
           }
           .room-status.not-ready {
             background: #FFEBE9;
@@ -588,7 +588,7 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
               <div class="summary-label">Grade</div>
             </div>
             <div class="summary-item">
-              <div class="summary-value" style="color: ${isReady ? '#34C759' : '#FF3B30'}">${isReady ? '✓' : '—'}</div>
+              <div class="summary-value" style="color: ${isReady ? '#33D39C' : '#FF3B30'}">${isReady ? '✓' : '—'}</div>
               <div class="summary-label">${isReady ? 'Ready' : 'Not Ready'}</div>
             </div>
             <div class="summary-item">

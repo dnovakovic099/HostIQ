@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#e9ecef',
   },
   button: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',

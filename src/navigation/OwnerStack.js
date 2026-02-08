@@ -150,7 +150,7 @@ export default function OwnerStack() {
           borderBottomWidth: 0.5,
           borderBottomColor: '#E5E5EA',
         },
-        headerTintColor: '#4A90E2',
+        headerTintColor: '#215EEA',
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 17,

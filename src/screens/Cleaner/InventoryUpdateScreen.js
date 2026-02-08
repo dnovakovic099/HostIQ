@@ -15,7 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 
 const STATUS_CONFIG = {
-  IN_STOCK: { label: 'OK', color: '#34C759', icon: 'checkmark-circle' },
+  IN_STOCK: { label: 'OK', color: '#33D39C', icon: 'checkmark-circle' },
   LOW: { label: 'Low', color: '#FF9500', icon: 'alert-circle' },
   OUT_OF_STOCK: { label: 'Out', color: '#FF3B30', icon: 'close-circle' },
   ORDERED: { label: 'Ordered', color: '#007AFF', icon: 'time' },
@@ -210,7 +210,7 @@ export default function InventoryUpdateScreen({ route, navigation }) {
                     <View style={styles.nameRow}>
                       <Text style={styles.itemName}>{item.name}</Text>
                       {wasUpdated && (
-                        <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+                        <Ionicons name="checkmark-circle" size={16} color="#33D39C" />
                       )}
                     </View>
                     <Text style={styles.itemUnit}>
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   },
   itemCardUpdated: {
     borderLeftWidth: 3,
-    borderLeftColor: '#34C759',
+    borderLeftColor: '#33D39C',
   },
   itemHeader: {
     flexDirection: 'row',

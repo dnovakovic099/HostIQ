@@ -306,7 +306,7 @@ const IssuesScreen = () => {
       case 'MEDIUM':
         return '#F59E0B'; // Amber
       case 'LOW':
-        return '#10B981'; // Green
+        return '#33D39C'; // Green
       default:
         return '#6B7280'; // Gray
     }
@@ -334,7 +334,7 @@ const IssuesScreen = () => {
       case 'REVIEWING':
         return '#F59E0B';
       case 'RESOLVED':
-        return '#10B981';
+        return '#33D39C';
       case 'FALSE_POSITIVE':
         return '#6B7280';
       default:
@@ -349,9 +349,9 @@ const IssuesScreen = () => {
       case 'ACKNOWLEDGED':
         return '#F59E0B';
       case 'IN_PROGRESS':
-        return '#3B82F6';
+        return '#215EEA';
       case 'RESOLVED':
-        return '#10B981';
+        return '#33D39C';
       case 'DISMISSED':
         return '#6B7280';
       default:
@@ -567,7 +567,7 @@ const IssuesScreen = () => {
                     <Text style={styles.actionButtonText}>Review</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: '#10B981' }]}
+                    style={[styles.actionButton, { backgroundColor: '#33D39C' }]}
                     onPress={() => updateIssueStatus(selectedIssue.id, 'RESOLVED')}
                   >
                     <Text style={styles.actionButtonText}>Resolve</Text>
@@ -805,7 +805,7 @@ const IssuesScreen = () => {
                   <Text style={styles.statLabel}>Blockers</Text>
                 </View>
                 <View style={styles.statCard}>
-                  <Text style={[styles.statNumber, { color: '#10B981' }]}>
+                  <Text style={[styles.statNumber, { color: '#33D39C' }]}>
                     {stats.byStatus?.RESOLVED || 0}
                   </Text>
                   <Text style={styles.statLabel}>Resolved</Text>
@@ -827,7 +827,7 @@ const IssuesScreen = () => {
                   <Text style={styles.statLabel}>Pending</Text>
                 </View>
                 <View style={styles.statCard}>
-                  <Text style={[styles.statNumber, { color: '#10B981' }]}>
+                  <Text style={[styles.statNumber, { color: '#33D39C' }]}>
                     {damageStats.resolved}
                   </Text>
                   <Text style={styles.statLabel}>Resolved</Text>

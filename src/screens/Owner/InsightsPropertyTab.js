@@ -160,7 +160,7 @@ export default function InsightsPropertyTab({ navigation }) {
     switch (severity?.toLowerCase()) {
       case 'critical': return '#EF4444';
       case 'high': return '#F59E0B';
-      case 'medium': return '#3B82F6';
+      case 'medium': return '#215EEA';
       default: return '#6B7280';
     }
   };
@@ -184,7 +184,7 @@ export default function InsightsPropertyTab({ navigation }) {
           <Ionicons
             name={selectedProperty?.isPMSProperty ? 'cloud' : 'home'}
             size={18}
-            color="#4A90E2"
+            color="#215EEA"
           />
         </View>
         <View>
@@ -218,7 +218,7 @@ export default function InsightsPropertyTab({ navigation }) {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: '#10B981' }]}>{resolvedIssues}</Text>
+            <Text style={[styles.statValue, { color: '#33D39C' }]}>{resolvedIssues}</Text>
             <Text style={styles.statLabel}>Resolved</Text>
           </View>
           <View style={styles.statDivider} />
@@ -249,7 +249,7 @@ export default function InsightsPropertyTab({ navigation }) {
     return (
       <View style={styles.pricingCard}>
         <View style={styles.pricingHeader}>
-          <Ionicons name="analytics" size={20} color="#4A90E2" />
+          <Ionicons name="analytics" size={20} color="#215EEA" />
           <Text style={styles.pricingTitle}>Pricing Analytics</Text>
         </View>
 
@@ -386,7 +386,7 @@ export default function InsightsPropertyTab({ navigation }) {
             activeOpacity={0.7}
           >
             <View style={[styles.actionCardIcon, { backgroundColor: '#ECFDF5' }]}>
-              <Ionicons name="analytics" size={24} color="#10B981" />
+              <Ionicons name="analytics" size={24} color="#33D39C" />
             </View>
             <View style={styles.actionCardContent}>
               <Text style={styles.actionCardTitle}>Pricing Analytics</Text>
@@ -450,7 +450,7 @@ export default function InsightsPropertyTab({ navigation }) {
                 <Ionicons
                   name={item.isPMSProperty ? 'cloud' : 'home'}
                   size={18}
-                  color={item.isPMSProperty ? '#4A90E2' : '#6B7280'}
+                  color={item.isPMSProperty ? '#215EEA' : '#6B7280'}
                 />
               </View>
               <View style={styles.propertyItemContent}>
@@ -460,7 +460,7 @@ export default function InsightsPropertyTab({ navigation }) {
                 )}
               </View>
               {selectedProperty?.id === item.id && (
-                <Ionicons name="checkmark-circle" size={22} color="#4A90E2" />
+                <Ionicons name="checkmark-circle" size={22} color="#215EEA" />
               )}
             </TouchableOpacity>
           )}
@@ -597,7 +597,7 @@ export default function InsightsPropertyTab({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#215EEA" />
         <Text style={styles.loadingText}>Loading properties...</Text>
       </View>
     );
@@ -609,7 +609,7 @@ export default function InsightsPropertyTab({ navigation }) {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4A90E2" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#215EEA" />
         }
       >
         {renderPropertySelector()}
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
   viewAllText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4A90E2',
+    color: '#215EEA',
   },
   // No PMS Card
   noPMSCard: {
@@ -946,7 +946,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   connectButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 10,
@@ -1035,7 +1035,7 @@ const styles = StyleSheet.create({
   propertyItemActive: {
     backgroundColor: '#E3F2FD',
     borderWidth: 1,
-    borderColor: '#4A90E2',
+    borderColor: '#215EEA',
   },
   propertyItemIcon: {
     width: 40,
@@ -1055,7 +1055,7 @@ const styles = StyleSheet.create({
   },
   propertyItemBadge: {
     fontSize: 12,
-    color: '#4A90E2',
+    color: '#215EEA',
     marginTop: 2,
   },
   emptyProperties: {

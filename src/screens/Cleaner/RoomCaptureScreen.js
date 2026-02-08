@@ -197,7 +197,7 @@ export default function RoomCaptureScreen({ route, navigation }) {
   };
 
   const getRoomColor = (roomId) => {
-    const colors = ['#3B82F6', '#33D39C', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+    const colors = ['#215EEA', '#33D39C', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
     return colors[0]; // Use first color for single room
   };
 
@@ -275,7 +275,7 @@ export default function RoomCaptureScreen({ route, navigation }) {
             disabled={uploading}
             activeOpacity={0.8}
           >
-            <Ionicons name="images" size={18} color="#3B82F6" />
+            <Ionicons name="images" size={18} color="#215EEA" />
             <Text style={styles.galleryButtonText}>From Gallery</Text>
           </TouchableOpacity>
         </View>
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   requirementsTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#3B82F6',
+    color: '#215EEA',
     letterSpacing: 0.3,
   },
   requirementsText: {
@@ -480,14 +480,14 @@ const styles = StyleSheet.create({
   },
   cameraButton: {
     flex: 1,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#215EEA',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
-    shadowColor: '#3B82F6',
+    shadowColor: '#215EEA',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -507,13 +507,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#3B82F6',
+    borderColor: '#215EEA',
     gap: 8,
   },
   galleryButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#3B82F6',
+    color: '#215EEA',
   },
   photoSection: {
     marginHorizontal: 16,

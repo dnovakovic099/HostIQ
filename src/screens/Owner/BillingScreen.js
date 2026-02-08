@@ -56,7 +56,7 @@ export default function BillingScreen() {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#4A90E2" />
+        <ActivityIndicator size="large" color="#215EEA" />
       </View>
     );
   }
@@ -175,12 +175,6 @@ export default function BillingScreen() {
         ))}
       </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          This is a demo billing system. In production, this would integrate with
-          Stripe or another payment processor.
-        </Text>
-      </View>
     </ScrollView>
   );
 }
@@ -205,7 +199,7 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   planCard: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     borderRadius: 12,
     padding: 20,
   },
@@ -287,7 +281,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   planOptionActive: {
-    borderColor: '#4A90E2',
+    borderColor: '#215EEA',
   },
   planOptionHeader: {
     flexDirection: 'row',
@@ -303,7 +297,7 @@ const styles = StyleSheet.create({
   planOptionPrice: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#4A90E2',
+    color: '#215EEA',
   },
   planOptionPeriod: {
     fontSize: 14,
@@ -313,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   subscribeButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#215EEA',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',

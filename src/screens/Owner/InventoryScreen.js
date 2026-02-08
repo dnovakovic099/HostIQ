@@ -32,7 +32,7 @@ const COLORS = {
 };
 
 const STATUS_CONFIG = {
-  IN_STOCK: { label: 'In Stock', color: '#34C759', icon: 'checkmark-circle' },
+  IN_STOCK: { label: 'In Stock', color: '#33D39C', icon: 'checkmark-circle' },
   LOW: { label: 'Low', color: '#FF9500', icon: 'alert-circle' },
   OUT_OF_STOCK: { label: 'Out', color: '#FF3B30', icon: 'close-circle' },
   ORDERED: { label: 'Ordered', color: COLORS.primary, icon: 'time' },

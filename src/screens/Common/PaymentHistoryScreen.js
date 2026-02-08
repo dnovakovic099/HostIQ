@@ -62,11 +62,11 @@ export default function PaymentHistoryScreen({ navigation }) {
   const getStatusConfig = (status) => {
     switch (status) {
       case 'SUCCEEDED':
-        return { color: '#10B981', bgColor: '#ECFDF5', icon: 'checkmark-circle', label: 'Completed' };
+        return { color: '#33D39C', bgColor: '#ECFDF5', icon: 'checkmark-circle', label: 'Completed' };
       case 'PROCESSING':
         return { color: '#F59E0B', bgColor: '#FFFBEB', icon: 'time', label: 'Processing' };
       case 'PENDING':
-        return { color: '#3B82F6', bgColor: '#EFF6FF', icon: 'hourglass', label: 'Pending' };
+        return { color: '#215EEA', bgColor: '#EFF6FF', icon: 'hourglass', label: 'Pending' };
       case 'FAILED':
         return { color: '#EF4444', bgColor: '#FEF2F2', icon: 'close-circle', label: 'Failed' };
       case 'CANCELLED':
@@ -107,7 +107,7 @@ export default function PaymentHistoryScreen({ navigation }) {
             <Ionicons
               name={isSent ? 'arrow-up' : 'arrow-down'}
               size={20}
-              color={isSent ? '#EF4444' : '#10B981'}
+              color={isSent ? '#EF4444' : '#33D39C'}
             />
           </View>
           <View style={styles.paymentInfo}>
@@ -117,7 +117,7 @@ export default function PaymentHistoryScreen({ navigation }) {
             <Text style={styles.paymentDate}>{formatDate(item.createdAt)}</Text>
           </View>
           <View style={styles.paymentAmount}>
-            <Text style={[styles.amountText, { color: isSent ? '#EF4444' : '#10B981' }]}>
+            <Text style={[styles.amountText, { color: isSent ? '#EF4444' : '#33D39C' }]}>
               {isSent ? '-' : '+'}${displayAmount.toFixed(2)}
             </Text>
           </View>
@@ -170,8 +170,8 @@ export default function PaymentHistoryScreen({ navigation }) {
 
         {(isCleaner || isOwner) && stats?.received && (
           <View style={[styles.statsCard, { backgroundColor: '#ECFDF5' }]}>
-            <Ionicons name="arrow-down-circle" size={24} color="#10B981" />
-            <Text style={[styles.statsValue, { color: '#10B981' }]}>
+            <Ionicons name="arrow-down-circle" size={24} color="#33D39C" />
+            <Text style={[styles.statsValue, { color: '#33D39C' }]}>
               ${stats.received.totalReceived?.toFixed(0) || 0}
             </Text>
             <Text style={styles.statsLabel}>Total Received</Text>
