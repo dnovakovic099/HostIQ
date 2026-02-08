@@ -8,13 +8,19 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
-  ScrollView
+  ScrollView,
+  StatusBar,
+  Platform
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
+import colors from '../../theme/colors';
 
 export default function CleanerReportsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [performance, setPerformance] = useState(null);
@@ -319,7 +325,7 @@ export default function CleanerReportsScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#215EEA" />
         <Text style={styles.loadingText}>Loading your reports...</Text>
       </View>
     );
@@ -327,9 +333,37 @@ export default function CleanerReportsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Gradient Header */}
+      <LinearGradient
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerGradient, Platform.OS === 'android' && { paddingTop: insets.top }]}
+      >
+        <SafeAreaView edges={['top']}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconCircle}>
+                <Ionicons name="document-text" size={24} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>My Reports</Text>
+              <Text style={styles.headerSubtitle}>Track your performance</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
       {/* Performance Summary */}
       <View style={styles.summaryHeader}>
-        <Text style={styles.headerTitle}>Your Performance</Text>
+        <Text style={styles.sectionTitle}>Your Performance</Text>
         
         <View style={styles.overallStats}>
           <View style={styles.overallStatItem}>
@@ -405,14 +439,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280'
   },
+  // Gradient Header Styles
+  headerGradient: {
+    paddingBottom: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerIconWrapper: {
+    marginRight: 12,
+  },
+  headerIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '500',
+  },
+  // Content Styles
   summaryHeader: {
     backgroundColor: '#FFF',
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB'
   },
-  headerTitle: {
-    fontSize: 22,
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 16

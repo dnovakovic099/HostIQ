@@ -8,11 +8,14 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
+  StatusBar,
+  Platform,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../api/client';
+import colors from '../../theme/colors';
 
 export default function CreateInspectionScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -150,10 +153,39 @@ export default function CreateInspectionScreen({ navigation }) {
     }
   };
 
+  // Render gradient header component
+  const renderGradientHeader = (title, subtitle) => (
+    <LinearGradient
+      colors={colors.gradients.dashboardHeader}
+      locations={colors.gradients.dashboardHeaderLocations}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[styles.headerGradient, Platform.OS === 'android' && { paddingTop: insets.top }]}
+    >
+      <SafeAreaView edges={['top']}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity onPress={() => mode ? setMode(null) : navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.headerIconWrapper}>
+            <View style={styles.headerIconCircle}>
+              <Ionicons name="clipboard" size={24} color="#FFFFFF" />
+            </View>
+          </View>
+          <View style={styles.headerTextWrapper}>
+            <Text style={styles.headerTitle}>{title}</Text>
+            <Text style={styles.headerSubtitle}>{subtitle}</Text>
+          </View>
+        </View>
+      </SafeAreaView>
+    </LinearGradient>
+  );
+
   if (!mode) {
     return (
-      <SafeAreaView style={styles.container}>
-       
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        {renderGradientHeader('Create Inspection', 'Start a new property inspection')}
 
         <ScrollView style={styles.modeContainer} contentContainerStyle={styles.modeContent}>
           <View style={styles.welcomeSection}>
@@ -195,14 +227,15 @@ export default function CreateInspectionScreen({ navigation }) {
             </View>
           </TouchableOpacity>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (mode === 'preset') {
     return (
-      <SafeAreaView style={styles.container}>
-       
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        {renderGradientHeader('Select Property', selectedProperty ? selectedProperty.name : 'Choose a property')}
 
         <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
           {loading ? (
@@ -359,17 +392,18 @@ export default function CreateInspectionScreen({ navigation }) {
             </View>
           )}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // Custom mode
   return (
-    <SafeAreaView style={styles.container}>
-      
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      {renderGradientHeader('Custom Property', 'Enter property details')}
 
-      <ScrollView 
-        style={styles.content} 
+      <ScrollView
+        style={styles.content}
         contentContainerStyle={[styles.contentContainer, { paddingBottom: tabBarHeight + 20 }]}
       >
         <View style={styles.sectionHeader}>
@@ -460,7 +494,7 @@ export default function CreateInspectionScreen({ navigation }) {
           )}
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -469,6 +503,51 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
+  // Gradient Header Styles
+  headerGradient: {
+    paddingBottom: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerIconWrapper: {
+    marginRight: 12,
+  },
+  headerIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '500',
+  },
+  // Legacy styles (kept for compatibility)
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -477,10 +556,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    marginRight: 12,
-    padding: 4,
   },
   title: {
     fontSize: 22,

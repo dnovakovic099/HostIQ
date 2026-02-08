@@ -44,10 +44,10 @@ export default function CleanerStack() {
         component={CleanerHistoryScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen 
-        name="CreateInspection" 
+      <Stack.Screen
+        name="CreateInspection"
         component={CreateInspectionScreen}
-        options={{ title: 'Create Inspection' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="CaptureMedia" 
@@ -76,10 +76,10 @@ export default function CleanerStack() {
         component={InspectionDetailScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen 
-        name="CleanerReports" 
+      <Stack.Screen
+        name="CleanerReports"
         component={CleanerReportsScreen}
-        options={{ title: 'My Reports' }}
+        options={{ headerShown: false }}
       />
       {FEATURE_FLAGS.ENABLE_PAYMENTS && (
         <Stack.Screen

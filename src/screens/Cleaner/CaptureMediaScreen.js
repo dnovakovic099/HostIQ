@@ -657,18 +657,35 @@ export default function CaptureMediaScreen({ route, navigation }) {
   // Error state: no rooms defined
   if (!hasRooms) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.errorHeaderTitle}>Capture Inspection</Text>
-            <Text style={styles.errorHeaderSubtitle}>
-              {displayPropertyName} • {displayUnitName}
-            </Text>
-          </View>
-        </View>
+      <View style={styles.container}>
+        {/* Gradient Header for Error State */}
+        <LinearGradient
+          colors={colors.gradients.dashboardHeader}
+          locations={colors.gradients.dashboardHeaderLocations}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerWrapper}
+        >
+          <StatusBar barStyle="light-content" />
+          <SafeAreaView>
+            <View style={styles.headerGradient}>
+              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+              <View style={styles.headerIconWrapper}>
+                <View style={styles.headerIconInner}>
+                  <Ionicons name="camera" size={28} color="#FFFFFF" />
+                </View>
+              </View>
+              <View style={styles.headerTextWrapper}>
+                <Text style={styles.headerTitle}>Capture Inspection</Text>
+                <Text style={styles.headerSubtitle}>
+                  {displayPropertyName} • {displayUnitName}
+                </Text>
+              </View>
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={64} color="#FF9800" />
           <Text style={styles.errorTitle}>No Rooms Configured</Text>
@@ -679,7 +696,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
             <Text style={styles.errorButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
