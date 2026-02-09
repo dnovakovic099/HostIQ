@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import client from '../../api/client';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -24,7 +24,7 @@ import { useSubscription } from '../../hooks/useSubscription';
 const { width } = Dimensions.get('window');
 
 // Subscription Upsell Screen Component
-const SubscriptionUpsellScreen = ({ onSubscribe }) => {
+const SubscriptionUpsellScreen = ({ onSubscribe, navigation }) => {
   return (
     <ScrollView style={styles.upsellContainer} contentContainerStyle={styles.upsellContent}>
       <LinearGradient
@@ -103,6 +103,30 @@ const SubscriptionUpsellScreen = ({ onSubscribe }) => {
         </TouchableOpacity>
         
         <Text style={styles.trialNote}>No credit card required • Cancel anytime</Text>
+        
+        {/* Apple Required: Links to Privacy Policy and Terms of Use */}
+        <View style={styles.legalLinksContainer}>
+          <TouchableOpacity 
+            onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}
+            style={styles.legalLink}
+          >
+            <Text style={styles.legalLinkText}>Terms of Use (EULA)</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalDivider}>•</Text>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+            style={styles.legalLink}
+          >
+            <Text style={styles.legalLinkText}>Privacy Policy</Text>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Apple Required: Subscription Details */}
+        <Text style={styles.subscriptionDetails}>
+          Auto-renewable monthly subscription. Payment charged to Apple ID at confirmation of purchase. 
+          Subscription automatically renews unless cancelled at least 24 hours before the end of the current period. 
+          Manage subscriptions in Account Settings.
+        </Text>
       </View>
 
       <View style={styles.testimonialsSection}>
@@ -236,6 +260,9 @@ const AILoadingScreen = () => {
 };
 
 export default function PricingScreen() {
+  // Navigation hook
+  const navigation = useNavigation();
+  
   // Subscription hook
   const {
     isInitialized: subscriptionInitialized,
@@ -977,7 +1004,7 @@ export default function PricingScreen() {
 
   // Show upsell screen if no subscription
   if (!hasSubscription) {
-    return <SubscriptionUpsellScreen onSubscribe={handleSubscribe} />;
+    return <SubscriptionUpsellScreen onSubscribe={handleSubscribe} navigation={navigation} />;
   }
 
   return (
@@ -1399,6 +1426,36 @@ const styles = StyleSheet.create({
   trialNote: {
     fontSize: 12,
     color: colors.text.tertiary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  // Apple Required Legal Links
+  legalLinksContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  legalLink: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    color: colors.primary.main,
+    textDecorationLine: 'underline',
+  },
+  legalDivider: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+    marginHorizontal: 8,
+  },
+  subscriptionDetails: {
+    fontSize: 10,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    lineHeight: 14,
+    marginTop: 8,
   },
   testimonialsSection: {
     paddingHorizontal: 20,

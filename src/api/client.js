@@ -24,7 +24,7 @@ client.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     console.log('📤 API Request:', config.method.toUpperCase(), config.url);
-    
+
     // Log request payload/data
     if (config.data) {
       try {
@@ -39,7 +39,7 @@ client.interceptors.request.use(
         console.log('📤 Request Payload: [Unable to stringify]', typeof config.data);
       }
     }
-    
+
     // Log query parameters for GET requests
     if (config.params && Object.keys(config.params).length > 0) {
       try {
@@ -49,7 +49,7 @@ client.interceptors.request.use(
         console.log('📤 Request Params: [Unable to stringify]', typeof config.params);
       }
     }
-    
+
     return config;
   },
   (error) => {
@@ -61,7 +61,7 @@ client.interceptors.request.use(
 client.interceptors.response.use(
   (response) => {
     console.log('📥 API Response:', response.config.method.toUpperCase(), response.config.url, '→', response.status);
-    
+
     // Log response data (truncate if too large for readability)
     try {
       const responseData = response.data;
@@ -74,7 +74,7 @@ client.interceptors.response.use(
     } catch (error) {
       console.log('📦 Response Data: [Unable to stringify]', typeof response.data);
     }
-    
+
     return response;
   },
   async (error) => {
@@ -83,24 +83,24 @@ client.interceptors.response.use(
     const url = error.config?.url || 'UNKNOWN';
     const status = error.response?.status || (error.code === 'ECONNABORTED' ? 'TIMEOUT' : 'NO_RESPONSE');
     const errorMessage = error.message || 'Unknown error';
-    
+
     // Safely stringify error data to avoid JSON parsing issues
     let errorData = null;
     try {
       if (error.response?.data) {
-        errorData = typeof error.response.data === 'string' 
-          ? error.response.data 
+        errorData = typeof error.response.data === 'string'
+          ? error.response.data
           : JSON.stringify(error.response.data);
       }
     } catch (e) {
       errorData = '[Unable to serialize error data]';
     }
-    
+
     console.log('❌ API Error:', method, url, '→', status, errorMessage);
     if (errorData) {
       console.log('❌ Error Details:', errorData.length > 500 ? errorData.substring(0, 500) + '...' : errorData);
     }
-    
+
     const originalRequest = error.config;
 
     // If error is 403 and we haven't already tried to refresh

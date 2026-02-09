@@ -160,7 +160,7 @@ export default function TermsOfServiceScreen() {
             You retain ownership of any content you submit, post, or display on or through the App ("User Content"). By submitting User Content, you grant us a worldwide, non-exclusive, royalty-free license to use, reproduce, modify, adapt, publish, translate, and distribute your User Content for the purpose of operating and providing the App and its services.
           </Text>
         </View>
-
+{/* 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>8. Payment Terms</Text>
           <Text style={styles.paragraph}>
@@ -190,7 +190,7 @@ export default function TermsOfServiceScreen() {
               You can manage and cancel your subscriptions by going to your account settings
             </Text>
           </View>
-        </View>
+        </View> */}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>9. Termination</Text>

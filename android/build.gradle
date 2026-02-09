@@ -6,24 +6,19 @@ buildscript {
         minSdkVersion = Integer.parseInt(findProperty('android.minSdkVersion') ?: '21')
         compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '33')
         targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '33')
-        // Use Kotlin version compatible with React Native 0.72 and react-native-screens 3.22
-        kotlinVersion = findProperty('android.kotlinVersion') ?: '1.8.22'
+        kotlinVersion = findProperty('android.kotlinVersion') ?: '1.8.10'
         frescoVersion = findProperty('expo.frescoVersion') ?: '2.5.0'
 
         // We use NDK 23 which has both M1 support and is the side-by-side NDK version from AGP.
         ndkVersion = "23.1.7779620"
-        
-        // Force Java 21 compatibility
-        javaVersion = JavaVersion.VERSION_21
     }
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath('com.android.tools.build:gradle:8.0.2')
-        classpath('com.facebook.react:react-native-gradle-plugin:0.72.12')
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+        classpath('com.android.tools.build:gradle:7.4.2')
+        classpath('com.facebook.react:react-native-gradle-plugin')
     }
 }
 
@@ -41,57 +36,6 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://www.jitpack.io' }
-    }
-    
-    // Force Java 17 compatibility for ALL projects
-    tasks.withType(JavaCompile).configureEach {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-    
-    // Force Kotlin JVM target 17 for ALL projects
-    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-        kotlinOptions {
-            jvmTarget = "17"
-        }
-    }
-}
-
-// Enable buildConfig and set namespace for all Android library projects
-subprojects { subproject ->
-    afterEvaluate {
-        if (subproject.plugins.hasPlugin('com.android.library') || subproject.plugins.hasPlugin('com.android.application')) {
-            subproject.android {
-                buildFeatures {
-                    buildConfig = true
-                }
-                
-                // Set consistent Java compatibility
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
-                
-                // If namespace is not set, try to read from AndroidManifest.xml
-                if (namespace == null) {
-                    def manifestFile = subproject.file("src/main/AndroidManifest.xml")
-                    if (manifestFile.exists()) {
-                        def manifest = new XmlSlurper().parse(manifestFile)
-                        def packageName = manifest.'@package'.text()
-                        if (packageName) {
-                            namespace = packageName
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Set Kotlin JVM target to match Java
-        subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-            kotlinOptions {
-                jvmTarget = "17"
-            }
-        }
     }
 }
 // @generated begin expo-camera-import - expo prebuild (DO NOT MODIFY) sync-f244f4f3d8bf7229102e8f992b525b8602c74770

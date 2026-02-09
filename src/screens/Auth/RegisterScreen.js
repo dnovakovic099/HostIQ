@@ -36,12 +36,12 @@ export default function RegisterScreen({ navigation }) {
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const codeInputRefs = useRef([]);
   const { register, signInWithGoogle, signInWithApple, resendVerificationEmail, verifyCode } = useAuthStore();
-  
+
   // Check if Google Sign-In is configured
   const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-  const isGoogleSignInConfigured = googleClientId && 
+  const isGoogleSignInConfigured = googleClientId &&
     googleClientId !== 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
-  
+
   // Debug logging
   useEffect(() => {
     console.log('🔍 RegisterScreen - Google Sign-In Configuration Check:');
@@ -86,7 +86,7 @@ export default function RegisterScreen({ navigation }) {
     setLoading(true);
     const result = await resendVerificationEmail(registeredEmail);
     setLoading(false);
-    
+
     if (result.success) {
       Alert.alert('Success', 'Verification code sent! Please check your email.');
       // Clear code inputs
@@ -99,7 +99,7 @@ export default function RegisterScreen({ navigation }) {
   const handleCodeChange = (index, value) => {
     // Only allow digits
     if (value && !/^\d$/.test(value)) return;
-    
+
     const newCode = [...verificationCode];
     newCode[index] = value;
     setVerificationCode(newCode);
@@ -504,6 +504,13 @@ export default function RegisterScreen({ navigation }) {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowVerificationModal(false)}
+            >
+              <Ionicons name="close" size={24} color="#94A3B8" />
+            </TouchableOpacity>
+
             <View style={styles.modalHeader}>
               <Ionicons name="mail-outline" size={48} color="#3B82F6" />
               <Text style={styles.modalTitle}>Verification sent to your account</Text>
@@ -890,6 +897,13 @@ const styles = StyleSheet.create({
     color: '#60A5FA',
     fontSize: 14,
     fontWeight: '500',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 8,
+    zIndex: 10,
   },
 });
 

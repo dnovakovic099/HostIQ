@@ -221,8 +221,25 @@ export default function LoginScreen({ navigation }) {
       const result = await signInWithApple();
       setLoading(false);
 
-      if (!result.success && result.error !== 'Sign in was cancelled') {
-        Alert.alert('Sign in with Apple Failed', result.error || 'Please try again');
+      if (!result.success) {
+        // Don't show alert if user cancelled
+        if (result.error !== 'Sign in was cancelled') {
+          // Check if error requires role selection
+          if (result.error === 'requiresRoleSelection' || 
+              result.error?.includes('requiresRoleSelection') ||
+              result.error?.includes('role selection')) {
+            Alert.alert(
+              'Account Not Found',
+              'No account found with this Apple ID. Please sign up to create an account.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Sign Up', onPress: () => navigation.navigate('Register') }
+              ]
+            );
+          } else {
+            Alert.alert('Sign in with Apple Failed', result.error || 'Please try again');
+          }
+        }
       }
     } catch (error) {
       setLoading(false);

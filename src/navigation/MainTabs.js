@@ -16,6 +16,7 @@ import InsightsScreen from '../screens/Owner/InsightsScreen';
 import IssuesScreen from '../screens/Owner/IssuesScreen';
 import InspectionDetailScreen from '../screens/Common/InspectionDetailScreen';
 import PricingScreen from '../screens/Owner/PricingScreen';
+import PrivacyPolicyScreen from '../screens/Common/PrivacyPolicyScreen';
 import PayCleanerScreen from '../screens/Owner/PayCleanerScreen';
 import PaymentHistoryScreen from '../screens/Common/PaymentHistoryScreen';
 import InventoryScreen from '../screens/Owner/InventoryScreen';
@@ -50,28 +51,28 @@ function PropertiesStack() {
         headerBackTitleVisible: false,
       }}
     >
-      <Stack.Screen 
-        name="PropertiesList" 
+      <Stack.Screen
+        name="PropertiesList"
         component={PropertiesScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen 
-        name="PropertyDetail" 
+      <Stack.Screen
+        name="PropertyDetail"
         component={PropertyDetailScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen 
-        name="CreateProperty" 
+      <Stack.Screen
+        name="CreateProperty"
         component={CreatePropertyScreen}
         options={{ title: 'Create Property' }}
       />
-      <Stack.Screen 
-        name="Inventory" 
+      <Stack.Screen
+        name="Inventory"
         component={InventoryScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen 
-        name="ValuableItems" 
+      <Stack.Screen
+        name="ValuableItems"
         component={ValuableItemsScreen}
         options={{ title: 'Valuable Items' }}
       />
@@ -103,28 +104,28 @@ function InsightsStack() {
         headerBackTitleVisible: false,
       }}
     >
-      <Stack.Screen 
-        name="InsightsTabs" 
+      <Stack.Screen
+        name="InsightsTabs"
         component={InsightsScreen}
         options={{ title: 'Insights' }}
       />
-      <Stack.Screen 
-        name="PayCleaner" 
+      <Stack.Screen
+        name="PayCleaner"
         component={PayCleanerScreen}
         options={{ title: 'Pay Cleaner' }}
       />
-      <Stack.Screen 
-        name="PaymentHistory" 
+      <Stack.Screen
+        name="PaymentHistory"
         component={PaymentHistoryScreen}
         options={{ title: 'Payment History' }}
       />
-      <Stack.Screen 
-        name="Issues" 
+      <Stack.Screen
+        name="Issues"
         component={IssuesScreen}
         options={{ title: 'Guest Issues' }}
       />
-      <Stack.Screen 
-        name="InspectionDetail" 
+      <Stack.Screen
+        name="InspectionDetail"
         component={InspectionDetailScreen}
         options={{ headerShown: false }}
       />
@@ -156,10 +157,15 @@ function PricingStack() {
         headerBackTitleVisible: false,
       }}
     >
-      <Stack.Screen 
-        name="PricingAnalysis" 
+      <Stack.Screen
+        name="PricingAnalysis"
         component={PricingScreen}
         options={{ title: 'Market Analysis' }}
+      />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{ title: 'Privacy Policy' }}
       />
     </Stack.Navigator>
   );
@@ -189,8 +195,8 @@ function SubscriptionStack() {
         headerBackTitleVisible: false,
       }}
     >
-      <Stack.Screen 
-        name="SubscriptionList" 
+      <Stack.Screen
+        name="SubscriptionList"
         component={SubscriptionScreen}
         options={{ title: 'Subscriptions', headerShown: false }}
       />
@@ -208,7 +214,7 @@ export default function MainTabs() {
   useEffect(() => {
     const checkPMSStatus = async () => {
       if (!isOwner) return;
-      
+
       try {
         // Check for PMS integrations
         const response = await api.get('/pms/integrations');
@@ -235,8 +241,8 @@ export default function MainTabs() {
       }}
     >
       {isCleaner && (
-        <Tab.Screen 
-          name="HomeTab" 
+        <Tab.Screen
+          name="HomeTab"
           component={CleanerStack}
           options={{ title: 'Home' }}
         />
@@ -244,13 +250,13 @@ export default function MainTabs() {
 
       {isOwner && (
         <>
-          <Tab.Screen 
-            name="Inspections" 
+          <Tab.Screen
+            name="Inspections"
             component={OwnerStack}
             options={{ title: 'Inspections' }}
           />
-          <Tab.Screen 
-            name="Properties" 
+          <Tab.Screen
+            name="Properties"
             component={PropertiesStack}
             options={{ title: 'Properties' }}
             listeners={({ navigation }) => ({
@@ -263,7 +269,7 @@ export default function MainTabs() {
                   const stackState = propertiesRoute.state;
                   const currentRoute = stackState.routes?.[stackState.index || 0];
                   const currentRouteName = currentRoute?.name;
-                  
+
                   // Reset to PropertiesList if we're not already on it
                   // This ensures clicking the Properties tab always shows the list first
                   if (currentRouteName && currentRouteName !== 'PropertiesList') {
@@ -279,16 +285,16 @@ export default function MainTabs() {
               },
             })}
           />
-          <Tab.Screen 
-            name="Insights" 
+          <Tab.Screen
+            name="Insights"
             component={InsightsStack}
             options={{ title: 'Insights' }}
           />
-          <Tab.Screen 
+          {/* <Tab.Screen 
             name="Pricing" 
             component={PricingStack}
             options={{ title: 'Pricing' }}
-          />
+          /> */}
           {/*
             Temporarily hide the Subscription tab from the bottom bar.
             To re-enable, remove this comment block and restore the Tab.Screen.
@@ -301,8 +307,8 @@ export default function MainTabs() {
         </>
       )}
 
-      <Tab.Screen 
-        name="Settings" 
+      <Tab.Screen
+        name="Settings"
         component={SettingsStack}
         options={{ headerShown: false }}
       />
