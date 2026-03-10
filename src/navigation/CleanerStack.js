@@ -103,7 +103,7 @@ export default function CleanerStack() {
       <Stack.Screen 
         name="CleaningReport" 
         component={CleaningReportScreen}
-        options={{ title: 'Cleaning Report' }}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

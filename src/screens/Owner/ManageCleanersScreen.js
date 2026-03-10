@@ -11,18 +11,22 @@ import {
   Modal,
   SafeAreaView,
   Platform,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
+import { useDataStore } from '../../store/dataStore';
 import colors from '../../theme/colors';
 
 export default function ManageCleanersScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  const [cleaners, setCleaners] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const cachedCleaners = useDataStore((s) => s.cleaners);
+  const cacheLoaded = useDataStore((s) => s.cleanersLoaded);
+  const [cleaners, setCleaners] = useState(cacheLoaded ? cachedCleaners : []);
+  const [loading, setLoading] = useState(!cacheLoaded);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
@@ -32,11 +36,12 @@ export default function ManageCleanersScreen({ navigation }) {
   const [editingCleaner, setEditingCleaner] = useState(null);
   const [newPassword, setNewPassword] = useState('');
   const [updatingPassword, setUpdatingPassword] = useState(false);
-  
+
   // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
   const tabBarHeight = 15;
 
   useEffect(() => {
+    // Always refresh in background — cached data is shown instantly
     fetchCleaners();
   }, []);
 
@@ -50,15 +55,16 @@ export default function ManageCleanersScreen({ navigation }) {
 
   const fetchCleaners = async () => {
     try {
-      // Try to fetch cleaners with assignments included
-      // If the API supports it, assignments will be included; otherwise it will just return cleaners
       const response = await api.get('/owner/cleaners', {
         params: { include: 'assignments' }
       });
       setCleaners(response.data);
+      useDataStore.getState().setCleaners(response.data);
     } catch (error) {
       console.error('Error fetching cleaners:', error);
-      Alert.alert('Error', 'Failed to load cleaners');
+      if (!cacheLoaded) {
+        Alert.alert('Error', 'Failed to load cleaners');
+      }
     } finally {
       setLoading(false);
     }
@@ -260,7 +266,7 @@ export default function ManageCleanersScreen({ navigation }) {
             }}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Ionicons name="lock-closed-outline" size={18} color="#548EDD" />
+            <Ionicons name="lock-closed-outline" size={18} color="#0A84FF" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.removeButton}
@@ -276,7 +282,7 @@ export default function ManageCleanersScreen({ navigation }) {
 
         <View style={styles.cleanerHeader}>
           <LinearGradient
-            colors={['#EFF6FF', '#DBEAFE']}
+            colors={['#E3F2FD', '#BBDEFB']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.cleanerAvatar}
@@ -293,11 +299,11 @@ export default function ManageCleanersScreen({ navigation }) {
               style={styles.statPill}
               onPress={navigateToAssignments}
             >
-              <Ionicons name="calendar-outline" size={14} color="#548EDD" />
+              <Ionicons name="calendar-outline" size={14} color="#0A84FF" />
               <Text style={styles.cleanerStats}>
                 {item._count?.assignments || 0} {(item._count?.assignments || 0) === 1 ? 'assignment' : 'assignments'}
               </Text>
-              <Ionicons name="arrow-forward" size={14} color="#548EDD" />
+              <Ionicons name="arrow-forward" size={14} color="#0A84FF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -310,7 +316,7 @@ export default function ManageCleanersScreen({ navigation }) {
           }}
         >
           <View style={styles.assignButtonContent}>
-            <Ionicons name="add-circle-outline" size={20} color="#548EDD" />
+            <Ionicons name="add-circle-outline" size={20} color="#0A84FF" />
             <Text style={styles.assignButtonText}>Assign New</Text>
           </View>
         </TouchableOpacity>
@@ -318,59 +324,32 @@ export default function ManageCleanersScreen({ navigation }) {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#548EDD" />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      {/* Header Gradient */}
+      <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={colors.gradients.dashboardHeader}
         locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
-        {Platform.OS === 'ios' ? (
-          <SafeAreaView>
-            <View style={styles.headerGradient}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
-              </TouchableOpacity>
-              <View style={styles.headerIconWrapper}>
-                <View style={styles.headerIconInner}>
-                  <Ionicons name="people" size={28} color="#FFFFFF" />
-                </View>
-              </View>
-              <View style={styles.headerTextWrapper}>
-                <Text style={styles.headerTitle}>My Cleaners</Text>
-                <Text style={styles.headerSubtitle}>
-                  {cleaners.length} {cleaners.length === 1 ? 'cleaner' : 'cleaners'}
-                </Text>
-              </View>
-            </View>
-          </SafeAreaView>
-        ) : (
+        {/* Decorative element */}
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="people" size={70} color={colors.decorative.icon1} />
+        </View>
+        <SafeAreaView>
           <View style={styles.headerGradient}>
             <TouchableOpacity
               onPress={() => navigation.goBack()}
-              style={styles.backButton}
+              style={styles.headerBackButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
-                <Ionicons name="people" size={28} color="#FFFFFF" />
+                <Ionicons name="people" size={22} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
@@ -380,9 +359,14 @@ export default function ManageCleanersScreen({ navigation }) {
               </Text>
             </View>
           </View>
-        )}
+        </SafeAreaView>
       </LinearGradient>
 
+      {loading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#0A84FF" />
+        </View>
+      ) : (
       <FlatList
         data={cleaners}
         renderItem={renderCleaner}
@@ -391,12 +375,12 @@ export default function ManageCleanersScreen({ navigation }) {
         ListEmptyComponent={
           <View style={styles.empty}>
             <LinearGradient
-              colors={['#DBEAFE', '#BFDBFE']}
+              colors={['#E3F2FD', '#BBDEFB']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.emptyIcon}
             >
-              <Ionicons name="people-outline" size={48} color="#548EDD" />
+              <Ionicons name="people-outline" size={48} color="#0A84FF" />
             </LinearGradient>
             <Text style={styles.emptyText}>No cleaners yet</Text>
             <Text style={styles.emptySubtext}>
@@ -405,6 +389,7 @@ export default function ManageCleanersScreen({ navigation }) {
           </View>
         }
       />
+      )}
 
       <TouchableOpacity
         style={[styles.fab, { bottom: tabBarHeight }]}
@@ -412,7 +397,7 @@ export default function ManageCleanersScreen({ navigation }) {
         activeOpacity={0.9}
       >
         <LinearGradient
-          colors={['#548EDD', '#4A7FD4']}
+          colors={['#0A84FF', '#0066CC']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabGradient}
@@ -433,7 +418,7 @@ export default function ManageCleanersScreen({ navigation }) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Cleaner</Text>
               <TouchableOpacity onPress={() => setShowInviteModal(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color="#3C3C43" />
               </TouchableOpacity>
             </View>
 
@@ -507,7 +492,7 @@ export default function ManageCleanersScreen({ navigation }) {
                   setEditingCleaner(null);
                 }}
               >
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color="#3C3C43" />
               </TouchableOpacity>
             </View>
 
@@ -551,39 +536,52 @@ export default function ManageCleanersScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F2F2F7',
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F2F2F7',
   },
   // Header Gradient
   headerWrapper: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingBottom: 18,
+    paddingVertical: 12,
+    paddingBottom: 14,
   },
-  backButton: {
-    marginRight: 4,
-    padding: 4,
+  headerBackButton: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerIconWrapper: {
-    marginRight: 14,
+    marginRight: 12,
   },
   headerIconInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -591,17 +589,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
-    letterSpacing: 0.3,
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
     fontWeight: '500',
-    opacity: 0.9,
+    opacity: 0.85,
   },
   list: {
     padding: 16,
@@ -615,10 +613,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E0E7FF',
+    borderColor: '#E5E5EA',
     ...Platform.select({
       ios: {
-        shadowColor: '#548EDD',
+        shadowColor: 'rgba(0, 0, 0, 0.08)',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -660,7 +658,7 @@ const styles = StyleSheet.create({
   cleanerAvatarText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#548EDD',
+    color: '#0A84FF',
   },
   cleanerInfo: {
     flex: 1,
@@ -669,13 +667,13 @@ const styles = StyleSheet.create({
   cleanerName: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000000',
     lineHeight: 22,
     marginBottom: 4,
   },
   cleanerEmail: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#8E8E93',
     lineHeight: 18,
     marginBottom: 8,
   },
@@ -683,7 +681,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: 'rgba(10, 132, 255, 0.10)',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 8,
@@ -692,13 +690,13 @@ const styles = StyleSheet.create({
   cleanerStats: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#3C3C43',
   },
   assignButton: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0E7FF',
+    borderTopColor: '#E5E5EA',
   },
   assignButtonContent: {
     flexDirection: 'row',
@@ -709,7 +707,7 @@ const styles = StyleSheet.create({
   assignButtonText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#548EDD',
+    color: '#0A84FF',
   },
   // Empty State
   empty: {
@@ -727,7 +725,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#548EDD',
+        shadowColor: 'rgba(0, 0, 0, 0.08)',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 12,
@@ -740,12 +738,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000000',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#6B7280',
+    color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -757,7 +755,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     ...Platform.select({
       ios: {
-        shadowColor: '#548EDD',
+        shadowColor: 'rgba(0, 0, 0, 0.08)',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -795,33 +793,33 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#000000',
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: '#8E8E93',
     marginBottom: 15,
   },
   input: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#E5E5EA',
     borderRadius: 8,
     paddingHorizontal: 15,
     fontSize: 16,
     marginBottom: 15,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#F2F2F7',
   },
   button: {
     height: 50,
-    backgroundColor: '#548EDD',
+    backgroundColor: '#0A84FF',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 10,
   },
   buttonDisabled: {
-    backgroundColor: '#93BFED',
+    backgroundColor: 'rgba(10, 132, 255, 0.5)',
   },
   buttonText: {
     color: '#fff',

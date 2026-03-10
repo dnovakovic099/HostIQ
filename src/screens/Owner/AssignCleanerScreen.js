@@ -21,28 +21,28 @@ import api from '../../api/client';
 import colors from '../../theme/colors';
 
 const COLORS = {
-  background: '#F8FAFC',
-  backgroundGradientStart: '#F1F5F9',
-  backgroundGradientEnd: '#E0E7FF',
+  background: '#F2F2F7',
+  backgroundGradientStart: '#F2F2F7',
+  backgroundGradientEnd: '#E5E5EA',
   card: '#FFFFFF',
-  cardBorder: 'rgba(15, 23, 42, 0.08)',
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  accent: '#215EEA',
-  accentDark: '#2563EB',
-  accentLight: '#60A5FA',
-  accentSoft: '#EFF6FF',
-  accentGradientStart: '#60A5FA',
-  accentGradientEnd: '#215EEA',
-  success: '#33D39C',
-  successSoft: '#D1FAE5',
-  danger: '#EF4444',
-  warning: '#F59E0B',
-  warningSoft: '#FEF3C7',
-  divider: '#E2E8F0',
-  shadow: 'rgba(59, 130, 246, 0.15)',
-  shadowDark: 'rgba(15, 23, 42, 0.1)',
+  cardBorder: 'rgba(0, 0, 0, 0.06)',
+  textPrimary: '#000000',
+  textSecondary: '#3C3C43',
+  textMuted: '#8E8E93',
+  accent: '#0A84FF',
+  accentDark: '#0066CC',
+  accentLight: '#5AC8FA',
+  accentSoft: 'rgba(10, 132, 255, 0.10)',
+  accentGradientStart: '#5AC8FA',
+  accentGradientEnd: '#0A84FF',
+  success: '#34C759',
+  successSoft: '#ECFDF5',
+  danger: '#FF3B30',
+  warning: '#FF9500',
+  warningSoft: '#FFFBEA',
+  divider: '#E5E5EA',
+  shadow: 'rgba(0, 0, 0, 0.08)',
+  shadowDark: 'rgba(0, 0, 0, 0.06)',
 };
 
 export default function AssignCleanerScreen({ route, navigation }) {
@@ -133,7 +133,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
       <View style={styles.propertyCard}>
         <View style={styles.propertyHeader}>
           <View style={styles.propertyIconWrapper}>
-            <Ionicons name="business" size={20} color={COLORS.accent} />
+            <Ionicons name="business" size={16} color={COLORS.accent} />
           </View>
           <View style={styles.propertyHeaderText}>
             <Text style={styles.propertyName}>{item.name}</Text>
@@ -148,7 +148,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
           {units.length === 0 ? (
             <View style={styles.noUnitsContainer}>
               <View style={styles.noUnitsIconWrapper}>
-                <Ionicons name="alert-circle" size={22} color={COLORS.warning} />
+                <Ionicons name="alert-circle" size={18} color={COLORS.warning} />
               </View>
               <View style={styles.noUnitsTextWrapper}>
                 <Text style={styles.noUnitsTitle}>No units available</Text>
@@ -179,7 +179,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
                         end={{ x: 1, y: 1 }}
                         style={styles.checkboxSelected}
                       >
-                        <Ionicons name="checkmark" size={16} color="#FFFFFF" />
+                        <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                       </LinearGradient>
                     ) : (
                       <View style={styles.checkboxUnselected} />
@@ -224,11 +224,22 @@ export default function AssignCleanerScreen({ route, navigation }) {
         end={{ x: 1, y: 1 }}
         style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
+        {/* Decorative element */}
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="person" size={70} color={colors.decorative.icon1} />
+        </View>
         <SafeAreaView>
           <View style={styles.headerGradient}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.headerBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
-                <Ionicons name="person" size={28} color="#FFFFFF" />
+                <Ionicons name="person" size={22} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
@@ -304,7 +315,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
 
             <View style={styles.dateCard}>
               <View style={styles.dateLabelRow}>
-                <Ionicons name="calendar" size={18} color={COLORS.accent} />
+                <Ionicons name="calendar" size={15} color={COLORS.accent} />
                 <Text style={styles.dateLabel}>Due date & time</Text>
               </View>
               <TouchableOpacity
@@ -314,7 +325,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
               >
                 <View style={styles.dateButtonContent}>
                   <View style={styles.dateIconWrapper}>
-                    <Ionicons name="time-outline" size={22} color={COLORS.accent} />
+                    <Ionicons name="time-outline" size={18} color={COLORS.accent} />
                   </View>
                   <View style={styles.dateTextWrapper}>
                     <Text style={styles.dateTextPrimary}>
@@ -345,7 +356,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
           <View style={styles.empty}>
             <View style={styles.emptyIconWrapper}>
               <LinearGradient
-                colors={['#DBEAFE', COLORS.accentSoft]}
+                colors={['#E3F2FD', '#BBDEFB']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.emptyIconGradient}
@@ -389,7 +400,7 @@ export default function AssignCleanerScreen({ route, navigation }) {
           <LinearGradient
             colors={
               assigning || selectedUnits.length === 0
-                ? ['#CBD5E1', '#94A3B8']
+                ? ['#C7C7CC', '#8E8E93']
                 : [COLORS.accentGradientStart, COLORS.accentGradientEnd]
             }
             start={{ x: 0, y: 0 }}
@@ -433,188 +444,209 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
+  },
+  headerBackButton: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerIconWrapper: {
-    marginRight: 14,
+    marginRight: 12,
   },
   headerIconInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   listHeader: {
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 16,
+    paddingTop: 12,
+    paddingBottom: 6,
+    gap: 12,
   },
   headerTextWrapper: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
-    letterSpacing: 0.3,
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
     fontWeight: '500',
-    opacity: 0.9,
+    opacity: 0.85,
   },
   headerDecoration: {
     marginLeft: 8,
   },
   dateCard: {
     backgroundColor: COLORS.card,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
     shadowColor: COLORS.shadowDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   dateLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 6,
+    marginBottom: 8,
+    gap: 5,
   },
   dateLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   dateButton: {
     backgroundColor: COLORS.accentSoft,
-    borderRadius: 14,
+    borderRadius: 10,
     overflow: 'hidden',
   },
   dateButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
   },
   dateIconWrapper: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   dateTextWrapper: {
     flex: 1,
   },
   dateTextPrimary: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     color: COLORS.textPrimary,
-    marginBottom: 2,
+    marginBottom: 1,
   },
   dateTextSecondary: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
     fontWeight: '500',
   },
   sectionHeader: {
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 4,
+    marginBottom: 2,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
     color: COLORS.textPrimary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   sectionSubtitle: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
+    fontSize: 13,
+    color: COLORS.textMuted,
   },
   propertyCard: {
     backgroundColor: COLORS.card,
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 14,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
     shadowColor: COLORS.shadowDark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   propertyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 14,
-    borderBottomWidth: 1,
+    marginBottom: 10,
+    paddingBottom: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.divider,
   },
   propertyIconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     backgroundColor: COLORS.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   propertyHeaderText: {
     flex: 1,
   },
   propertyName: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '600',
     color: COLORS.textPrimary,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   propertyAddress: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 12,
+    color: COLORS.textMuted,
     fontWeight: '500',
   },
   unitCountBadge: {
-    minWidth: 32,
-    height: 32,
-    borderRadius: 16,
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: COLORS.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
   },
   unitCountText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.accent,
   },
   unitsList: {
-    gap: 10,
+    gap: 6,
   },
   unitItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     backgroundColor: COLORS.background,
-    borderRadius: 14,
-    borderWidth: 2,
+    borderRadius: 10,
+    borderWidth: 1.5,
     borderColor: 'transparent',
   },
   unitItemSelected: {
@@ -625,20 +657,20 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   unitCheckbox: {
-    marginRight: 12,
+    marginRight: 10,
   },
   checkboxSelected: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxUnselected: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    borderWidth: 2,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
     borderColor: COLORS.divider,
     backgroundColor: COLORS.card,
   },
@@ -646,17 +678,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   unitName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.textPrimary,
-    marginBottom: 2,
+    marginBottom: 1,
   },
   unitNameSelected: {
     color: COLORS.accent,
     fontWeight: '700',
   },
   unitNotes: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.textMuted,
     fontStyle: 'italic',
   },
@@ -667,26 +699,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.warningSoft,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#FDE68A',
   },
   noUnitsIconWrapper: {
-    marginRight: 10,
+    marginRight: 8,
   },
   noUnitsTextWrapper: {
     flex: 1,
   },
   noUnitsTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '600',
     color: COLORS.warning,
-    marginBottom: 2,
+    marginBottom: 1,
   },
   noUnitsText: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS.warning,
     opacity: 0.8,
   },
@@ -701,9 +733,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyIconGradient: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: COLORS.shadow,
@@ -725,8 +757,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   addPropertyButton: {
-    marginTop: 24,
-    borderRadius: 16,
+    marginTop: 20,
+    borderRadius: 12,
     overflow: 'hidden',
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
@@ -737,9 +769,9 @@ const styles = StyleSheet.create({
   addPropertyButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 28,
-    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    gap: 8,
   },
   addPropertyButtonText: {
     fontSize: 16,
@@ -753,9 +785,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: COLORS.card,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingHorizontal: 16,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: COLORS.divider,
     shadowColor: COLORS.shadowDark,
     shadowOffset: { width: 0, height: -4 },
@@ -764,8 +796,8 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   assignButton: {
-    height: 56,
-    borderRadius: 16,
+    height: 48,
+    borderRadius: 12,
     overflow: 'hidden',
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
@@ -782,23 +814,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   assignButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   pickerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'flex-end',
   },
   pickerContainer: {
     backgroundColor: COLORS.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     paddingBottom: Platform.OS === 'ios' ? 32 : 16,
     shadowColor: COLORS.shadowDark,
     shadowOffset: { width: 0, height: -4 },

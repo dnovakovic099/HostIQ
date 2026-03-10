@@ -7,9 +7,13 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  ActivityIndicator
+  ActivityIndicator,
+  StatusBar,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 import colors from '../../theme/colors';
 import { spacing, borderRadius } from '../../theme/spacing';
@@ -21,6 +25,7 @@ const PMS_PROVIDERS = [
 ];
 
 export default function PMSSettingsScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [integrations, setIntegrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -239,16 +244,48 @@ export default function PMSSettingsScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
-        <Text style={styles.title}>PMS Integrations</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowConnectModal(true)}
-        >
-          <Ionicons name="add-circle" size={28} color={colors.primary} />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.outerContainer}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerWrapperGrad, { paddingTop: insets.top }]}
+      >
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="settings" size={70} color={colors.decorative.icon1} />
+        </View>
+        <SafeAreaView>
+          <View style={styles.headerGradient}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.headerBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.headerIconWrapperGrad}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="settings" size={22} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapperGrad}>
+              <Text style={styles.headerTitleGrad}>PMS Settings</Text>
+              <Text style={styles.headerSubtitleGrad}>Manage your PMS integration</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.addButtonRow}>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setShowConnectModal(true)}
+          >
+            <Ionicons name="add-circle" size={28} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
 
       {integrations.length === 0 ? (
         <View style={styles.emptyState}>
@@ -313,16 +350,82 @@ export default function PMSSettingsScreen({ navigation }) {
         ))
       )}
     </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
   scrollContent: {
     padding: spacing.md,
+  },
+  headerWrapperGrad: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
+  },
+  headerBackButton: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIconWrapperGrad: {
+    marginRight: 12,
+  },
+  headerIconInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapperGrad: {
+    flex: 1,
+  },
+  headerTitleGrad: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 2,
+    letterSpacing: 0.2,
+  },
+  headerSubtitleGrad: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.85,
+  },
+  addButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: spacing.md,
   },
   loadingContainer: {
     flex: 1,

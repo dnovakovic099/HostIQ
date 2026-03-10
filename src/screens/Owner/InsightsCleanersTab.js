@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,47 +8,104 @@ import {
   ActivityIndicator,
   RefreshControl,
   Modal,
-  ScrollView,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 import { FEATURE_FLAGS } from '../../config/constants';
+import { useDataStore } from '../../store/dataStore';
+import colors from '../../theme/colors';
 
+// Align with app theme (AssignCleanerScreen / PropertiesScreen)
 const COLORS = {
-  background: '#F1F5F9',
+  background: '#F2F2F7',
   card: '#FFFFFF',
-  cardBorder: 'rgba(15, 23, 42, 0.08)',
-  cardShadow: 'rgba(15, 23, 42, 0.08)',
-  textPrimary: '#0F172A',
-  textSecondary: '#64748B',
-  textMuted: '#94A3B8',
-  // Gradient theme colors
-  gradientBlue: '#1E3AFF',
-  gradientMediumBlue: '#215EEA',
-  gradientTeal: '#2CB5E9',
-  gradientGreen: '#33D39C',
-  accent: '#215EEA',
-  accentSoft: 'rgba(33, 94, 234, 0.1)',
-  success: '#33D39C',
-  successSoft: 'rgba(51, 211, 156, 0.1)',
-  warning: '#F59E0B',
-  warningSoft: 'rgba(245, 158, 11, 0.08)',
-  error: '#EF4444',
-  errorSoft: 'rgba(239, 68, 68, 0.06)',
-  divider: '#E2E8F0',
+  cardBorder: 'rgba(0, 0, 0, 0.06)',
+  cardShadow: 'rgba(0, 0, 0, 0.08)',
+  textPrimary: '#000000',
+  textSecondary: '#3C3C43',
+  textMuted: '#8E8E93',
+  accent: colors.primary?.main || '#0A84FF',
+  accentSoft: 'rgba(10, 132, 255, 0.10)',
+  success: '#34C759',
+  successSoft: '#ECFDF5',
+  warning: '#FF9500',
+  warningSoft: '#FFFBEA',
+  error: '#FF3B30',
+  errorSoft: 'rgba(255, 59, 48, 0.10)',
+  divider: '#E5E5EA',
 };
 
+// Extract stats computation so it can be used for both cached data and fresh fetches
+function buildCleanerStats(cleanersList, allInspections) {
+  return cleanersList.map(cleaner => {
+    const assignmentsCount = cleaner._count?.assignments ?? cleaner.assignments?.length ?? 0;
+    const cleanerInspections = allInspections.filter(i => {
+      if (i.creator?.id !== cleaner.id) return false;
+      if (i.status !== 'COMPLETE') return false;
+      if (i.cleanliness_score === null || i.cleanliness_score === undefined) return false;
+      return true;
+    });
+
+    const totalInspections = cleanerInspections.length;
+    const passedCount = cleanerInspections.filter(
+      i => i.airbnb_grade_analysis?.guest_ready === true
+    ).length;
+    const failedCount = totalInspections - passedCount;
+    const passRate = totalInspections > 0
+      ? Math.round((passedCount / totalInspections) * 100)
+      : 0;
+    const recentInspections = cleanerInspections.slice(0, 5);
+
+    return {
+      ...cleaner,
+      totalInspections,
+      passedCount,
+      failedCount,
+      passRate,
+      recentInspections,
+      assignmentsCount,
+      avgScore: cleanerInspections.length > 0
+        ? Math.round(
+          cleanerInspections.reduce((sum, i) => sum + (i.cleanliness_score || 0), 0) /
+          cleanerInspections.length * 10
+        ) / 10
+        : null
+    };
+  });
+}
+
+function buildSummary(cleanersWithStats) {
+  const totalCleaners = cleanersWithStats.length;
+  const totalInspections = cleanersWithStats.reduce((sum, c) => sum + c.totalInspections, 0);
+  const totalAssignments = cleanersWithStats.reduce(
+    (sum, c) => sum + (c.assignmentsCount || 0),
+    0
+  );
+  const avgPassRate = totalCleaners > 0
+    ? Math.round(cleanersWithStats.reduce((sum, c) => sum + c.passRate, 0) / totalCleaners)
+    : 0;
+  return { totalCleaners, totalInspections, totalAssignments, avgPassRate };
+}
+
 export default function InsightsCleanersTab({ navigation }) {
-  const [loading, setLoading] = useState(true);
+  const cachedCleaners = useDataStore((s) => s.cleaners);
+  const cachedInspections = useDataStore((s) => s.inspections);
+  const cacheLoaded = useDataStore((s) => s.cleanersLoaded);
+  const [loading, setLoading] = useState(!cacheLoaded);
   const [refreshing, setRefreshing] = useState(false);
-  const [cleaners, setCleaners] = useState([]);
-  const [summary, setSummary] = useState(null);
+  const [cleaners, setCleaners] = useState(() =>
+    cacheLoaded ? buildCleanerStats(cachedCleaners, cachedInspections) : []
+  );
+  const [summary, setSummary] = useState(() =>
+    cacheLoaded ? buildSummary(buildCleanerStats(cachedCleaners, cachedInspections)) : null
+  );
   const [selectedCleaner, setSelectedCleaner] = useState(null);
   const [cleanerReports, setCleanerReports] = useState([]);
   const [reportModalVisible, setReportModalVisible] = useState(false);
-  const [loadingInspections, setLoadingInspections] = useState(false);
+  const hasLoadedOnce = useRef(cacheLoaded);
 
   useFocusEffect(
     useCallback(() => {
@@ -58,107 +115,49 @@ export default function InsightsCleanersTab({ navigation }) {
 
   const fetchCleanerPerformance = async () => {
     try {
-      setLoading(true);
-      
-      // Fetch cleaners
-      const cleanersResponse = await api.get('/owner/cleaners');
-      const cleanersList = cleanersResponse.data || [];
-      
-      // Fetch inspections to calculate stats (get more to be accurate)
-      // Use a reasonable limit to avoid timeouts
-      let allInspections = [];
-      try {
-        const inspectionsResponse = await api.get('/owner/inspections/recent?limit=500');
-        allInspections = inspectionsResponse.data || [];
-      } catch (inspectionError) {
-        // If fetching 500 times out, try with a smaller limit
-        if (inspectionError.code === 'ECONNABORTED' || inspectionError.message?.includes('timeout')) {
-          console.warn('Timeout fetching 500 inspections, trying with 100...');
-          try {
-            const fallbackResponse = await api.get('/owner/inspections/recent?limit=100');
-            allInspections = fallbackResponse.data || [];
-          } catch (fallbackError) {
-            console.error('Error fetching inspections (fallback):', fallbackError);
-            // Continue with empty array - stats will be calculated from available data
-            allInspections = [];
-          }
-        } else {
-          throw inspectionError;
-        }
+      // Only show loading spinner on the very first load when there's no cached data
+      if (!hasLoadedOnce.current) {
+        setLoading(true);
       }
-      
-      // Calculate stats for each cleaner from actual inspections
-      // Only count COMPLETE inspections (not PROCESSING, FAILED, or REJECTED)
-      const cleanersWithStats = cleanersList.map(cleaner => {
-        const assignmentsCount = cleaner._count?.assignments ?? cleaner.assignments?.length ?? 0;
-        const cleanerInspections = allInspections.filter(i => {
-          // Must be by this cleaner
-          if (i.creator?.id !== cleaner.id) return false;
-          // Must be COMPLETE status only
-          if (i.status !== 'COMPLETE') return false;
-          // Must have a valid cleanliness score (means it was actually analyzed)
-          if (i.cleanliness_score === null || i.cleanliness_score === undefined) return false;
-          return true;
-        });
-        
-        const totalInspections = cleanerInspections.length;
-        const passedCount = cleanerInspections.filter(
-          i => i.airbnb_grade_analysis?.guest_ready === true
-        ).length;
-        const failedCount = totalInspections - passedCount;
-        const passRate = totalInspections > 0 
-          ? Math.round((passedCount / totalInspections) * 100) 
-          : 0;
-        
-        // Get recent inspections for this cleaner (for preview)
-        const recentInspections = cleanerInspections.slice(0, 5);
-        
-        return {
-          ...cleaner,
-          totalInspections,
-          passedCount,
-          failedCount,
-          passRate,
-          recentInspections,
-          assignmentsCount,
-          avgScore: cleanerInspections.length > 0
-            ? Math.round(
-                cleanerInspections.reduce((sum, i) => sum + (i.cleanliness_score || 0), 0) / 
-                cleanerInspections.length * 10
-              ) / 10
-            : null
-        };
-      });
-      
+
+      // Fetch cleaners and inspections in parallel for faster load
+      const [cleanersResponse, inspectionsResult] = await Promise.all([
+        api.get('/owner/cleaners'),
+        api.get('/owner/inspections/recent?limit=100').catch(async (inspectionError) => {
+          if (inspectionError.code === 'ECONNABORTED' || inspectionError.message?.includes('timeout')) {
+            try {
+              return await api.get('/owner/inspections/recent?limit=50');
+            } catch (fallbackError) {
+              return { data: [] };
+            }
+          }
+          return { data: [] };
+        }),
+      ]);
+
+      const cleanersList = cleanersResponse.data || [];
+      let allInspections = inspectionsResult.data || [];
+
+      // Update the cache for next time
+      useDataStore.getState().setCleaners(cleanersList);
+      useDataStore.getState().setInspections(allInspections);
+
+      const cleanersWithStats = buildCleanerStats(cleanersList, allInspections);
       setCleaners(cleanersWithStats);
-      
-      // Calculate summary
-      const totalCleaners = cleanersWithStats.length;
-      const totalInspections = cleanersWithStats.reduce((sum, c) => sum + c.totalInspections, 0);
-      const totalAssignments = cleanersWithStats.reduce(
-        (sum, c) => sum + (c.assignmentsCount || 0),
-        0
-      );
-      const avgPassRate = totalCleaners > 0
-        ? Math.round(cleanersWithStats.reduce((sum, c) => sum + c.passRate, 0) / totalCleaners)
-        : 0;
-      
-      setSummary({
-        totalCleaners,
-        totalInspections,
-        totalAssignments,
-        avgPassRate
-      });
+      setSummary(buildSummary(cleanersWithStats));
+      hasLoadedOnce.current = true;
     } catch (error) {
       console.error('Error fetching cleaner performance:', error);
-      // Set empty state on error to prevent UI from being stuck
-      setCleaners([]);
-      setSummary({
-        totalCleaners: 0,
-        totalInspections: 0,
-        totalAssignments: 0,
-        avgPassRate: 0
-      });
+      // Only set empty state if we have no data at all
+      if (!hasLoadedOnce.current) {
+        setCleaners([]);
+        setSummary({
+          totalCleaners: 0,
+          totalInspections: 0,
+          totalAssignments: 0,
+          avgPassRate: 0
+        });
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -170,51 +169,28 @@ export default function InsightsCleanersTab({ navigation }) {
     fetchCleanerPerformance();
   };
 
-  const openCleanerInspections = async (cleaner) => {
+  const openCleanerInspections = (cleaner) => {
     setSelectedCleaner(cleaner);
-    setCleanerReports([]);
-    setLoadingInspections(true);
+    // Show pre-loaded recent inspections immediately (instant open, no spinner)
+    setCleanerReports(cleaner.recentInspections || []);
     setReportModalVisible(true);
-    
-    // Fetch ALL inspections for this cleaner
-    try {
-      let allInspections = [];
+
+    // Optionally load more in background (non-blocking)
+    (async () => {
       try {
-        const response = await api.get(`/owner/inspections/recent?limit=500`);
-        allInspections = response.data || [];
-      } catch (timeoutError) {
-        // If timeout, try with smaller limit
-        if (timeoutError.code === 'ECONNABORTED' || timeoutError.message?.includes('timeout')) {
-          console.warn('Timeout fetching 500 inspections, trying with 100...');
-          try {
-            const fallbackResponse = await api.get(`/owner/inspections/recent?limit=100`);
-            allInspections = fallbackResponse.data || [];
-          } catch (fallbackError) {
-            console.error('Error fetching inspections (fallback):', fallbackError);
-            // Fall back to pre-loaded data
-            setCleanerReports(cleaner.recentInspections || []);
-            return;
-          }
-        } else {
-          throw timeoutError;
-        }
+        const response = await api.get('/owner/inspections/recent?limit=100');
+        const allInspections = response.data || [];
+        const filtered = allInspections.filter(i => {
+          if (i.creator?.id !== cleaner.id) return false;
+          if (i.status !== 'COMPLETE') return false;
+          if (i.cleanliness_score == null) return false;
+          return true;
+        });
+        setCleanerReports(prev => (filtered.length > (cleaner.recentInspections?.length || 0) ? filtered : prev));
+      } catch (e) {
+        // Keep showing recentInspections on error
       }
-      
-      // Same filter as stats: COMPLETE status with valid score
-      const cleanerInspections = allInspections.filter(i => {
-        if (i.creator?.id !== cleaner.id) return false;
-        if (i.status !== 'COMPLETE') return false;
-        if (i.cleanliness_score === null || i.cleanliness_score === undefined) return false;
-        return true;
-      });
-      setCleanerReports(cleanerInspections);
-    } catch (error) {
-      console.error('Error fetching cleaner inspections:', error);
-      // Fall back to pre-loaded data
-      setCleanerReports(cleaner.recentInspections || []);
-    } finally {
-      setLoadingInspections(false);
-    }
+    })();
   };
 
   const openInspectionDetail = (inspection) => {
@@ -224,8 +200,8 @@ export default function InsightsCleanersTab({ navigation }) {
   };
 
   const getPassRateColor = (rate) => {
-    if (rate >= 90) return COLORS.gradientGreen;
-    if (rate >= 70) return COLORS.gradientTeal;
+    if (rate >= 90) return COLORS.success;
+    if (rate >= 70) return COLORS.accent;
     if (rate >= 50) return COLORS.warning;
     return COLORS.error;
   };
@@ -315,7 +291,7 @@ export default function InsightsCleanersTab({ navigation }) {
     const assignmentCount = item.assignmentsCount ?? item._count?.assignments ?? (item.assignments?.length ?? 0);
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.cleanerCard}
         onPress={() => openCleanerInspections(item)}
         activeOpacity={0.7}
@@ -340,7 +316,7 @@ export default function InsightsCleanersTab({ navigation }) {
 
         <View style={styles.assignmentsRow}>
           <View style={styles.assignmentPill}>
-            <Ionicons name="calendar-outline" size={14} color={COLORS.gradientMediumBlue} />
+            <Ionicons name="calendar-outline" size={14} color={COLORS.accent} />
             <Text style={styles.assignmentText}>
               {assignmentCount} {assignmentCount === 1 ? 'assignment' : 'assignments'}
             </Text>
@@ -370,7 +346,7 @@ export default function InsightsCleanersTab({ navigation }) {
 
         <View style={styles.cardFooter}>
           <Text style={styles.viewReportsText}>View Inspections</Text>
-          <Ionicons name="chevron-forward" size={16} color={COLORS.gradientMediumBlue} />
+          <Ionicons name="chevron-forward" size={16} color={COLORS.accent} />
         </View>
       </TouchableOpacity>
     );
@@ -384,84 +360,122 @@ export default function InsightsCleanersTab({ navigation }) {
       onRequestClose={() => setReportModalVisible(false)}
     >
       <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={() => setReportModalVisible(false)}>
-            <Ionicons name="close" size={28} color="#1F2937" />
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>
-            {selectedCleaner?.name}'s Inspections ({cleanerReports.length})
-          </Text>
-          <View style={{ width: 28 }} />
-        </View>
-
-        {loadingInspections ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
-            <Text style={styles.loadingText}>Loading inspections...</Text>
+        <SafeAreaView style={styles.modalHeaderPlain}>
+          <View style={styles.modalHeaderRow}>
+            <TouchableOpacity
+              onPress={() => setReportModalVisible(false)}
+              style={styles.modalBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={26} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+            <View style={styles.modalHeaderLeft}>
+              <View style={styles.modalHeaderIconWrap}>
+                <Ionicons name="document-text-outline" size={20} color={COLORS.accent} />
+              </View>
+              <View style={styles.modalHeaderTextWrap}>
+                <Text style={styles.modalTitlePlain} numberOfLines={1}>
+                  {selectedCleaner?.name}'s Inspections
+                </Text>
+                <Text style={styles.modalSubtitlePlain}>
+                  {cleanerReports.length} {cleanerReports.length === 1 ? 'inspection' : 'inspections'}
+                </Text>
+              </View>
+            </View>
           </View>
-        ) : (
-          <FlatList
-            data={cleanerReports}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.reportsListContent}
-            renderItem={({ item }) => {
-              const isGuestReady = item.airbnb_grade_analysis?.guest_ready;
-              const score = item.cleanliness_score;
-              const propertyName = item.unit?.property?.name || item.unit?.name || 'Property';
-              const unitName = item.unit?.name || '';
-              
-              return (
-                <TouchableOpacity 
-                  style={styles.inspectionListItem}
-                  onPress={() => openInspectionDetail(item)}
-                >
-                  <View style={styles.inspectionListLeft}>
-                    <Text style={styles.inspectionPropertyName} numberOfLines={1}>
-                      {propertyName}
-                    </Text>
-                    {unitName && propertyName !== unitName && (
-                      <Text style={styles.inspectionUnitName}>{unitName}</Text>
-                    )}
-                    <Text style={styles.inspectionDate}>
-                      {formatDate(item.created_at)}
+        </SafeAreaView>
+
+        <FlatList
+          data={cleanerReports}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.reportsListContent}
+          renderItem={({ item }) => {
+            const isGuestReady = item.airbnb_grade_analysis?.guest_ready;
+            const score = item.cleanliness_score;
+            const propertyName = item.unit?.property?.name || item.unit?.name || 'Property';
+            const unitName = item.unit?.name || '';
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.inspectionListItem,
+                  isGuestReady && styles.inspectionListItemPassed,
+                ]}
+                onPress={() => openInspectionDetail(item)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.inspectionListLeft}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <View style={styles.inspectionPropertyIconWrap}>
+                      <Ionicons name="home-outline" size={16} color={COLORS.accent} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.inspectionPropertyName} numberOfLines={1}>
+                        {propertyName}
+                      </Text>
+                      {unitName && propertyName !== unitName && (
+                        <Text style={styles.inspectionUnitName}>{unitName}</Text>
+                      )}
+                      <View style={styles.inspectionDateRow}>
+                        <Ionicons name="calendar-outline" size={12} color={COLORS.textMuted} />
+                        <Text style={styles.inspectionDate}>
+                          {formatDate(item.created_at)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.inspectionListRight}>
+                  <View style={[
+                    styles.inspectionStatusBadge,
+                    { backgroundColor: isGuestReady ? COLORS.successSoft : COLORS.errorSoft }
+                  ]}>
+                    <Text style={[
+                      styles.inspectionStatusText,
+                      { color: isGuestReady ? COLORS.success : COLORS.error }
+                    ]}>
+                      {isGuestReady ? 'Passed' : 'Failed'}
                     </Text>
                   </View>
-                  <View style={styles.inspectionListRight}>
-                    {score != null && (
+                  {score != null && (
+                    <View style={[
+                      styles.inspectionScoreWrap,
+                      score >= 7 ? styles.inspectionScoreWrapBlue :
+                        score >= 5 ? styles.inspectionScoreWrapWarning :
+                          styles.inspectionScoreWrapError
+                    ]}
+                    >
+                      <Ionicons
+                        name="star"
+                        size={12}
+                        color={score >= 7 ? COLORS.accent : score >= 5 ? COLORS.warning : COLORS.error}
+                      />
                       <Text style={[
                         styles.inspectionScore,
-                        { color: score >= 7 ? COLORS.success : score >= 5 ? COLORS.warning : COLORS.error }
+                        { color: score >= 7 ? COLORS.accent : score >= 5 ? COLORS.warning : COLORS.error }
                       ]}>
                         {score.toFixed(1)}
                       </Text>
-                    )}
-                    <View style={[
-                      styles.inspectionStatusBadge,
-                      { backgroundColor: isGuestReady ? COLORS.successSoft : COLORS.errorSoft }
-                    ]}>
-                      <Text style={[
-                        styles.inspectionStatusText,
-                        { color: isGuestReady ? COLORS.success : COLORS.error }
-                      ]}>
-                        {isGuestReady ? 'Passed' : 'Failed'}
-                      </Text>
                     </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-                </TouchableOpacity>
-              );
-            }}
-            ListEmptyComponent={
-              <View style={styles.emptyReports}>
-                <Ionicons name="clipboard-outline" size={48} color={COLORS.textMuted} />
-                <Text style={styles.emptyTitle}>No Inspections Yet</Text>
-                <Text style={styles.emptyText}>
-                  This cleaner hasn't completed any inspections
-                </Text>
+                  )}
+                </View>
+                <View style={styles.inspectionChevronWrap}>
+                  <Ionicons name="chevron-forward" size={20} color={COLORS.accent} />
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+          ListEmptyComponent={
+            <View style={styles.emptyReports}>
+              <View style={styles.emptyReportsIconWrap}>
+                <Ionicons name="clipboard-outline" size={40} color={COLORS.accent} />
               </View>
-            }
-          />
-        )}
+              <Text style={styles.emptyTitle}>No Inspections Yet</Text>
+              <Text style={styles.emptyText}>
+                This cleaner hasn't completed any inspections
+              </Text>
+            </View>
+          }
+        />
       </View>
     </Modal>
   );
@@ -497,7 +511,7 @@ export default function InsightsCleanersTab({ navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="people-outline" size={48} color={COLORS.gradientMediumBlue} />
+              <Ionicons name="people-outline" size={48} color={COLORS.accent} />
             </View>
             <Text style={styles.emptyTitle}>No Cleaners Yet</Text>
             <Text style={styles.emptyText}>
@@ -619,12 +633,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryStatValue: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
   summaryStatLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -673,13 +687,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: 'rgba(44, 181, 233, 0.12)',
+    backgroundColor: COLORS.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   avatarText: {
-    color: COLORS.gradientTeal,
+    color: COLORS.accent,
     fontSize: 18,
     fontWeight: '700',
   },
@@ -703,7 +717,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(33, 94, 234, 0.1)',
+    backgroundColor: COLORS.accentSoft,
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 10,
@@ -712,7 +726,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.gradientMediumBlue,
+    color: COLORS.accent,
   },
   trendBadge: {
     width: 32,
@@ -773,11 +787,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+    borderTopColor: COLORS.divider,
   },
   viewReportsText: {
     fontSize: 14,
-    color: COLORS.gradientMediumBlue,
+    color: COLORS.accent,
     fontWeight: '600',
     marginRight: 4,
   },
@@ -791,7 +805,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 20,
-    backgroundColor: 'rgba(33, 94, 234, 0.1)',
+    backgroundColor: COLORS.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -807,49 +821,105 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     textAlign: 'center',
   },
-  // Modal Styles
+  // Modal Styles (plain header, blue accents in content)
   modalContainer: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
+  modalHeaderPlain: {
+    backgroundColor: COLORS.card,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
   },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  modalBackButton: {
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalHeaderLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modalHeaderIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: COLORS.accentSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalHeaderTextWrap: {
+    flex: 1,
+  },
+  modalTitlePlain: {
+    fontSize: 16,
+    fontWeight: '700',
     color: COLORS.textPrimary,
+    letterSpacing: 0.2,
+    textAlign: 'left',
+  },
+  modalSubtitlePlain: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+    marginTop: 2,
+    textAlign: 'left',
   },
   reportsListContent: {
     padding: 16,
+    paddingBottom: 24,
   },
-  reportListItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-  },
-  // Inspection list styles
+  // Inspection list styles (thin blue border like PropertyDetailScreen, content aligned)
   inspectionListItem: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.card,
-    borderRadius: 14,
+    borderRadius: 16,
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
+    ...Platform.select({
+      ios: {
+        shadowColor: COLORS.cardShadow,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  inspectionListItemPassed: {
+    borderColor: '#E0E7FF',
   },
   inspectionListLeft: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  inspectionPropertyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inspectionPropertyIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: COLORS.accentSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   inspectionPropertyName: {
+    flex: 1,
     fontSize: 15,
     fontWeight: '600',
     color: COLORS.textPrimary,
@@ -859,33 +929,59 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 2,
   },
+  inspectionDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
   inspectionDate: {
     fontSize: 12,
     color: COLORS.textMuted,
-    marginTop: 4,
   },
   inspectionListRight: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    gap: 4,
     marginRight: 8,
   },
+  inspectionScoreWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  inspectionScoreWrapBlue: {
+    backgroundColor: COLORS.accentSoft,
+  },
+  inspectionScoreWrapWarning: {
+    backgroundColor: COLORS.warningSoft,
+  },
+  inspectionScoreWrapError: {
+    backgroundColor: COLORS.errorSoft,
+  },
   inspectionScore: {
-    fontSize: 20,
+    fontSize: 14, // Reduced from 20
     fontWeight: '700',
+  },
+  inspectionChevronWrap: {
+    paddingLeft: 4,
   },
   inspectionStatusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
-    marginTop: 4,
+    marginBottom: 2, // Add some spacing below status
   },
   inspectionStatusText: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
   },
   // Avg score badge
   avgScoreBadge: {
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.accentSoft,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -893,11 +989,11 @@ const styles = StyleSheet.create({
   avgScoreText: {
     fontSize: 16,
     fontWeight: '700',
-    color: COLORS.textPrimary,
+    color: COLORS.accent,
   },
   avgScoreLabel: {
     fontSize: 10,
-    color: COLORS.textSecondary,
+    color: COLORS.accent,
   },
   reportNumberBadge: {
     backgroundColor: COLORS.textPrimary,
@@ -935,6 +1031,15 @@ const styles = StyleSheet.create({
   emptyReports: {
     alignItems: 'center',
     padding: 40,
+  },
+  emptyReportsIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    backgroundColor: COLORS.accentSoft,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   // Report Detail
   reportDetailContent: {

@@ -17,7 +17,93 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
-import colors from '../../theme/colors';
+import colors, { getPassRateColor } from '../../theme/colors';
+
+// Helper for trend icons
+const getTrendIcon = (trend) => {
+  switch (trend) {
+    case 'improving': return { name: 'trending-up', color: colors.status.success };
+    case 'declining': return { name: 'trending-down', color: colors.status.error };
+    default: return { name: 'remove', color: colors.text.tertiary };
+  }
+};
+
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+};
+
+// Separated Report Card Component to prevent re-renders
+const ReportCard = React.memo(({ item, onPress }) => {
+  const trendInfo = getTrendIcon(item.trendDirection);
+  const isUnread = !item.viewedByCleaner;
+
+  return (
+    <TouchableOpacity
+      style={[styles.reportCard, isUnread && styles.unreadCard]}
+      onPress={() => onPress(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.reportHeader}>
+        <View style={styles.reportNumberContainer}>
+          <View style={styles.reportIconBg}>
+            <Ionicons name="document-text" size={16} color={colors.primary.main} />
+          </View>
+          <Text style={styles.reportNumberText}>Report #{item.reportNumber}</Text>
+        </View>
+
+        {isUnread && (
+          <View style={styles.newBadge}>
+            <Text style={styles.newBadgeText}>NEW</Text>
+          </View>
+        )}
+
+        <View style={styles.trendBadge}>
+          <Ionicons name={trendInfo.name} size={16} color={trendInfo.color} />
+        </View>
+      </View>
+
+      <View style={styles.reportStats}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: getPassRateColor(item.passRate) }]}>
+            {item.passRate}%
+          </Text>
+          <Text style={styles.statLabel}>Pass Rate</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: colors.status.success }]}>{item.passedCount}</Text>
+          <Text style={styles.statLabel}>Passed</Text>
+        </View>
+        <View style={styles.statDivider} />
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, { color: colors.status.error }]}>{item.failedCount}</Text>
+          <Text style={styles.statLabel}>Failed</Text>
+        </View>
+      </View>
+
+      <Text style={styles.reportPeriod}>
+        {formatDate(item.periodStart)} - {formatDate(item.periodEnd)}
+      </Text>
+
+      {item.aiFeedback && (
+        <View style={styles.feedbackPreviewContainer}>
+          <Text style={styles.feedbackPreview} numberOfLines={2}>
+            "{item.aiFeedback}"
+          </Text>
+        </View>
+      )}
+
+      <View style={styles.cardFooter}>
+        <Text style={styles.viewDetailsText}>View Analysis</Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.primary.main} />
+      </View>
+    </TouchableOpacity>
+  );
+});
 
 export default function CleanerReportsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -37,7 +123,7 @@ export default function CleanerReportsScreen({ navigation }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch performance summary and reports in parallel
       const [perfResponse, reportsResponse] = await Promise.all([
         api.get('/cleaner/performance'),
@@ -59,104 +145,36 @@ export default function CleanerReportsScreen({ navigation }) {
     fetchData();
   };
 
-  const openReport = async (report) => {
+  const openReport = useCallback(async (report) => {
     try {
-      // Fetch full report details and mark as viewed
+      // First show the report immediately with existing data
+      setSelectedReport(report);
+      setModalVisible(true);
+
+      // Fetch full details in background
       const response = await api.get(`/cleaner/reports/${report.id}`);
       setSelectedReport(response.data.report);
-      setModalVisible(true);
-      
+
       // Update the reports list to show this one as viewed
-      setReports(prev => prev.map(r => 
+      setReports(prev => prev.map(r =>
         r.id === report.id ? { ...r, viewedByCleaner: true } : r
       ));
-      
+
       // Update unread count
-      if (performance?.unreadReports > 0) {
+      if (performance?.unreadReports > 0 && !report.viewedByCleaner) {
         setPerformance(prev => ({
           ...prev,
-          unreadReports: prev.unreadReports - 1
+          unreadReports: Math.max(0, prev.unreadReports - 1)
         }));
       }
     } catch (error) {
       console.error('Error fetching report:', error);
     }
-  };
+  }, [performance]);
 
-  const getTrendIcon = (trend) => {
-    switch (trend) {
-      case 'improving': return { name: 'trending-up', color: '#33D39C' };
-      case 'declining': return { name: 'trending-down', color: '#EF4444' };
-      default: return { name: 'remove', color: '#6B7280' };
-    }
-  };
-
-  const getPassRateColor = (rate) => {
-    if (rate >= 90) return '#33D39C';
-    if (rate >= 70) return '#F59E0B';
-    return '#EF4444';
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  const renderReportCard = ({ item }) => {
-    const trendInfo = getTrendIcon(item.trendDirection);
-    const isUnread = !item.viewedByCleaner;
-
-    return (
-      <TouchableOpacity 
-        style={[styles.reportCard, isUnread && styles.unreadCard]}
-        onPress={() => openReport(item)}
-      >
-        <View style={styles.reportHeader}>
-          <View style={styles.reportNumberBadge}>
-            <Text style={styles.reportNumberText}>#{item.reportNumber}</Text>
-          </View>
-          {isUnread && (
-            <View style={styles.newBadge}>
-              <Text style={styles.newBadgeText}>NEW</Text>
-            </View>
-          )}
-          <Ionicons name={trendInfo.name} size={20} color={trendInfo.color} />
-        </View>
-
-        <View style={styles.reportStats}>
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: getPassRateColor(item.passRate) }]}>
-              {item.passRate}%
-            </Text>
-            <Text style={styles.statLabel}>Pass Rate</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{item.passedCount}</Text>
-            <Text style={styles.statLabel}>Passed</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: '#EF4444' }]}>{item.failedCount}</Text>
-            <Text style={styles.statLabel}>Failed</Text>
-          </View>
-        </View>
-
-        <Text style={styles.reportPeriod}>
-          {formatDate(item.periodStart)} - {formatDate(item.periodEnd)}
-        </Text>
-
-        {item.aiFeedback && (
-          <Text style={styles.feedbackPreview} numberOfLines={2}>
-            {item.aiFeedback}
-          </Text>
-        )}
-      </TouchableOpacity>
-    );
-  };
+  const renderReportItem = useCallback(({ item }) => (
+    <ReportCard item={item} onPress={openReport} />
+  ), [openReport]);
 
   const renderReportModal = () => {
     if (!selectedReport) return null;
@@ -172,44 +190,57 @@ export default function CleanerReportsScreen({ navigation }) {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Ionicons name="close" size={28} color="#1F2937" />
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={styles.modalHeaderClose}
+            >
+              <Ionicons name="close" size={24} color={colors.text.primary} />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Report #{selectedReport.reportNumber}</Text>
-            <View style={{ width: 28 }} />
+            <View style={styles.modalHeaderTitleContainer}>
+              <Text style={styles.modalTitle}>Report Analysis</Text>
+
+            </View>
+            <View style={{ width: 40 }} />
           </View>
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             {/* Summary Stats */}
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryRow}>
-                <View style={styles.summaryItem}>
-                  <Text style={[styles.summaryValue, { color: getPassRateColor(selectedReport.passRate) }]}>
+            <View style={styles.modalSummaryCard}>
+              <View style={styles.modalSummaryTop}>
+                <View style={styles.modalScoreContainer}>
+                  <Text style={[styles.modalScoreValue, { color: getPassRateColor(selectedReport.passRate) }]}>
                     {selectedReport.passRate}%
                   </Text>
-                  <Text style={styles.summaryLabel}>Pass Rate</Text>
+                  <Text style={styles.modalScoreLabel}>Pass Rate</Text>
                 </View>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryValue}>{selectedReport.avgScore?.toFixed(1) || '—'}</Text>
-                  <Text style={styles.summaryLabel}>Avg Score</Text>
+
+                <View style={{ height: 40, width: 1, backgroundColor: colors.border.light }} />
+
+                <View style={{ alignItems: 'center' }}>
+                  <View style={[styles.modalTrendContainer, { backgroundColor: trendInfo.color + '15' }]}>
+                    <Ionicons name={trendInfo.name} size={16} color={trendInfo.color} />
+                    <Text style={[styles.modalTrendText, { color: trendInfo.color }]}>
+                      {selectedReport.trendDirection || 'Stable'}
+                    </Text>
+                  </View>
+                  <Text style={styles.modalScoreLabel}>Trend</Text>
                 </View>
-                <View style={styles.summaryItem}>
-                  <Ionicons name={trendInfo.name} size={28} color={trendInfo.color} />
-                  <Text style={styles.summaryLabel}>{selectedReport.trendDirection || 'Stable'}</Text>
+
+                <View style={{ height: 40, width: 1, backgroundColor: colors.border.light }} />
+
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={styles.modalScoreValue}>{selectedReport.inspectionCount}</Text>
+                  <Text style={styles.modalScoreLabel}>Total</Text>
                 </View>
               </View>
 
               <View style={styles.inspectionCounts}>
-                <View style={styles.countItem}>
-                  <Text style={styles.countValue}>{selectedReport.inspectionCount}</Text>
-                  <Text style={styles.countLabel}>Total</Text>
-                </View>
-                <View style={[styles.countItem, { backgroundColor: '#ECFDF5' }]}>
-                  <Text style={[styles.countValue, { color: '#33D39C' }]}>{selectedReport.passedCount}</Text>
+                <View style={[styles.countItem, { backgroundColor: colors.accent.successLight }]}>
+                  <Text style={[styles.countValue, { color: colors.status.success }]}>{selectedReport.passedCount}</Text>
                   <Text style={styles.countLabel}>Passed</Text>
                 </View>
-                <View style={[styles.countItem, { backgroundColor: '#FEF2F2' }]}>
-                  <Text style={[styles.countValue, { color: '#EF4444' }]}>{selectedReport.failedCount}</Text>
+                <View style={[styles.countItem, { backgroundColor: colors.accent.errorLight }]}>
+                  <Text style={[styles.countValue, { color: colors.status.error }]}>{selectedReport.failedCount}</Text>
                   <Text style={styles.countLabel}>Failed</Text>
                 </View>
               </View>
@@ -219,8 +250,10 @@ export default function CleanerReportsScreen({ navigation }) {
             {selectedReport.aiFeedback && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="bulb" size={20} color="#F59E0B" />
-                  <Text style={styles.sectionTitle}>Personalized Feedback</Text>
+                  <View style={[styles.sectionIcon, { backgroundColor: '#FEF3C7' }]}>
+                    <Ionicons name="bulb" size={18} color="#D97706" />
+                  </View>
+                  <Text style={styles.sectionTitle}>Performance Insight</Text>
                 </View>
                 <Text style={styles.feedbackText}>{selectedReport.aiFeedback}</Text>
               </View>
@@ -230,15 +263,19 @@ export default function CleanerReportsScreen({ navigation }) {
             {selectedReport.strengths && selectedReport.strengths.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="star" size={20} color="#33D39C" />
-                  <Text style={styles.sectionTitle}>Strengths</Text>
-                </View>
-                {selectedReport.strengths.map((strength, index) => (
-                  <View key={index} style={styles.listItem}>
-                    <Ionicons name="checkmark-circle" size={18} color="#33D39C" />
-                    <Text style={styles.listItemText}>{strength}</Text>
+                  <View style={[styles.sectionIcon, { backgroundColor: colors.accent.successLight }]}>
+                    <Ionicons name="star" size={18} color={colors.status.success} />
                   </View>
-                ))}
+                  <Text style={styles.sectionTitle}>Key Strengths</Text>
+                </View>
+                <View style={styles.listContainer}>
+                  {selectedReport.strengths.map((strength, index) => (
+                    <View key={index} style={styles.listItem}>
+                      <Ionicons name="checkmark-circle" size={18} color={colors.status.success} />
+                      <Text style={styles.listItemText}>{strength}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             )}
 
@@ -246,8 +283,10 @@ export default function CleanerReportsScreen({ navigation }) {
             {selectedReport.improvements && selectedReport.improvements.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="trending-up" size={20} color="#215EEA" />
-                  <Text style={styles.sectionTitle}>Areas for Improvement</Text>
+                  <View style={[styles.sectionIcon, { backgroundColor: colors.accent.blueLight }]}>
+                    <Ionicons name="trending-up" size={18} color={colors.accent.blue} />
+                  </View>
+                  <Text style={styles.sectionTitle}>Focus Areas</Text>
                 </View>
                 {selectedReport.improvements.map((improvement, index) => (
                   <View key={index} style={styles.improvementItem}>
@@ -262,7 +301,9 @@ export default function CleanerReportsScreen({ navigation }) {
             {selectedReport.commonIssues && selectedReport.commonIssues.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="alert-circle" size={20} color="#EF4444" />
+                  <View style={[styles.sectionIcon, { backgroundColor: colors.accent.errorLight }]}>
+                    <Ionicons name="alert-circle" size={18} color={colors.status.error} />
+                  </View>
                   <Text style={styles.sectionTitle}>Common Issues</Text>
                 </View>
                 {selectedReport.commonIssues.slice(0, 5).map((issue, index) => (
@@ -283,7 +324,9 @@ export default function CleanerReportsScreen({ navigation }) {
             {selectedReport.categoryFailures && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="pie-chart" size={20} color="#6B7280" />
+                  <View style={[styles.sectionIcon, { backgroundColor: colors.accent.blueLight }]}>
+                    <Ionicons name="pie-chart" size={18} color={colors.primary.main} />
+                  </View>
                   <Text style={styles.sectionTitle}>Failure Categories</Text>
                 </View>
                 <View style={styles.categoryGrid}>
@@ -325,8 +368,8 @@ export default function CleanerReportsScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#215EEA" />
-        <Text style={styles.loadingText}>Loading your reports...</Text>
+        <ActivityIndicator size="large" color={colors.primary.main} />
+        <Text style={styles.loadingText}>Loading reports...</Text>
       </View>
     );
   }
@@ -341,30 +384,39 @@ export default function CleanerReportsScreen({ navigation }) {
         locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.headerGradient, Platform.OS === 'android' && { paddingTop: insets.top }]}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
-        <SafeAreaView edges={['top']}>
-          <View style={styles.headerContent}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-            </TouchableOpacity>
-            <View style={styles.headerIconWrapper}>
-              <View style={styles.headerIconCircle}>
-                <Ionicons name="document-text" size={24} color="#FFFFFF" />
-              </View>
-            </View>
-            <View style={styles.headerTextWrapper}>
-              <Text style={styles.headerTitle}>My Reports</Text>
-              <Text style={styles.headerSubtitle}>Track your performance</Text>
+        <View style={styles.headerGradient}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.headerBackButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+          </TouchableOpacity>
+          <View style={styles.headerIconWrapper}>
+            <View style={styles.headerIconInner}>
+              <Ionicons name="document-text" size={22} color="#FFFFFF" />
             </View>
           </View>
-        </SafeAreaView>
+          <View style={styles.headerTextWrapper}>
+            <Text style={styles.headerTitle}>My Reports</Text>
+            <Text style={styles.headerSubtitle}>Performance analysis & trends</Text>
+          </View>
+        </View>
       </LinearGradient>
 
       {/* Performance Summary */}
       <View style={styles.summaryHeader}>
-        <Text style={styles.sectionTitle}>Your Performance</Text>
-        
+        <View style={styles.summaryTitleRow}>
+          <Text style={styles.sectionTitle}>Performance Overview</Text>
+          {performance?.unreadReports > 0 && (
+            <View style={styles.unreadCountBadge}>
+              <Text style={styles.unreadCountText}>{performance.unreadReports} new</Text>
+            </View>
+          )}
+        </View>
+
         <View style={styles.overallStats}>
           <View style={styles.overallStatItem}>
             <Text style={[styles.overallStatValue, { color: getPassRateColor(performance?.allTime?.passRate || 0) }]}>
@@ -372,18 +424,26 @@ export default function CleanerReportsScreen({ navigation }) {
             </Text>
             <Text style={styles.overallStatLabel}>All-Time Pass Rate</Text>
           </View>
+          <View style={styles.overallStatDivider} />
           <View style={styles.overallStatItem}>
             <Text style={styles.overallStatValue}>{performance?.allTime?.totalInspections || 0}</Text>
             <Text style={styles.overallStatLabel}>Total Inspections</Text>
           </View>
         </View>
 
-        {performance?.inspectionsUntilNextReport && (
+        {performance?.inspectionsUntilNextReport > 0 && (
           <View style={styles.nextReportBanner}>
-            <Ionicons name="document-text-outline" size={18} color="#6B7280" />
-            <Text style={styles.nextReportText}>
-              {performance.inspectionsUntilNextReport} inspection{performance.inspectionsUntilNextReport !== 1 ? 's' : ''} until next report
-            </Text>
+            <LinearGradient
+              colors={['rgba(255,255,255,0.6)', 'rgba(255,255,255,0.2)']}
+              style={styles.nextReportContent}
+            >
+              <Ionicons name="information-circle" size={18} color={colors.primary.main} />
+              <Text style={styles.nextReportText}>
+                <Text style={{ fontWeight: '700', color: colors.primary.main }}>
+                  {performance.inspectionsUntilNextReport} more inspection{performance.inspectionsUntilNextReport !== 1 ? 's' : ''}
+                </Text> until your next report
+              </Text>
+            </LinearGradient>
           </View>
         )}
       </View>
@@ -391,28 +451,20 @@ export default function CleanerReportsScreen({ navigation }) {
       {/* Reports List */}
       <FlatList
         data={reports}
-        renderItem={renderReportCard}
+        renderItem={renderReportItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListHeaderComponent={
-          <View style={styles.listHeader}>
-            <Text style={styles.listTitle}>Performance Reports</Text>
-            {performance?.unreadReports > 0 && (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadBadgeText}>{performance.unreadReports} new</Text>
-              </View>
-            )}
-          </View>
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary.main} />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={48} color="#D1D5DB" />
+            <View style={styles.emptyIcon}>
+              <Ionicons name="document-text-outline" size={48} color={colors.primary.main} />
+            </View>
             <Text style={styles.emptyTitle}>No Reports Yet</Text>
             <Text style={styles.emptyText}>
-              Reports are generated every 5 inspections. Keep cleaning to get your first report!
+              Reports are generated every 5 inspections. Keep up the good work!
             </Text>
           </View>
         }
@@ -426,7 +478,7 @@ export default function CleanerReportsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB'
+    backgroundColor: colors.background.secondary,
   },
   centerContainer: {
     flex: 1,
@@ -437,35 +489,35 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6B7280'
+    color: colors.text.secondary
   },
   // Gradient Header Styles
-  headerGradient: {
-    paddingBottom: 20,
+  headerWrapper: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  headerContent: {
+  headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingVertical: 12,
+    paddingBottom: 14,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  headerBackButton: {
+    marginRight: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   headerIconWrapper: {
     marginRight: 12,
   },
-  headerIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  headerIconInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -473,333 +525,455 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 2,
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    color: '#FFFFFF',
     fontWeight: '500',
+    opacity: 0.85,
   },
-  // Content Styles
+  // Summary Header
   summaryHeader: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB'
+    borderBottomColor: colors.border.light,
+  },
+  summaryTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 16
+    color: colors.text.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: colors.text.secondary,
+  },
+  unreadCountBadge: {
+    backgroundColor: colors.status.error,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  unreadCountText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   overallStats: {
     flexDirection: 'row',
-    gap: 16
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+    borderRadius: 16,
+    padding: 16,
   },
   overallStatItem: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
-    padding: 16,
-    borderRadius: 12,
     alignItems: 'center'
   },
   overallStatValue: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#1F2937'
+    color: colors.text.primary
   },
   overallStatLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4
+    fontSize: 11,
+    color: colors.text.secondary,
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  overallStatDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: colors.border.light,
   },
   nextReportBanner: {
+    marginTop: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.primary.lighter + '40', // Very light blue
+    borderWidth: 1,
+    borderColor: colors.primary.lighter,
+  },
+  nextReportContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
     padding: 12,
-    borderRadius: 8,
-    marginTop: 16,
-    gap: 8
+    gap: 10,
   },
   nextReportText: {
-    fontSize: 14,
-    color: '#6B7280'
+    fontSize: 13,
+    color: colors.text.secondary,
+    flex: 1,
   },
   listContent: {
     padding: 16
   },
-  listHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12
-  },
-  listTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937'
-  },
-  unreadBadge: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12
-  },
-  unreadBadgeText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '600'
-  },
+  // Report Card
   reportCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow.card,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: { elevation: 2 },
+    }),
   },
   unreadCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#215EEA'
+    borderLeftColor: colors.primary.main,
   },
   reportHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  reportNumberBadge: {
-    backgroundColor: '#1F2937',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 8
+  reportNumberContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reportIconBg: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.accent.blueLight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   reportNumberText: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: '700'
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text.primary,
   },
   newBadge: {
-    backgroundColor: '#215EEA',
+    backgroundColor: colors.primary.main,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 4,
-    marginRight: 'auto'
+    borderRadius: 6,
+    marginLeft: 8,
   },
   newBadgeText: {
-    color: '#FFF',
+    color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '700'
+    fontWeight: '700',
+  },
+  trendBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
   },
   reportStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12
+    backgroundColor: colors.background.primary,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
   },
   statItem: {
     flex: 1,
     alignItems: 'center'
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937'
+    color: colors.text.primary
   },
   statLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: colors.text.secondary,
     marginTop: 2
   },
   statDivider: {
     width: 1,
-    height: 30,
-    backgroundColor: '#E5E7EB'
+    height: 24,
+    backgroundColor: colors.border.light
   },
   reportPeriod: {
     fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 8
+    color: colors.text.tertiary,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  feedbackPreviewContainer: {
+    backgroundColor: colors.background.lightYellow,
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 16,
   },
   feedbackPreview: {
     fontSize: 13,
-    color: '#4B5563',
-    fontStyle: 'italic'
+    color: colors.text.secondary,
+    fontStyle: 'italic',
+    lineHeight: 18,
   },
-  emptyState: {
+  cardFooter: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 40
+    justifyContent: 'flex-end',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border.light,
+    gap: 4,
   },
-  emptyTitle: {
-    fontSize: 18,
+  viewDetailsText: {
+    fontSize: 13,
     fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 16
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginTop: 8
+    color: colors.primary.main,
   },
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#FFF'
+    backgroundColor: colors.background.primary,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB'
+    borderBottomColor: colors.border.light,
+  },
+  modalHeaderClose: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: colors.background.primary,
+  },
+  modalHeaderTitleContainer: {
+    alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937'
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text.primary,
+  },
+  modalSubtitle: {
+    fontSize: 12,
+    color: colors.text.secondary,
   },
   modalContent: {
-    flex: 1
+    flex: 1,
+    padding: 16,
   },
-  summaryCard: {
-    backgroundColor: '#F9FAFB',
-    margin: 16,
-    padding: 20,
-    borderRadius: 16
+  modalSummaryCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    ...Platform.select({
+      ios: {
+        shadowColor: colors.shadow.card,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: { elevation: 2 },
+    }),
   },
-  summaryRow: {
+  modalSummaryTop: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.light,
   },
-  summaryItem: {
-    alignItems: 'center'
+  modalScoreContainer: {
+    alignItems: 'flex-start',
   },
-  summaryValue: {
-    fontSize: 32,
+  modalScoreValue: {
+    fontSize: 24,
     fontWeight: '700',
-    color: '#1F2937'
   },
-  summaryLabel: {
+  modalScoreLabel: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginTop: 4,
+  },
+  modalTrendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  modalTrendText: {
     fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4
+    fontWeight: '600',
   },
   inspectionCounts: {
     flexDirection: 'row',
-    gap: 12
+    gap: 10,
   },
   countItem: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background.primary,
     padding: 12,
-    borderRadius: 8,
-    alignItems: 'center'
+    borderRadius: 10,
+    alignItems: 'center',
   },
   countValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937'
+    color: colors.text.primary,
   },
   countLabel: {
     fontSize: 11,
-    color: '#6B7280',
-    marginTop: 2
+    color: colors.text.secondary,
+    marginTop: 2,
   },
   section: {
-    marginHorizontal: 16,
-    marginBottom: 20,
-    backgroundColor: '#FFF',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB'
+    borderColor: colors.border.light,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12
+    gap: 10,
+    marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937'
+  sectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   feedbackText: {
     fontSize: 15,
-    color: '#374151',
-    lineHeight: 22
+    color: colors.text.secondary,
+    lineHeight: 24,
+  },
+  listContainer: {
+    gap: 8,
   },
   listItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8
+    gap: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.background.primary,
   },
   listItemText: {
     fontSize: 14,
-    color: '#374151',
-    flex: 1
+    color: colors.text.primary,
+    flex: 1,
+    lineHeight: 20,
   },
   improvementItem: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background.primary,
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 8
+    borderRadius: 12,
+    marginBottom: 8,
   },
   improvementArea: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 4
+    color: colors.text.primary,
+    marginBottom: 4,
   },
   improvementTip: {
     fontSize: 13,
-    color: '#6B7280'
+    color: colors.text.secondary,
+    lineHeight: 18,
   },
   issueItem: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.status.errorLight,
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 8
+    borderRadius: 12,
+    marginBottom: 8,
   },
   issueHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: 4,
   },
   issueText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#1F2937',
-    flex: 1
+    fontWeight: '600',
+    color: colors.text.primary,
+    flex: 1,
   },
   issueBadge: {
-    backgroundColor: '#EF4444',
+    backgroundColor: colors.status.error,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 10
+    borderRadius: 8,
   },
   issueBadgeText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '600'
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   issueCategory: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.text.secondary,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: 40
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 20,
+    backgroundColor: colors.primary.lighter,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginTop: 16
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.text.secondary,
     marginTop: 4,
-    textTransform: 'capitalize'
+    textAlign: 'center'
+  },
+  bottomPadding: {
+    height: 40,
   },
   categoryGrid: {
     flexDirection: 'row',
@@ -808,7 +982,7 @@ const styles = StyleSheet.create({
   },
   categoryItem: {
     width: '48%',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.background.primary,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center'
@@ -816,18 +990,18 @@ const styles = StyleSheet.create({
   categoryValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1F2937'
+    color: colors.text.primary
   },
   categoryLabel: {
     fontSize: 12,
-    color: '#6B7280',
+    color: colors.text.secondary,
     marginTop: 4
   },
   trendSection: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#F3F4F6'
+    backgroundColor: colors.background.primary,
   },
   trendNote: {
     flex: 1,

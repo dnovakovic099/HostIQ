@@ -20,6 +20,7 @@ import api from '../../api/client';
 import colors from '../../theme/colors';
 
 export default function ChangePasswordScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -90,28 +91,39 @@ export default function ChangePasswordScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={colors.gradients.dashboardHeader}
         locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
-        <View style={styles.headerGradient}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <View style={styles.headerTextWrapper}>
-            <Text style={styles.headerTitle}>Change Password</Text>
-            <Text style={styles.headerSubtitle}>Update your password</Text>
-          </View>
+        {/* Decorative element */}
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="lock-closed" size={70} color={colors.decorative.icon1} />
         </View>
+        <SafeAreaView>
+          <View style={styles.headerGradient}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.headerBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="lock-closed" size={22} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>Change Password</Text>
+              <Text style={styles.headerSubtitle}>Update your password</Text>
+            </View>
+          </View>
+        </SafeAreaView>
       </LinearGradient>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -322,7 +334,7 @@ export default function ChangePasswordScreen({ navigation }) {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -346,33 +358,57 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
   },
-  backButton: {
+  headerBackButton: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIconWrapper: {
     marginRight: 12,
-    padding: 4,
+  },
+  headerIconInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTextWrapper: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
-    letterSpacing: 0.3,
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
     fontWeight: '500',
-    opacity: 0.9,
+    opacity: 0.85,
   },
   introSection: {
     marginBottom: 28,

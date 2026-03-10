@@ -12,11 +12,15 @@ import {
   Dimensions,
   Linking,
   Platform,
+  StatusBar,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system';
 import api from '../../api/client';
+import colors from '../../theme/colors';
 import { API_URL } from '../../config/api';
 import * as SecureStore from 'expo-secure-store';
 
@@ -86,10 +90,8 @@ export default function CleaningReportScreen({ route, navigation }) {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   
-  // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
-  const tabBarHeight = 110 + insets.bottom;
-  // Footer height: padding (16) + buttons (~60) + hint (~30) + tab bar padding
-  const footerHeight = 106 + tabBarHeight;
+  // Bottom bar: buttons (~48) + padding (12+12) + safe area bottom
+  const bottomBarHeight = 72 + insets.bottom;
 
   useEffect(() => {
     if (shareToken) {
@@ -383,79 +385,141 @@ export default function CleaningReportScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
+      >
+        {/* Decorative element */}
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="document-text" size={70} color={colors.decorative.icon1} />
+        </View>
+        <SafeAreaView>
+          <View style={styles.headerGradient}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.headerBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="document-text" size={22} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>Cleaning Report</Text>
+              <Text style={styles.headerSubtitle}>Verified Documentation</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
       <ScrollView 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={styles.scrollContent}
-        style={{ marginBottom: footerHeight }}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomBarHeight + 16 }]}
       >
-        {/* Header Card */}
-        <View style={styles.headerCard}>
-          <View style={styles.verifiedBadge}>
-            <Ionicons name="shield-checkmark" size={16} color="#33D39C" />
-            <Text style={styles.verifiedText}>Verified Cleaning Report</Text>
+        {/* Property Card */}
+        <View style={styles.card}>
+          <View style={styles.cardLabelRow}>
+            <Ionicons name="home" size={16} color={colors.primary.main} />
+            <Text style={styles.cardLabel}>PROPERTY INFORMATION</Text>
           </View>
-          
-          <Text style={styles.propertyName}>{report.property_name}</Text>
-          {report.unit_name && (
-            <Text style={styles.unitName}>{report.unit_name}</Text>
-          )}
-          
-          <View style={styles.dateRow}>
-            <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
-            <Text style={styles.dateText}>{report.formatted_date}</Text>
-          </View>
-          
-          <View style={styles.cleanerRow}>
-            <Ionicons name="person-outline" size={16} color="#8E8E93" />
-            <Text style={styles.cleanerText}>Cleaned by {report.cleaner_name}</Text>
+          <View style={styles.propertySection}>
+            <Text style={styles.propertyName}>{report.property_name}</Text>
+            {report.unit_name && (
+              <View style={styles.propertyDetailRow}>
+                <Ionicons name="layers-outline" size={16} color={colors.text.tertiary} />
+                <Text style={styles.propertyUnit}>{report.unit_name}</Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Stats Card */}
-        <View style={styles.statsCard}>
-          <View style={styles.statItem}>
-            <View style={styles.statIcon}>
-              <Ionicons name="camera" size={20} color="#007AFF" />
-            </View>
-            <Text style={styles.statValue}>{report.photo_count}</Text>
-            <Text style={styles.statLabel}>Photos</Text>
+        {/* Cleaning Summary Card */}
+        <View style={styles.card}>
+          <View style={styles.cardLabelRow}>
+            <Ionicons name="clipboard" size={16} color={colors.primary.main} />
+            <Text style={styles.cardLabel}>CLEANING SUMMARY</Text>
           </View>
-          
-          <View style={styles.statDivider} />
-          
-          <View style={styles.statItem}>
-            <View style={styles.statIcon}>
-              <Ionicons name="home" size={20} color="#5856D6" />
+
+          {/* Key Metrics Row */}
+          <View style={styles.metricsRow}>
+            <View style={styles.metricBox}>
+              <Text style={styles.metricValue}>{report.cleanliness_score?.toFixed(1) || '—'}</Text>
+              <Text style={styles.metricLabel}>Score</Text>
             </View>
-            <Text style={styles.statValue}>{report.room_count}</Text>
-            <Text style={styles.statLabel}>Rooms</Text>
+            <View style={styles.metricDivider} />
+            <View style={styles.metricBox}>
+              <Text style={[styles.metricValue, { color: gradeColor }]}>
+                {report.overall_grade || '—'}
+              </Text>
+              <Text style={styles.metricLabel}>Grade</Text>
+            </View>
+            <View style={styles.metricDivider} />
+            <View style={styles.metricBox}>
+              <View style={[styles.metricStatusIcon, { 
+                backgroundColor: report.guest_ready ? colors.background.lightGreen : colors.background.lightRed 
+              }]}>
+                <Ionicons 
+                  name={report.guest_ready ? 'checkmark-circle' : 'close-circle'} 
+                  size={20} 
+                  color={report.guest_ready ? colors.status.success : colors.status.error} 
+                />
+              </View>
+              <Text style={[styles.metricLabel, {
+                color: report.guest_ready ? colors.status.success : colors.status.error,
+                marginTop: 4,
+                fontWeight: '700'
+              }]}>
+                {report.guest_ready ? 'Ready' : 'Not Ready'}
+              </Text>
+            </View>
+            <View style={styles.metricDivider} />
+            <View style={styles.metricBox}>
+              <Text style={styles.metricValue}>{report.photo_count}</Text>
+              <Text style={styles.metricLabel}>Photos</Text>
+            </View>
           </View>
-          
-          <View style={styles.statDivider} />
-          
-          <View style={styles.statItem}>
-            <View style={[styles.statIcon, { backgroundColor: `${gradeColor}15` }]}>
-              <Ionicons 
-                name={report.guest_ready ? 'checkmark-circle' : 'star'} 
-                size={20} 
-                color={gradeColor} 
-              />
+
+          <View style={styles.summaryDivider} />
+
+          {/* Details */}
+          <View style={styles.detailsList}>
+            <View style={styles.detailItem}>
+              <Ionicons name="calendar-outline" size={16} color={colors.primary.main} />
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Cleaning Date</Text>
+                <Text style={styles.detailValue}>{report.formatted_date}</Text>
+              </View>
             </View>
-            <Text style={[styles.statValue, { color: gradeColor }]}>
-              {report.overall_grade || (report.cleanliness_score?.toFixed(1) || 'N/A')}
-            </Text>
-            <Text style={styles.statLabel}>
-              {report.guest_ready ? 'Guest Ready' : 'Score'}
-            </Text>
+            <View style={styles.detailItem}>
+              <Ionicons name="person-outline" size={16} color={colors.primary.main} />
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Cleaned By</Text>
+                <Text style={styles.detailValue}>{report.cleaner_name}</Text>
+              </View>
+            </View>
+            <View style={styles.detailItem}>
+              <Ionicons name="bed-outline" size={16} color={colors.primary.main} />
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Rooms Cleaned</Text>
+                <Text style={styles.detailValue}>{report.room_count} rooms</Text>
+              </View>
+            </View>
           </View>
         </View>
 
         {/* AI Summary */}
         {report.ai_summary && (
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryHeader}>
-              <Ionicons name="sparkles" size={18} color="#5856D6" />
-              <Text style={styles.summaryTitle}>AI Analysis</Text>
+          <View style={styles.card}>
+            <View style={styles.cardLabelRow}>
+              <Ionicons name="sparkles" size={16} color={colors.primary.main} />
+              <Text style={styles.cardLabel}>AI ANALYSIS</Text>
             </View>
             <Text style={styles.summaryText}>{report.ai_summary}</Text>
           </View>
@@ -463,12 +527,23 @@ export default function CleaningReportScreen({ route, navigation }) {
 
         {/* Highlights */}
         {report.highlights && report.highlights.length > 0 && (
-          <View style={styles.highlightsCard}>
-            <Text style={styles.sectionTitle}>Highlights</Text>
+          <View style={styles.card}>
+            <View style={styles.cardHeaderRow}>
+              <View style={styles.cardLabelRow}>
+                <Ionicons name="checkmark-done" size={16} color={colors.primary.main} />
+                <Text style={styles.cardLabel}>HIGHLIGHTS</Text>
+              </View>
+              <View style={styles.highlightCountBadge}>
+                <Text style={styles.highlightCountText}>{report.highlights.length}</Text>
+              </View>
+            </View>
             {report.highlights.slice(0, 5).map((highlight, index) => (
               <View key={index} style={styles.highlightItem}>
-                <Ionicons name="checkmark-circle" size={18} color="#33D39C" />
-                <Text style={styles.highlightText}>{highlight}</Text>
+                <View style={styles.highlightDot} />
+                <View style={styles.highlightContent}>
+                  <Text style={styles.highlightLabel}>Highlight {index + 1}</Text>
+                  <Text style={styles.highlightText}>{highlight}</Text>
+                </View>
               </View>
             ))}
           </View>
@@ -502,10 +577,16 @@ export default function CleaningReportScreen({ route, navigation }) {
         )}
 
         {/* Timestamped Photos */}
-        <View style={styles.photosSection}>
-          <Text style={styles.sectionTitle}>
-            Timestamped Evidence ({displayPhotos?.length || 0} photos)
-          </Text>
+        <View style={styles.card}>
+          <View style={styles.cardLabelRow}>
+            <Ionicons name="images" size={16} color={colors.primary.main} />
+            <Text style={styles.cardLabel}>TIMESTAMPED PHOTO EVIDENCE</Text>
+          </View>
+          <View style={styles.photoDisclaimer}>
+            <Text style={styles.photoDisclaimerText}>
+              All photos include embedded timestamps and metadata for verification.
+            </Text>
+          </View>
           
           <View style={styles.photosGrid}>
             {displayPhotos?.map((photo, index) => (
@@ -530,43 +611,45 @@ export default function CleaningReportScreen({ route, navigation }) {
 
         {/* Verification Footer */}
         <View style={styles.verificationFooter}>
-          <Ionicons name="shield-checkmark" size={24} color="#33D39C" />
-          <View style={styles.verificationText}>
+          <Ionicons name="shield-checkmark" size={24} color={colors.status.success} />
+          <View style={styles.verificationTextContainer}>
             <Text style={styles.verificationTitle}>Verified by HostIQ</Text>
             <Text style={styles.verificationSubtitle}>
-              AI-powered inspection • Tamper-proof timestamps
+              AI-powered inspection · Tamper-proof timestamps
             </Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* Action Buttons */}
-      <View style={[styles.footer, { paddingBottom: tabBarHeight }]}>
-        <View style={styles.footerButtons}>
+      {/* Bottom Action Bar */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        {downloadingPdf && (
+          <View style={styles.generatingOverlay}>
+            <ActivityIndicator size="small" color={colors.primary.main} />
+            <Text style={styles.generatingText}>Downloading PDF...</Text>
+          </View>
+        )}
+
+        <View style={styles.buttonRow}>
           <TouchableOpacity 
-            style={styles.downloadButton} 
-            onPress={handleDownloadPdf}
-            disabled={downloadingPdf}
+            style={[styles.actionButton, styles.shareBtn]} 
+            onPress={handleShare}
+            activeOpacity={0.7}
           >
-            {downloadingPdf ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <>
-                <Ionicons name="document-text-outline" size={20} color="#FFF" />
-                <Text style={styles.downloadButtonText}>Download PDF</Text>
-              </>
-            )}
+            <Ionicons name="share-outline" size={18} color={colors.primary.main} />
+            <Text style={styles.shareBtnText}>Share Link</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-            <Ionicons name="share-outline" size={20} color="#007AFF" />
-            <Text style={styles.shareButtonText}>Share Link</Text>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.pdfBtn]} 
+            onPress={handleDownloadPdf}
+            activeOpacity={0.7}
+            disabled={downloadingPdf}
+          >
+            <Ionicons name="document-outline" size={18} color={colors.primary.main} />
+            <Text style={styles.pdfBtnText}>Download PDF</Text>
           </TouchableOpacity>
         </View>
-        
-        <Text style={styles.footerHint}>
-          Use the PDF for Airbnb disputes • Share link for quick access
-        </Text>
       </View>
     </View>
   );
@@ -578,7 +661,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F7',
   },
   scrollContent: {
-    padding: 16,
+    paddingBottom: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -605,7 +688,7 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     marginTop: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 10,
@@ -615,157 +698,280 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFF',
   },
-  // Header Card
-  headerCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 12,
+
+  // Gradient Header
+  headerWrapper: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#33D39C15',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    gap: 6,
-    marginBottom: 12,
-  },
-  verifiedText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#33D39C',
-  },
-  propertyName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000',
-    letterSpacing: -0.5,
-  },
-  unitName: {
-    fontSize: 17,
-    color: '#8E8E93',
-    marginTop: 4,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    gap: 6,
-  },
-  dateText: {
-    fontSize: 15,
-    color: '#8E8E93',
-  },
-  cleanerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 6,
-  },
-  cleanerText: {
-    fontSize: 15,
-    color: '#8E8E93',
-  },
-  // Stats Card
-  statsCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 12,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: '#007AFF15',
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
   },
-  statValue: {
+  headerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
+  },
+  headerBackButton: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIconWrapper: {
+    marginRight: 12,
+  },
+  headerIconInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
+  },
+  headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
+    color: '#FFFFFF',
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginTop: 2,
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.85,
   },
-  statDivider: {
-    width: 1,
-    backgroundColor: '#E5E5EA',
-    marginHorizontal: 12,
+
+  // Card (shared style matching dispute report)
+  card: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 10,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(0, 0, 0, 0.08)',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 1,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  // Summary Card
-  summaryCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-  summaryHeader: {
+  cardLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 10,
+    marginBottom: 14,
   },
-  summaryTitle: {
-    fontSize: 16,
+  cardLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0A84FF',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  // Property
+  propertySection: {
+    marginTop: 4,
+  },
+  propertyName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
+    letterSpacing: -0.3,
+    marginBottom: 12,
+    lineHeight: 26,
+  },
+  propertyDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  propertyUnit: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '500',
+    flex: 1,
+  },
+
+  // Metrics Row
+  metricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  metricBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#000000',
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  metricLabel: {
+    fontSize: 11,
+    color: '#8E8E93',
     fontWeight: '600',
-    color: '#000',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+  },
+  metricDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: '#E5E5EA',
+    opacity: 0.6,
+    marginHorizontal: 4,
+  },
+  metricStatusIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+
+  // Summary details
+  summaryDivider: {
+    height: 1,
+    backgroundColor: '#E5E5EA',
+    marginVertical: 16,
+    opacity: 0.6,
   },
   summaryText: {
     fontSize: 15,
     color: '#3C3C43',
     lineHeight: 22,
+    fontWeight: '500',
   },
-  // Highlights
-  highlightsCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+  detailsList: {
+    gap: 12,
   },
-  sectionTitle: {
-    fontSize: 17,
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  detailContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 12,
+    marginBottom: 4,
+    letterSpacing: 0.2,
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+
+  // Highlights
+  highlightCountBadge: {
+    backgroundColor: 'rgba(51, 211, 156, 0.1)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  highlightCountText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#33D39C',
   },
   highlightItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 10,
-    marginBottom: 10,
+    marginBottom: 16,
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#F2F2F7',
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    borderLeftWidth: 1.5,
+    borderLeftColor: '#33D39C',
+  },
+  highlightDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#33D39C',
+    marginTop: 2,
+  },
+  highlightContent: {
+    flex: 1,
+  },
+  highlightLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#8E8E93',
+    letterSpacing: 0.3,
+    marginBottom: 6,
+    textTransform: 'uppercase',
   },
   highlightText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#3C3C43',
+    fontSize: 14,
+    color: '#000000',
     lineHeight: 20,
+    fontWeight: '500',
   },
+
   // Room Filter
   roomFilter: {
-    marginBottom: 12,
+    marginTop: 16,
+    paddingHorizontal: 16,
   },
   roomChip: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
   },
   roomChipActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#0A84FF',
+    borderColor: '#0A84FF',
   },
   roomChipText: {
     fontSize: 14,
@@ -775,12 +981,22 @@ const styles = StyleSheet.create({
   roomChipTextActive: {
     color: '#FFF',
   },
+
   // Photos
-  photosSection: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+  photoDisclaimer: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#0A84FF',
+    marginBottom: 16,
+  },
+  photoDisclaimerText: {
+    fontSize: 12,
+    color: '#3C3C43',
+    fontWeight: '500',
+    lineHeight: 18,
   },
   photosGrid: {
     flexDirection: 'row',
@@ -829,17 +1045,21 @@ const styles = StyleSheet.create({
     color: '#FFF',
     textAlign: 'center',
   },
+
   // Verification Footer
   verificationFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#33D39C10',
-    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    backgroundColor: 'rgba(51, 211, 156, 0.08)',
+    borderRadius: 10,
     padding: 16,
     gap: 12,
-    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(51, 211, 156, 0.15)',
   },
-  verificationText: {
+  verificationTextContainer: {
     flex: 1,
   },
   verificationTitle: {
@@ -851,63 +1071,89 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#059669',
     marginTop: 2,
+    fontWeight: '500',
   },
-  // Footer
-  footer: {
+
+  // Bottom Bar
+  bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    paddingTop: 16,
-    backgroundColor: '#FFF',
-    borderTopWidth: StyleSheet.hairlineWidth,
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderTopWidth: 1,
     borderTopColor: '#E5E5EA',
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(0, 0, 0, 0.08)',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
-  footerButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  downloadButton: {
-    flex: 1,
+  generatingOverlay: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#33D39C',
-    borderRadius: 12,
-    padding: 16,
+    marginBottom: 10,
     gap: 8,
+    paddingVertical: 6,
   },
-  downloadButtonText: {
-    fontSize: 16,
+  generatingText: {
+    fontSize: 13,
+    color: '#3C3C43',
     fontWeight: '600',
-    color: '#FFF',
   },
-  shareButton: {
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EFF6FF',
-    borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(0, 0, 0, 0.08)',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  shareBtn: {
+    backgroundColor: '#F2F2F7',
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#E5E5EA',
   },
-  shareButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
+  shareBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0A84FF',
+    letterSpacing: 0.1,
   },
-  footerHint: {
-    fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 10,
+  pdfBtn: {
+    backgroundColor: '#E3F2FD',
+    borderWidth: 1,
+    borderColor: '#0A84FF',
   },
-  bottomPadding: {
-    height: 20,
+  pdfBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0A84FF',
+    letterSpacing: 0.1,
   },
 });
 

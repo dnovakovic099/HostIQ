@@ -24,88 +24,82 @@ import IssuesScreen from '../screens/Owner/IssuesScreen';
 import RoomTemplatesScreen from '../screens/Owner/RoomTemplatesScreen';
 import CleaningReportScreen from '../screens/Common/CleaningReportScreen';
 import AirbnbDisputeReportScreen from '../screens/Owner/AirbnbDisputeReportScreen';
+import colors from '../theme/colors';
 
 // Custom header component matching PropertiesScreen style
 function DisputeReportHeader({ navigation, route }) {
   const insets = useSafeAreaInsets();
   
   return (
-    <View style={[headerStyles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}>
+    <LinearGradient
+      colors={colors.gradients.dashboardHeader}
+      locations={colors.gradients.dashboardHeaderLocations}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[headerStyles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+    >
       {Platform.OS === 'ios' ? (
         <SafeAreaView>
-          <LinearGradient
-            colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={headerStyles.headerGradient}
-          >
+          <View style={headerStyles.headerGradient}>
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={headerStyles.backButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={headerStyles.headerIconWrapper}>
               <View style={headerStyles.headerIconInner}>
-                <Ionicons name="document-text" size={24} color="#FFFFFF" />
+                <Ionicons name="shield-checkmark" size={28} color="#FFFFFF" />
               </View>
             </View>
             <View style={headerStyles.headerTextWrapper}>
-              <Text style={headerStyles.headerTitle}>Airbnb Dispute Report</Text>
-          
+              <Text style={headerStyles.headerTitle}>Dispute Report</Text>
+              <Text style={headerStyles.headerSubtitle}>Official Documentation</Text>
             </View>
-          </LinearGradient>
+          </View>
         </SafeAreaView>
       ) : (
-        <LinearGradient
-          colors={['#548EDD', '#4A7FD4', '#3F70CB', '#3561C2']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={headerStyles.headerGradient}
-        >
+        <View style={headerStyles.headerGradient}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={headerStyles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
           </TouchableOpacity>
           <View style={headerStyles.headerIconWrapper}>
             <View style={headerStyles.headerIconInner}>
-              <Ionicons name="document-text" size={24} color="#FFFFFF" />
+              <Ionicons name="shield-checkmark" size={28} color="#FFFFFF" />
             </View>
           </View>
           <View style={headerStyles.headerTextWrapper}>
-            <Text style={headerStyles.headerTitle}>Airbnb Dispute Report</Text>
+            <Text style={headerStyles.headerTitle}>Dispute Report</Text>
             <Text style={headerStyles.headerSubtitle}>Official Documentation</Text>
           </View>
-        </LinearGradient>
+        </View>
       )}
-    </View>
+    </LinearGradient>
   );
 }
 
 const headerStyles = StyleSheet.create({
   headerWrapper: {
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
     overflow: 'hidden',
   },
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 16,
     paddingBottom: 18,
   },
   backButton: {
-    marginRight: 2,
+    marginRight: 8,
     padding: 4,
   },
   headerIconWrapper: {
-    marginRight: 8,
-    marginLeft: -4,
+    marginRight: 14,
   },
   headerIconInner: {
     width: 56,
@@ -117,7 +111,6 @@ const headerStyles = StyleSheet.create({
   },
   headerTextWrapper: {
     flex: 1,
-    marginright: 2,
   },
   headerTitle: {
     fontSize: 22,
@@ -255,7 +248,7 @@ export default function OwnerStack() {
       <Stack.Screen 
         name="CleaningReport" 
         component={CleaningReportScreen}
-        options={{ title: 'Cleaning Report' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen 
         name="AirbnbDisputeReport" 

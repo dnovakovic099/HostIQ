@@ -22,6 +22,7 @@ import UsageIndicator from '../../components/UsageIndicator';
 import OnboardingPopup from '../../components/OnboardingPopup';
 import { useOnboardingStore } from '../../store/onboardingStore';
 import { useAuthStore } from '../../store/authStore';
+import { useDataStore } from '../../store/dataStore';
 import colors from '../../theme/colors';
 
 const { width } = Dimensions.get('window');
@@ -111,12 +112,16 @@ export default function OwnerDashboardScreen({ navigation }) {
                 setShowOnboarding(true);
             }
 
+            // Prefetch Team + Insights data in background so those screens load instantly
+            useDataStore.getState().prefetchInvites();
+            useDataStore.getState().prefetchInsights();
+
             // Fetch properties in background (non-blocking) for low-rated properties
             // This is optional and won't block the dashboard from loading
             // Skip if already fetching to prevent duplicate requests
             if (!propertiesFetchInProgress.current) {
                 propertiesFetchInProgress.current = true;
-                
+
                 Promise.race([
                     api.get('/owner/properties'),
                     new Promise((_, reject) =>
@@ -136,7 +141,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                             allProperties = propertiesRes.data;
                         }
                     }
-                    
+
                     const lowRated = allProperties.filter(prop => prop.hasLowRating);
                     setLowRatingProperties(lowRated);
                 }).catch(error => {
@@ -195,18 +200,18 @@ export default function OwnerDashboardScreen({ navigation }) {
         const isAppFailed = errorMsg.includes('blurred') || errorMsg.includes('technical');
 
         if (status === 'FAILED' || isAppFailed) {
-            return { label: 'Failed', color: colors.status.error };
+            return { label: 'Failed', color: colors.status.error, backgroundColor: colors.accent.errorLightAlt };
         }
         if (status === 'COMPLETE' && isReady === false) {
-            return { label: 'Cleaning Failed', color: colors.status.error };
+            return { label: 'Cleaning Failed', color: colors.status.error, backgroundColor: colors.accent.errorLightAlt };
         }
         if (status === 'COMPLETE') {
-            return { label: 'Complete', color: colors.status.success };
+            return { label: 'Complete', color: colors.status.success, backgroundColor: colors.accent.successLight };
         }
         if (status === 'PROCESSING') {
-            return { label: 'Processing', color: colors.status.warning };
+            return { label: 'Processing', color: colors.status.warning, backgroundColor: colors.accent.warningLight };
         }
-        return { label: status, color: colors.ios.gray };
+        return { label: status, color: colors.text.secondary, backgroundColor: colors.background.secondary };
     };
 
     const formatDate = (date) => {
@@ -311,12 +316,12 @@ export default function OwnerDashboardScreen({ navigation }) {
                         <View style={styles.quickActions}>
                             {/* Free Image Usage Indicator */}
                             <View style={styles.usageIndicatorInCard}>
-                                <UsageIndicator navigation={navigation} />
+                                <UsageIndicator navigation={navigation} inCard={true} />
                             </View>
-                            
+
                             {/* Divider */}
                             <View style={styles.quickActionsDivider} />
-                            
+
                             <View style={styles.quickActionsRow}>
                                 <TouchableOpacity
                                     style={styles.quickActionBtn}
@@ -356,7 +361,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={['#33D39C', '#2CB5E9']}
+                                        colors={['#5AC8FA', '#0A84FF']}
                                         style={styles.quickActionCircle}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
@@ -483,12 +488,10 @@ export default function OwnerDashboardScreen({ navigation }) {
                                         </Text>
 
                                         {/* Status Badge */}
-                                        {statusConfig.label === 'Cleaning Failed' || statusConfig.label === 'Failed' ? (
-                                            <View style={styles.attentionBadge}>
-                                                <View style={styles.attentionDot} />
-                                                <Text style={styles.attentionText}>Attention</Text>
-                                            </View>
-                                        ) : null}
+                                        <View style={[styles.attentionBadge, { backgroundColor: statusConfig.backgroundColor }]}>
+                                            <View style={[styles.attentionDot, { backgroundColor: statusConfig.color }]} />
+                                            <Text style={[styles.attentionText, { color: statusConfig.color }]}>{statusConfig.label}</Text>
+                                        </View>
                                     </TouchableOpacity>
 
                                     {/* Airbnb Dispute Report Button */}
@@ -642,7 +645,7 @@ const styles = StyleSheet.create({
         marginTop: 40,
     },
     sectionTitle: {
-        fontSize: 28,                           // iOS title 1
+        fontSize: 24,                           // iOS title 1
         fontWeight: '700',                      // Bold, not extra bold
         color: COLORS.text.primary,
         letterSpacing: -0.8,                    // Apple-style tight
@@ -708,12 +711,11 @@ const styles = StyleSheet.create({
     quickActionsDivider: {
         height: 1,
         backgroundColor: COLORS.divider,
-        marginVertical: 16,
-        marginHorizontal: -10,
+        marginVertical: 12,
+        marginHorizontal: -12,
     },
     usageIndicatorInCard: {
-        marginHorizontal: -10,
-        marginTop: -18,
+        marginTop: -4,
     },
     quickActionBtn: {
         alignItems: 'center',

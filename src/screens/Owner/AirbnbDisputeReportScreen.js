@@ -14,9 +14,14 @@ import {
   Modal,
   TextInput,
   KeyboardAvoidingView,
+  StatusBar,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
+import colors from '../../theme/colors';
 import { API_URL } from '../../config/api';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
@@ -35,22 +40,22 @@ try {
 }
 
 const COLORS = {
-  background: '#F8F9FA',
+  background: '#F2F2F7',
   card: '#FFFFFF',
-  primary: '#548EDD',
-  primaryLight: '#E3F2FF',
-  primaryDark: '#4A7FD4',
+  primary: '#0A84FF',
+  primaryLight: '#E3F2FD',
+  primaryDark: '#0066CC',
   text: {
-    primary: '#1D1D1F',
-    secondary: '#48484A',
+    primary: '#000000',
+    secondary: '#3C3C43',
     tertiary: '#8E8E93',
   },
   success: '#33D39C',
-  successLight: '#E8F9ED',
+  successLight: '#ECFDF5',
   warning: '#FF9500',
-  warningLight: '#FFF4E6',
+  warningLight: '#FFFBEA',
   error: '#FF3B30',
-  errorLight: '#FFEBE9',
+  errorLight: '#FFF5F5',
   separator: '#E5E5EA',
   shadow: 'rgba(0, 0, 0, 0.08)',
   overlay: 'rgba(0, 0, 0, 0.4)',
@@ -218,6 +223,7 @@ const AuthenticatedImage = ({ media, index, inspection, onError }) => {
 };
 
 export default function AirbnbDisputeReportScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const { inspectionId } = route?.params || {};
   const [inspection, setInspection] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -789,15 +795,11 @@ export default function AirbnbDisputeReportScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Badge */}
+        {/* Generated timestamp */}
         <View style={styles.badgeContainer}>
-          <View style={styles.headerBadge}>
-            <View style={styles.iconWithShadow}>
-              <Ionicons name="shield-checkmark" size={14} color={COLORS.primary} />
-            </View>
-            <Text style={styles.headerBadgeText}>Official Documentation</Text>
-          </View>
           <Text style={styles.generatedText}>
             Generated {formatDateTime(new Date())}
           </Text>
@@ -1214,39 +1216,12 @@ const styles = StyleSheet.create({
     }),
   },
   
-  // Badge
+  // Badge / Generated timestamp
   badgeContainer: {
     paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
+    paddingTop: 16,
+    paddingBottom: 4,
     alignItems: 'center',
-  },
-  headerBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 14,
-    gap: 8,
-    marginBottom: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: COLORS.shadow,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  headerBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.text.secondary,
-    letterSpacing: 0.3,
   },
   generatedText: {
     fontSize: 12,

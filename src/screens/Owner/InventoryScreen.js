@@ -219,50 +219,35 @@ export default function InventoryScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Top gradient header – match Property detail / PropertiesScreen */}
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={colors.gradients.dashboardHeader}
         locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
-        {Platform.OS === 'ios' ? (
-          <SafeAreaView>
-            <View style={styles.headerGradient}>
-              <View style={styles.headerIconWrapper}>
-                <View style={styles.headerIconInner}>
-                  <Ionicons name="home" size={24} color="#FFFFFF" />
-                </View>
-              </View>
-              <View style={styles.headerTextWrapper}>
-                <Text style={styles.headerTitleTop} numberOfLines={2}>
-                  {propertyName}
-                </Text>
-                <Text style={styles.headerSubtitleTop} numberOfLines={1}>
-                  {isPMS ? 'PMS Property' : 'Manual Property'} • Inventory
-                </Text>
-              </View>
-            </View>
-          </SafeAreaView>
-        ) : (
+        {/* Decorative element */}
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="cube-outline" size={70} color={colors.decorative.icon1} />
+        </View>
+        <SafeAreaView>
           <View style={styles.headerGradient}>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
-                <Ionicons name="home" size={24} color="#FFFFFF" />
+                <Ionicons name="cube-outline" size={22} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
-              <Text style={styles.headerTitleTop} numberOfLines={2}>
+              <Text style={styles.headerTitle} numberOfLines={2}>
                 {propertyName}
               </Text>
-              <Text style={styles.headerSubtitleTop} numberOfLines={1}>
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
                 {isPMS ? 'PMS Property' : 'Manual Property'} • Inventory
               </Text>
             </View>
           </View>
-        )}
+        </SafeAreaView>
       </LinearGradient>
 
       <ScrollView
@@ -539,45 +524,44 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.bg,
   },
-  // Gradient header (copied from PropertyDetail/Properties styles)
+  // Gradient header (match reference pattern)
   headerWrapper: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
   },
   headerIconWrapper: {
-    marginRight: 14,
+    marginRight: 12,
   },
   headerIconInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTextWrapper: {
     flex: 1,
-  },
-  headerTitleTop: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 4,
-    letterSpacing: 0.3,
-  },
-  headerSubtitleTop: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
-    opacity: 0.9,
   },
   headerCard: {
     marginHorizontal: 16,
@@ -602,12 +586,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#FFFFFF',
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    marginTop: 4,
     fontSize: 13,
-    color: COLORS.textSecondary,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.85,
   },
   loadingContainer: {
     flex: 1,

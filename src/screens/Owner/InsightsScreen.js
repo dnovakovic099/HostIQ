@@ -8,6 +8,7 @@ import {
   Dimensions,
   Platform,
   SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,14 +26,6 @@ const TABS = [
   { id: 'cleaners', label: 'Cleaners', icon: 'people' },
   { id: 'property', label: 'Property', icon: 'business' },
 ];
-
-// Gradient theme colors
-const GRADIENT_COLORS = {
-  blue: '#1E3AFF',
-  mediumBlue: '#215EEA',
-  teal: '#2CB5E9',
-  green: '#33D39C',
-};
 
 export default function InsightsScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -75,33 +68,30 @@ export default function InsightsScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Header Gradient - Same style as Properties screen */}
+      <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={colors.gradients.dashboardHeader}
         locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
-        {Platform.OS === 'ios' ? (
-          <SafeAreaView>
-            <View style={styles.headerContent}>
-              <View style={styles.headerIconWrapper}>
-                <View style={styles.headerIconInner}>
-                  <Ionicons name="bar-chart" size={28} color="#FFFFFF" />
-                </View>
-              </View>
-              <View style={styles.headerTextWrapper}>
-                <Text style={styles.headerTitle}>Insights</Text>
-                <Text style={styles.headerSubtitle}>Track team performance</Text>
-              </View>
-            </View>
-          </SafeAreaView>
-        ) : (
-          <View style={styles.headerContent}>
+        {/* Decorative element */}
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="bar-chart" size={70} color={colors.decorative.icon1} />
+        </View>
+        <SafeAreaView>
+          <View style={styles.headerGradient}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.headerBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
-                <Ionicons name="bar-chart" size={28} color="#FFFFFF" />
+                <Ionicons name="bar-chart" size={22} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
@@ -109,7 +99,7 @@ export default function InsightsScreen({ navigation }) {
               <Text style={styles.headerSubtitle}>Track team performance</Text>
             </View>
           </View>
-        )}
+        </SafeAreaView>
       </LinearGradient>
 
       {FEATURE_FLAGS.ENABLE_INSIGHTS_PROPERTY_TAB && (
@@ -168,29 +158,46 @@ export default function InsightsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#F2F2F7',
   },
-  // Header - Same style as Properties screen
+  // Header (match reference pattern)
   headerWrapper: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     overflow: 'hidden',
+    position: 'relative',
   },
-  headerContent: {
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
+  },
+  headerBackButton: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerIconWrapper: {
-    marginRight: 14,
+    marginRight: 12,
   },
   headerIconInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -198,49 +205,49 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
-    letterSpacing: 0.3,
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
     fontWeight: '500',
-    opacity: 0.9,
+    opacity: 0.85,
   },
   tabBarContainer: {
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F2F2F7',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#E5E5EA',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 4,
     position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
   },
   tabIndicator: {
     position: 'absolute',
     top: 4,
     bottom: 4,
-    backgroundColor: GRADIENT_COLORS.mediumBlue,
+    backgroundColor: colors.primary?.main || '#0A84FF',
     borderRadius: 10,
     ...Platform.select({
       ios: {
-        shadowColor: GRADIENT_COLORS.mediumBlue,
+        shadowColor: '#0A84FF',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
+        shadowOpacity: 0.2,
         shadowRadius: 4,
       },
-      android: {
-        elevation: 3,
-      },
+      android: { elevation: 3 },
     }),
   },
   tab: {
@@ -257,7 +264,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#8E8E93',
   },
   tabLabelActive: {
     color: '#FFFFFF',

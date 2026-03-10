@@ -13,6 +13,7 @@ import {
   TextInput,
   Platform,
   SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,22 +27,22 @@ const { width } = Dimensions.get('window');
 // Helper function to fix image URLs (convert production URLs to local when using local API)
 const fixImageUrl = (url) => {
   if (!url) return url;
-  
+
   // Ensure it's a string and trim whitespace
   const originalUrl = String(url).trim();
   url = originalUrl;
-  
+
   // Check if it's already a full URL
   const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
-  
+
   let fixedUrl;
-  
+
   if (isFullUrl) {
     // Backend returned a full URL
     // If it's pointing to production but we're using local API, replace it
     const productionUrl = 'https://roomify-server-production.up.railway.app';
     const baseUrl = API_URL.replace('/api', '');
-    
+
     // Only replace if URL contains production domain AND we're using local API
     if (url.includes(productionUrl) && !baseUrl.includes('roomify-server-production')) {
       // Extract the path from the production URL and use local base
@@ -57,14 +58,14 @@ const fixImageUrl = (url) => {
     const path = url.startsWith('/') ? url : '/' + url;
     fixedUrl = baseUrl + path;
   }
-  
+
   // Print URL transformation
   console.log('🖼️  Image URL:', {
     original: originalUrl,
     fixed: fixedUrl,
     changed: originalUrl !== fixedUrl
   });
-  
+
   return fixedUrl;
 };
 
@@ -329,9 +330,9 @@ export default function InspectionDetailScreen({ route, navigation }) {
   };
 
   const getRatingBgColor = (score) => {
-    if (score >= 8) return '#E8F8ED';  // Light green tint
-    if (score >= 6) return '#FFF9E6';  // Light yellow tint
-    return '#FFEBEA';  // Light red tint
+    if (score >= 8) return '#ECFDF5';  // Light green tint (iOS)
+    if (score >= 6) return '#FFFBEA';  // Light yellow tint (iOS)
+    return '#FFF5F5';  // Light red tint (iOS)
   };
 
   if (error) {
@@ -359,6 +360,8 @@ export default function InspectionDetailScreen({ route, navigation }) {
   }
 
   const fullAddress = safeString(inspection.unit?.property?.address, 'Address');
+  const unitName = safeString(inspection.unit?.name, '');
+  const propertyName = safeString(inspection.unit?.property?.name, 'Property');
   const status = safeString(inspection.status, 'UNKNOWN');
 
   // Format date
@@ -381,30 +384,8 @@ export default function InspectionDetailScreen({ route, navigation }) {
   const roomResults = photoQuality?.room_results || {};
   const roomIds = Object.keys(roomResults);
 
-  // Debug logging
-  console.log('🔍 Inspection Debug:');
-  console.log('  - Photo Quality:', photoQuality);
-  console.log('  - Room Results:', roomResults);
-  console.log('  - Room IDs:', roomIds);
-  console.log('  - Room IDs length:', roomIds.length);
-  console.log('  - Media count:', inspection.media?.length);
-  console.log('  - Media with room_id:', inspection.media?.filter(m => m.room_id).length);
-  console.log('  - Selected Room ID:', selectedRoomId);
-
   // Get selected room data or fall back to overall
   const selectedRoomData = selectedRoomId ? roomResults[selectedRoomId] : null;
-
-  // Debug logging for instruction adherence
-  if (selectedRoomData) {
-    console.log(`🔍 Selected room: ${selectedRoomData.room_name}`);
-    console.log(`📋 has_custom_requirements: ${selectedRoomData.has_custom_requirements}`);
-    console.log(`📋 instruction_adherence exists: ${!!selectedRoomData.instruction_adherence}`);
-    if (selectedRoomData.instruction_adherence) {
-      console.log(`   - adherence_score: ${selectedRoomData.instruction_adherence.adherence_score}/10`);
-    } else {
-      console.log(`⚠️  No instruction_adherence data for ${selectedRoomData.room_name}`);
-    }
-  }
 
   // Use room-specific data if available, otherwise fall back to overall
   const improvements = selectedRoomData?.cleanliness_reasons || inspection.airbnb_grade_analysis?.improvements_needed || [];
@@ -413,6 +394,9 @@ export default function InspectionDetailScreen({ route, navigation }) {
   const isReady = selectedRoomData?.guest_ready ?? inspection.airbnb_grade_analysis?.guest_ready;
   const grade = selectedRoomData?.overall_grade || inspection.airbnb_grade_analysis?.overall_grade;
   const roomScore = selectedRoomData ? safeNumber(selectedRoomData.cleanliness_score, 0) : cleanlinessScore;
+  const photoCount = selectedRoomId
+    ? (inspection.media || []).filter(m => m.room_id === selectedRoomId).length
+    : (inspection.media || []).length;
 
   const isCriticalIssue = (item) => {
     const text = String(item || '').toUpperCase();
@@ -450,6 +434,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
         label: 'App Failed',
         backgroundColor: '#FFEBEE',
         textColor: '#C62828',
+        icon: 'alert-circle',
         canEdit: true
       };
     }
@@ -459,6 +444,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
         label: 'Rejected',
         backgroundColor: '#FFF3E0',
         textColor: '#E65100',
+        icon: 'close-circle',
         canEdit: true
       };
     }
@@ -469,6 +455,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
         label: 'Cleaning Failed',
         backgroundColor: '#FFEBEE',
         textColor: '#C62828',
+        icon: 'alert-circle',
         canEdit: true
       };
     }
@@ -477,11 +464,16 @@ export default function InspectionDetailScreen({ route, navigation }) {
       label: 'Ready',
       backgroundColor: '#E8F8ED',
       textColor: '#1B5E20',
+      icon: 'checkmark-circle',
       canEdit: false
     };
   };
 
   const statusDisplay = getStatusDisplay();
+  const gradeColor = getScoreColor(cleanlinessScore);
+
+  // Bottom bar: buttons (~48) + padding (8+safe area)
+  const bottomBarHeight = 56 + insets.bottom;
 
   return (
     <View style={styles.container}>
@@ -492,155 +484,141 @@ export default function InspectionDetailScreen({ route, navigation }) {
         </View>
       ) : (status === 'COMPLETE' || status === 'FAILED' || status === 'REJECTED') && cleanlinessScore !== null && cleanlinessScore !== undefined ? (
         <>
-          {/* Header Gradient */}
+          <StatusBar barStyle="light-content" />
+
+          {/* Gradient Header */}
           <LinearGradient
             colors={colors.gradients.dashboardHeader}
             locations={colors.gradients.dashboardHeaderLocations}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={[styles.headerWrapper, Platform.OS === 'android' && { paddingTop: insets.top }]}
+            style={[styles.headerWrapper, { paddingTop: insets.top }]}
           >
-            {Platform.OS === 'ios' ? (
-              <SafeAreaView>
-                <View style={styles.headerGradient}>
-                  <TouchableOpacity
-                    style={styles.headerBackButton}
-                    onPress={() => navigation.goBack()}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
-                  <View style={styles.headerIconWrapper}>
-                    <View style={styles.headerIconInner}>
-                      <Ionicons name="document-text" size={28} color="#FFFFFF" />
-                    </View>
-                  </View>
-                  <View style={styles.headerTextWrapper}>
-                    <Text style={styles.headerTitle}>Inspection Details</Text>
-                  </View>
-                </View>
-              </SafeAreaView>
-            ) : (
+            {/* Decorative element */}
+            <View style={styles.decorativeCircle}>
+              <Ionicons name="document-text" size={70} color={colors.decorative.icon1} />
+            </View>
+            <SafeAreaView>
               <View style={styles.headerGradient}>
                 <TouchableOpacity
-                  style={styles.headerBackButton}
                   onPress={() => navigation.goBack()}
+                  style={styles.headerBackButton}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                  <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
                 </TouchableOpacity>
                 <View style={styles.headerIconWrapper}>
                   <View style={styles.headerIconInner}>
-                    <Ionicons name="document-text" size={28} color="#FFFFFF" />
+                    <Ionicons name="document-text" size={22} color="#FFFFFF" />
                   </View>
                 </View>
                 <View style={styles.headerTextWrapper}>
                   <Text style={styles.headerTitle}>Inspection Details</Text>
+                  <Text style={styles.headerSubtitle}>Verified Documentation</Text>
                 </View>
               </View>
-            )}
+            </SafeAreaView>
           </LinearGradient>
 
-          {/* COMPACT HEADER DESIGN */}
-          <View style={styles.compactHeader}>
-            {/* Compact Info Card */}
-            <View style={styles.headerInfoCard}>
-              {/* Top Row: Address + Date + Score */}
-              <View style={styles.headerTopRow}>
-                <View style={styles.headerLeftSection}>
-                  <View style={styles.headerAddressContainer}>
-                    <Ionicons name="location-sharp" size={28} color="#64748B" />
-                    <Text style={styles.headerAddress} numberOfLines={1}>{fullAddress}</Text>
-                  </View>
-                  <View style={styles.headerDateRow}>
-                    <Ionicons name="calendar-outline" size={20} color="#64748B" />
-                    <Text style={styles.headerDate}>{formattedDate}</Text>
-                  </View>
+          <ScrollView
+            style={styles.scrollContent}
+            contentContainerStyle={[styles.content, { paddingBottom: bottomBarHeight + 16 }]}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Property Info Card */}
+            <View style={styles.card}>
+              <View style={styles.cardLabelRow}>
+                <Ionicons name="home" size={16} color={colors.primary.main} />
+                <Text style={styles.cardLabel}>PROPERTY INFORMATION</Text>
+              </View>
+              <View style={styles.propertySection}>
+                <Text style={styles.propertyName}>{propertyName}</Text>
+                <View style={styles.propertyAddressRow}>
+                  <Ionicons name="location-outline" size={16} color={colors.text.tertiary} />
+                  <Text style={styles.propertyAddress}>{fullAddress}</Text>
                 </View>
-                
-                <View style={styles.headerRightSection}>
-                  <View style={[styles.statBadge, { backgroundColor: '#EFF6FF', borderColor: '#215EEA' }]}>
-                    <Ionicons name="star" size={14} color="#215EEA" />
-                    <Text style={[styles.statValue, { color: '#215EEA' }]}>{roomScore.toFixed(1)}</Text>
+                {unitName ? (
+                  <View style={styles.propertyUnitRow}>
+                    <Ionicons name="layers-outline" size={16} color={colors.text.tertiary} />
+                    <Text style={styles.propertyUnit}>{unitName}</Text>
                   </View>
-                  <View style={[styles.statBadgeCompact, { 
-                    backgroundColor: statusDisplay.backgroundColor,
-                    borderColor: statusDisplay.textColor,
-                    borderWidth: statusDisplay.label === 'Cleaning Failed' ? 0 : 1,
-                  }]}>
-                    <Text style={[styles.statValueCompact, { color: statusDisplay.textColor }]}>
-                      {statusDisplay.label}
-                    </Text>
-                  </View>
+                ) : null}
+                <View style={styles.propertyDateRow}>
+                  <Ionicons name="calendar-outline" size={16} color={colors.text.tertiary} />
+                  <Text style={styles.propertyDate}>{formattedDate}</Text>
                 </View>
               </View>
-
-              {/* Action Buttons - Compact Horizontal */}
-              {(status === 'COMPLETE' || statusDisplay.canEdit || (userRole === 'OWNER' && status !== 'REJECTED')) && (
-                <View style={styles.headerActionsInCard}>
-                  {status === 'COMPLETE' && (
-                    <TouchableOpacity
-                      style={[styles.actionBtnCompact, { borderColor: '#33D39C' }]}
-                      onPress={() => navigation.navigate('CleaningReport', { inspectionId })}
-                    >
-                      <Ionicons name="document-text" size={16} color="#33D39C" />
-                      <Text style={[styles.actionBtnTextCompact, { color: '#33D39C' }]}>Report</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {userRole === 'CLEANER' && statusDisplay.canEdit && (
-                    <TouchableOpacity
-                      style={[styles.actionBtnCompact, { borderColor: '#215EEA' }]}
-                      onPress={handleEditInspection}
-                    >
-                      <Ionicons name="create" size={16} color="#215EEA" />
-                      <Text style={[styles.actionBtnTextCompact, { color: '#215EEA' }]}>Edit</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {userRole === 'OWNER' && status !== 'REJECTED' && (
-                    <TouchableOpacity
-                      style={[styles.actionBtnCompact, { borderColor: '#DC2626' }]}
-                      onPress={handleOpenRejectModal}
-                    >
-                      <Ionicons name="close-circle" size={16} color="#DC2626" />
-                      <Text style={[styles.actionBtnTextCompact, { color: '#DC2626' }]}>Reject</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
             </View>
 
-            {/* Compact Room Selector */}
+            {/* Cleaning Summary Card */}
+            <View style={styles.card}>
+              <View style={styles.cardLabelRow}>
+                <Ionicons name="clipboard" size={16} color={colors.primary.main} />
+                <Text style={styles.cardLabel}>CLEANING SUMMARY</Text>
+              </View>
+
+              {/* Key Metrics Row */}
+              <View style={styles.metricsRow}>
+                <View style={styles.metricBox}>
+                  <Text style={styles.metricValue}>{roomScore.toFixed(1)}</Text>
+                  <Text style={styles.metricLabel}>Score</Text>
+                </View>
+                <View style={styles.metricDivider} />
+                <View style={styles.metricBox}>
+                  <Text style={[styles.metricValue, { color: gradeColor }]}>
+                    {grade || '—'}
+                  </Text>
+                  <Text style={styles.metricLabel}>Grade</Text>
+                </View>
+                <View style={styles.metricDivider} />
+                <View style={styles.metricBox}>
+                  <View style={[styles.metricStatusIcon, {
+
+                  }]}>
+                    <Ionicons
+                      name={statusDisplay.icon}
+                      size={20}
+                      color={statusDisplay.textColor}
+                    />
+                  </View>
+                  <Text style={[styles.metricLabel, {
+                    color: statusDisplay.textColor,
+                    marginTop: 4,
+                    fontWeight: '700'
+                  }]}>
+                    {statusDisplay.label}
+                  </Text>
+                </View>
+                <View style={styles.metricDivider} />
+                <View style={styles.metricBox}>
+                  <Text style={styles.metricValue}>{photoCount}</Text>
+                  <Text style={styles.metricLabel}>Photos</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Room Filter */}
             {roomIds.length > 0 && (
-              <View style={styles.roomSelectorCard}>
-                <ScrollView 
-                  horizontal 
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.roomGrid}
-                >
+              <View style={styles.roomFilter}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <TouchableOpacity
+                    style={[styles.roomChip, !selectedRoomId && styles.roomChipActive]}
+                    onPress={() => setSelectedRoomId(null)}
+                  >
+                    <Text style={[styles.roomChipText, !selectedRoomId && styles.roomChipTextActive]}>
+                      All Rooms
+                    </Text>
+                  </TouchableOpacity>
                   {roomIds.map(roomId => {
                     const room = roomResults[roomId];
                     const isSelected = roomId === selectedRoomId;
-
                     return (
                       <TouchableOpacity
                         key={roomId}
-                        style={[
-                          styles.roomTab, 
-                          isSelected && styles.roomTabSelected
-                        ]}
+                        style={[styles.roomChip, isSelected && styles.roomChipActive]}
                         onPress={() => setSelectedRoomId(roomId)}
                       >
-                        <Ionicons
-                          name={isSelected ? "checkmark-circle" : "ellipse-outline"}
-                          size={16}
-                          color={isSelected ? "#FFFFFF" : "#94A3B8"}
-                        />
-                        <Text 
-                          style={[styles.roomTabText, isSelected && styles.roomTabTextSelected]}
-                          numberOfLines={1}
-                        >
+                        <Text style={[styles.roomChipText, isSelected && styles.roomChipTextActive]}>
                           {room.room_name}
                         </Text>
                       </TouchableOpacity>
@@ -649,37 +627,32 @@ export default function InspectionDetailScreen({ route, navigation }) {
                 </ScrollView>
               </View>
             )}
-          </View>
 
-          <ScrollView style={styles.scrollContent} contentContainerStyle={styles.content}>
             {/* CRITICAL ERROR BANNER */}
             {criticalIssues.length > 0 && (
-                <View style={styles.criticalErrorBanner}>
-                  <View style={styles.criticalErrorHeader}>
-                    <Ionicons name="alert-circle" size={16} color='#C62828'/>
-                    <Text style={styles.criticalErrorTitle}>Critical Issue</Text>
-                  </View>
-                  {criticalIssues.slice(0, 2).map((error, i) => (
-                    <Text
-                      key={i}
-                      style={styles.criticalErrorText}
-                    >
-                      {safeString(String(error).replace(/^❌\s*/i, ''))}
-                    </Text>
-                  ))}
-                  {criticalIssues.length > 2 && (
-                    <Text style={styles.criticalErrorMoreText}>
-                      + {criticalIssues.length - 2} more critical {criticalIssues.length - 2 === 1 ? 'issue' : 'issues'}
-                    </Text>
-                  )}
-                  <View style={styles.criticalErrorAction}>
-                    <Ionicons name="camera-outline" size={14} color="#78350F" />
-                    <Text style={styles.criticalErrorActionText}>
-                      Retake photos of the correct room
-                    </Text>
-                  </View>
+              <View style={styles.criticalErrorBanner}>
+                <View style={styles.criticalErrorHeader}>
+                  <Ionicons name="alert-circle" size={16} color='#C62828' />
+                  <Text style={styles.criticalErrorTitle}>Critical Issue</Text>
                 </View>
-              )}
+                {criticalIssues.slice(0, 2).map((error, i) => (
+                  <Text key={i} style={styles.criticalErrorText}>
+                    {safeString(String(error).replace(/^❌\s*/i, ''))}
+                  </Text>
+                ))}
+                {criticalIssues.length > 2 && (
+                  <Text style={styles.criticalErrorMoreText}>
+                    + {criticalIssues.length - 2} more critical {criticalIssues.length - 2 === 1 ? 'issue' : 'issues'}
+                  </Text>
+                )}
+                <View style={styles.criticalErrorAction}>
+                  <Ionicons name="camera-outline" size={14} color="#78350F" />
+                  <Text style={styles.criticalErrorActionText}>
+                    Retake photos of the correct room
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* IMPROVEMENTS NEEDED */}
             <View style={styles.card}>
@@ -687,7 +660,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
                 style={styles.sectionHeaderButton}
                 onPress={() => toggleSection('issues')}
               >
-                <Text style={styles.sectionTitle}>Improvements Needed ({nonCriticalImprovements.length})</Text>
+                <View style={styles.cardLabelRow}>
+                  <Ionicons name="build" size={16} color={colors.primary.main} />
+                  <Text style={styles.cardLabel}>IMPROVEMENTS ({nonCriticalImprovements.length})</Text>
+                </View>
                 <Text style={styles.expandIcon}>{expandedSections.issues ? '−' : '+'}</Text>
               </TouchableOpacity>
               {expandedSections.issues ? (
@@ -695,17 +671,14 @@ export default function InspectionDetailScreen({ route, navigation }) {
                   {nonCriticalImprovements.length > 0 ? (
                     nonCriticalImprovements.map((item, i) => (
                       <View key={i} style={styles.issueItem}>
+                        <View style={styles.bulletDot} />
                         <Text style={styles.issueText}>{safeString(item)}</Text>
                       </View>
                     ))
                   ) : (
                     <View style={styles.emptyStateContainer}>
-                      <Text style={styles.emptyStateText}>
-                        ✅ No additional issues
-                      </Text>
-                      <Text style={styles.emptyStateSubtext}>
-                        All other aspects look good
-                      </Text>
+                      <Text style={styles.emptyStateText}>✅ No additional issues</Text>
+                      <Text style={styles.emptyStateSubtext}>All other aspects look good</Text>
                     </View>
                   )}
                 </View>
@@ -718,7 +691,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
                 style={styles.sectionHeaderButton}
                 onPress={() => toggleSection('inventory')}
               >
-                <Text style={styles.sectionTitle}>Room Inventory ({allInventory.length})</Text>
+                <View style={styles.cardLabelRow}>
+                  <Ionicons name="cube" size={16} color={colors.primary.main} />
+                  <Text style={styles.cardLabel}>INVENTORY ({allInventory.length})</Text>
+                </View>
                 <Text style={styles.expandIcon}>{expandedSections.inventory ? '−' : '+'}</Text>
               </TouchableOpacity>
               {expandedSections.inventory ? (
@@ -752,12 +728,8 @@ export default function InspectionDetailScreen({ route, navigation }) {
                     ))
                   ) : (
                     <View style={styles.emptyStateContainer}>
-                      <Text style={styles.emptyStateText}>
-                        ⚠️ No items detected
-                      </Text>
-                      <Text style={styles.emptyStateSubtext}>
-                        AI should detect furniture and fixtures in the room.
-                      </Text>
+                      <Text style={styles.emptyStateText}>⚠️ No items detected</Text>
+                      <Text style={styles.emptyStateSubtext}>AI should detect furniture and fixtures in the room.</Text>
                     </View>
                   )}
                 </View>
@@ -771,9 +743,16 @@ export default function InspectionDetailScreen({ route, navigation }) {
                   style={styles.sectionHeaderButton}
                   onPress={() => toggleSection('instructions')}
                 >
-                  <View style={styles.sectionHeaderWithScore}>
-                    <Text style={styles.sectionTitle}>Special Instructions</Text>
-                    {selectedRoomData.instruction_adherence.adherence_score !== undefined && (
+                  <View style={styles.cardLabelRow}>
+                    <Ionicons name="list" size={16} color={colors.primary.main} />
+                    <Text style={styles.cardLabel}>INSTRUCTIONS</Text>
+                  </View>
+                  <Text style={styles.expandIcon}>{expandedSections.instructions ? '−' : '+'}</Text>
+                </TouchableOpacity>
+                {expandedSections.instructions ? (
+                  <View>
+                    <View style={styles.adherenceHeader}>
+                      <Text style={styles.adherenceLabel}>Adherence Score</Text>
                       <View style={[styles.adherenceScoreBadge, {
                         backgroundColor: getRatingBgColor(selectedRoomData.instruction_adherence.adherence_score)
                       }]}>
@@ -783,26 +762,50 @@ export default function InspectionDetailScreen({ route, navigation }) {
                           {safeNumber(selectedRoomData.instruction_adherence.adherence_score, 0)}/10
                         </Text>
                       </View>
-                    )}
-                  </View>
-                  <Text style={styles.expandIcon}>{expandedSections.instructions ? '−' : '+'}</Text>
-                </TouchableOpacity>
-                {expandedSections.instructions ? (
-                  <View>
+                    </View>
+
                     {selectedRoomData.instruction_adherence.feedback && (
-                      <View style={styles.feedbackSection}>
-                        <Text style={styles.feedbackTitle}>📋 Overall Assessment</Text>
+                      <View style={styles.feedbackSectionCompact}>
+                        <Text style={styles.feedbackTitleCompact}>Assessment</Text>
                         <Text style={styles.feedbackText}>{safeString(selectedRoomData.instruction_adherence.feedback)}</Text>
+                      </View>
+                    )}
+
+                    {selectedRoomData.instruction_adherence.requirements_missed && selectedRoomData.instruction_adherence.requirements_missed.length > 0 && (
+                      <View style={styles.missedSectionClean}>
+                        <Text style={styles.missedTitleClean}>Missed Requirements</Text>
+                        {selectedRoomData.instruction_adherence.requirements_missed.map((missed, idx) => (
+                          <View key={idx} style={styles.missedItemClean}>
+                            <Ionicons name="close-circle" size={16} color="#DC2626" />
+                            <Text style={styles.missedTextClean}>{safeString(missed)}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
+                    {selectedRoomData.instruction_adherence.improvements_needed && selectedRoomData.instruction_adherence.improvements_needed.length > 0 && (
+                      <View style={styles.feedbackSectionCompact}>
+                        <Text style={styles.feedbackTitleCompact}>How to Improve</Text>
+                        {selectedRoomData.instruction_adherence.improvements_needed.map((tip, idx) => (
+                          <View key={idx} style={styles.feedbackTipRow}>
+                            <View style={styles.bulletDotSmall} />
+                            <Text style={styles.feedbackTipText}>{safeString(tip)}</Text>
+                          </View>
+                        ))}
                       </View>
                     )}
 
                     {selectedRoomData.instruction_adherence.requirements_met && selectedRoomData.instruction_adherence.requirements_met.length > 0 && (
                       <View style={styles.requirementsSection}>
-                        <Text style={styles.requirementsSectionTitle}>Requirements Status:</Text>
+                        <Text style={styles.requirementsSectionTitle}>Details</Text>
                         {selectedRoomData.instruction_adherence.requirements_met.map((req, idx) => (
                           <View key={idx} style={styles.requirementItem}>
                             <View style={styles.requirementHeader}>
-                              <Text style={styles.requirementIcon}>{req.met ? '✅' : '❌'}</Text>
+                              <Ionicons
+                                name={req.met ? "checkmark-circle" : "close-circle"}
+                                size={16}
+                                color={req.met ? colors.status.success : colors.status.error}
+                              />
                               <Text style={[styles.requirementText, { flex: 1 }]}>
                                 {safeString(req.requirement)}
                               </Text>
@@ -812,34 +815,6 @@ export default function InspectionDetailScreen({ route, navigation }) {
                                 Evidence: {safeString(req.evidence)}
                               </Text>
                             )}
-                            {req.notes && (
-                              <Text style={styles.requirementNotes}>
-                                {safeString(req.notes)}
-                              </Text>
-                            )}
-                          </View>
-                        ))}
-                      </View>
-                    )}
-
-                    {selectedRoomData.instruction_adherence.requirements_missed && selectedRoomData.instruction_adherence.requirements_missed.length > 0 && (
-                      <View style={styles.missedSection}>
-                        <Text style={styles.missedTitle}>Missed Requirements:</Text>
-                        {selectedRoomData.instruction_adherence.requirements_missed.map((missed, idx) => (
-                          <View key={idx} style={styles.bulletPoint}>
-                            <Text style={[styles.bullet, { color: '#E65100' }]}>•</Text>
-                            <Text style={styles.missedText}>{safeString(missed)}</Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
-
-                    {selectedRoomData.instruction_adherence.improvements_needed && selectedRoomData.instruction_adherence.improvements_needed.length > 0 && (
-                      <View style={styles.feedbackSection}>
-                        <Text style={styles.feedbackTitle}>💡 How to Improve</Text>
-                        {selectedRoomData.instruction_adherence.improvements_needed.map((tip, idx) => (
-                          <View key={idx} style={styles.feedbackTipRow}>
-                            <Text style={styles.feedbackTipText}>• {safeString(tip)}</Text>
                           </View>
                         ))}
                       </View>
@@ -856,7 +831,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
                   style={styles.sectionHeaderButton}
                   onPress={() => toggleSection('photoQuality')}
                 >
-                  <Text style={styles.sectionTitle}>Photo Quality</Text>
+                  <View style={styles.cardLabelRow}>
+                    <Ionicons name="camera" size={16} color={colors.primary.main} />
+                    <Text style={styles.cardLabel}>PHOTO QUALITY</Text>
+                  </View>
                   <Text style={styles.expandIcon}>{expandedSections.photoQuality ? '−' : '+'}</Text>
                 </TouchableOpacity>
                 {expandedSections.photoQuality ? (
@@ -894,14 +872,6 @@ export default function InspectionDetailScreen({ route, navigation }) {
                           {safeNumber(roomPhotoQuality.technical_score, 0)}/10
                         </Text>
                       </View>
-                      <View style={styles.qualityMetric}>
-                        <Text style={styles.metricLabel}>Coverage</Text>
-                        <Text style={[styles.metricValue, {
-                          color: getRatingColor(roomPhotoQuality.coverage_score || 0)
-                        }]}>
-                          {safeNumber(roomPhotoQuality.coverage_score, 0)}/10
-                        </Text>
-                      </View>
                     </View>
 
                     {/* Coverage Percentage */}
@@ -909,8 +879,8 @@ export default function InspectionDetailScreen({ route, navigation }) {
                       <View style={styles.coveragePercentageSection}>
                         <Text style={styles.coveragePercentageLabel}>Room Coverage</Text>
                         <Text style={[styles.coveragePercentageValue, {
-                          color: roomPhotoQuality.coverage_percentage >= 70 ? colors.success :
-                            roomPhotoQuality.coverage_percentage >= 30 ? colors.warning : colors.error
+                          color: roomPhotoQuality.coverage_percentage >= 70 ? colors.status.success :
+                            roomPhotoQuality.coverage_percentage >= 30 ? colors.status.warning : colors.status.error
                         }]}>
                           {roomPhotoQuality.coverage_percentage}%
                         </Text>
@@ -921,30 +891,32 @@ export default function InspectionDetailScreen({ route, navigation }) {
                       </View>
                     ) : null}
 
-                    {/* Missing Areas */}
                     {roomPhotoQuality.missing_areas && roomPhotoQuality.missing_areas.length > 0 ? (
-                      <View style={styles.feedbackSection}>
-                        <Text style={styles.feedbackTitle}>Missing from Photos</Text>
-                        <Text style={styles.feedbackSubtext}>
-                          {roomPhotoQuality.missing_areas.join(', ')}
-                        </Text>
+                      <View style={styles.missedSectionClean}>
+                        <Text style={styles.missedTitleClean}>Missing from Photos</Text>
+                        <View style={styles.missedItemClean}>
+                          
+                          <Text style={styles.missedTextClean}>
+                            {roomPhotoQuality.missing_areas.join(', ')}
+                          </Text>
+                        </View>
                       </View>
                     ) : null}
 
                     {roomPhotoQuality.what_to_improve ? (
-                      <View style={styles.feedbackSection}>
-                        <Text style={styles.feedbackTitle}>Recommendations</Text>
+                      <View style={styles.feedbackSectionCompact}>
+                        <Text style={styles.feedbackTitleCompact}>Recommendations</Text>
                         <Text style={styles.feedbackText}>{safeString(roomPhotoQuality.what_to_improve)}</Text>
                       </View>
                     ) : null}
 
-                    {/* Photographer Feedback from Coverage Referee */}
                     {roomPhotoQuality.photographer_feedback && roomPhotoQuality.photographer_feedback.length > 0 ? (
-                      <View style={styles.feedbackSection}>
-                        <Text style={styles.feedbackTitle}>How to Improve Coverage</Text>
+                      <View style={styles.feedbackSectionCompact}>
+                        <Text style={styles.feedbackTitleCompact}>How to Improve Coverage</Text>
                         {roomPhotoQuality.photographer_feedback.map((tip, i) => (
                           <View key={i} style={styles.feedbackTipRow}>
-                            <Text style={styles.feedbackTipText}>• {safeString(tip)}</Text>
+                            <View style={styles.bulletDotSmall} />
+                            <Text style={styles.feedbackTipText}>{safeString(tip)}</Text>
                           </View>
                         ))}
                       </View>
@@ -961,29 +933,32 @@ export default function InspectionDetailScreen({ route, navigation }) {
                   style={styles.sectionHeaderButton}
                   onPress={() => toggleSection('photos')}
                 >
-                  <Text style={styles.sectionTitle}>Inspection Photos ({roomMedia.length})</Text>
+                  <View style={styles.cardLabelRow}>
+                    <Ionicons name="images" size={16} color={colors.primary.main} />
+                    <Text style={styles.cardLabel}>TIMESTAMPED PHOTOS ({roomMedia.length})</Text>
+                  </View>
                   <Text style={styles.expandIcon}>{expandedSections.photos ? '−' : '+'}</Text>
                 </TouchableOpacity>
+                <View style={styles.photoDisclaimer}>
+                  <Text style={styles.photoDisclaimerText}>
+                    All photos include embedded timestamps and metadata for verification.
+                  </Text>
+                </View>
                 {expandedSections.photos ? (
                   <View style={styles.photosGrid}>
                     {roomMedia.map((media, index) => {
                       const imageUrl = fixImageUrl(media.url);
-                      console.log(`🖼️  Rendering image [${index + 1}/${roomMedia.length}]:`, {
-                        mediaId: media.id,
-                        originalUrl: media.url,
-                        fixedUrl: imageUrl,
-                        roomId: media.room_id,
-                        roomName: media.room_name
-                      });
                       return (
-                        <View key={media.id || index} style={styles.photoContainer}>
+                        <View key={media.id || index} style={styles.photoWrapper}>
                           <Image
                             source={{ uri: imageUrl }}
-                            style={styles.photoThumbnail}
+                            style={styles.photo}
                             resizeMode="cover"
                           />
                           {media.room_name && (
-                            <Text style={styles.photoRoomLabel}>{media.room_name}</Text>
+                            <View style={styles.roomLabel}>
+                              <Text style={styles.roomLabelText} numberOfLines={1}>{media.room_name}</Text>
+                            </View>
                           )}
                         </View>
                       );
@@ -993,6 +968,46 @@ export default function InspectionDetailScreen({ route, navigation }) {
               </View>
             )}
           </ScrollView>
+
+          {/* Bottom Action Bar */}
+          <View style={[styles.bottomBar, { paddingBottom: insets.bottom }]}>
+            {(status === 'COMPLETE' || statusDisplay.canEdit || (userRole === 'OWNER' && status !== 'REJECTED')) && (
+              <View style={styles.buttonRow}>
+                {status === 'COMPLETE' && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.shareBtn]}
+                    onPress={() => navigation.navigate('CleaningReport', { inspectionId })}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="document-text-outline" size={18} color={colors.primary.main} />
+                    <Text style={styles.shareBtnText}>View Report</Text>
+                  </TouchableOpacity>
+                )}
+
+                {userRole === 'CLEANER' && statusDisplay.canEdit && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.pdfBtn]}
+                    onPress={handleEditInspection}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="create-outline" size={18} color={colors.primary.main} />
+                    <Text style={styles.pdfBtnText}>Edit Inspection</Text>
+                  </TouchableOpacity>
+                )}
+
+                {userRole === 'OWNER' && status !== 'REJECTED' && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: '#FFEBEE', borderColor: '#FF3B30' }]}
+                    onPress={handleOpenRejectModal}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="close-circle-outline" size={18} color='#FF3B30' />
+                    <Text style={[styles.pdfBtnText, { color: '#FF3B30' }]}>Reject</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
         </>
       ) : null}
 
@@ -1075,7 +1090,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: '#F2F2F7',
   },
   scrollContent: {
     flex: 1,
@@ -1106,36 +1121,44 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
 
-  // COMPACT HEADER DESIGN
-  compactHeader: {
-    backgroundColor: '#F8FAFC',
-    paddingBottom: 8,
-  },
-  // Header Gradient
+  // Gradient Header
   headerWrapper: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
   },
   headerBackButton: {
-    marginRight: 12,
-    padding: 4,
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerIconWrapper: {
-    marginRight: 14,
+    marginRight: 12,
   },
   headerIconInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1143,168 +1166,57 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#FFFFFF',
-    letterSpacing: 0.3,
-  },
-  headerInfoCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 12,
-    marginTop: 8,
-    marginBottom: 8,
-    padding: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  headerTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  headerLeftSection: {
-    flex: 1,
-    marginRight: 8,
-  },
-  headerRightSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    flexShrink: 0,
-  },
-  headerAddressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  headerAddress: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-    flex: 1,
-  },
-  headerDateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  headerDate: {
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-  },
-  statBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  statBadgeCompact: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  statValue: {
-    fontSize: 12,
-    fontWeight: '700',
+    marginBottom: 2,
     letterSpacing: 0.2,
   },
-  statValueCompact: {
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.85,
+  },
+
+  // CARD Styles (Standardized)
+  card: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 10,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+    ...Platform.select({
+      ios: {
+        shadowColor: 'rgba(0, 0, 0, 0.08)',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 1,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  cardLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 14,
+  },
+  cardLabel: {
     fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.2,
+    color: '#0A84FF',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
-  headerActionsInCard: {
-    flexDirection: 'row',
-    gap: 6,
-    marginTop: 4,
-  },
-  actionBtnCompact: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    paddingHorizontal: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  actionBtnTextCompact: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // STATUS AND ACTION CARD
-  statusActionCard: {
-    flexDirection: 'row',
-    paddingTop: 16,
-  },
-  statusBadge: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-  },
-  statusBadgeText: {
-    fontSize: 14,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  shareReportButtonCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    backgroundColor: '#F0FDF4',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#33D39C',
-    gap: 8,
-  },
-  shareReportButtonCardText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#33D39C',
-  },
-
-  // CARD
-  card: {
-    backgroundColor: colors.background.card,
-    marginHorizontal: 12,
-    marginTop: 12,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-
-  // SECTIONS
   sectionHeaderButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.text.primary,
   },
   expandIcon: {
     fontSize: 20,
@@ -1312,27 +1224,178 @@ const styles = StyleSheet.create({
     color: colors.text.muted,
   },
 
-  // ISSUES
+  // Property Section
+  propertySection: {
+    gap: 8,
+  },
+  propertyName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  propertyAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  propertyAddress: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  propertyUnitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  propertyUnit: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
+  propertyDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  propertyDate: {
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
+
+  // Cleaning Summary Metrics
+  metricsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  metricBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  metricLabel: {
+    fontSize: 10,
+    color: colors.text.tertiary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  metricDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: colors.border.light,
+    marginTop: 6,
+  },
+  metricStatusIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Room Filter
+  roomFilter: {
+    marginTop: 16,
+    paddingLeft: 16,
+  },
+  roomChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  roomChipActive: {
+    backgroundColor: colors.primary.main,
+    borderColor: colors.primary.main,
+  },
+  roomChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  roomChipTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // Critical Error Banner
+  criticalErrorBanner: {
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#C62828',
+  },
+  criticalErrorHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  criticalErrorTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#C62828',
+    flex: 1,
+  },
+  criticalErrorText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#C62828',
+    marginBottom: 4,
+    paddingLeft: 24,
+  },
+  criticalErrorMoreText: {
+    fontSize: 12,
+    color: '#C62828',
+    paddingLeft: 24,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  criticalErrorAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingLeft: 24,
+  },
+  criticalErrorActionText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#78350F',
+    fontWeight: '600',
+  },
+
+  // Issues List
   issuesList: {
-    gap: 10,
+    gap: 12,
   },
   issueItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: 10,
   },
   bulletDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: colors.primary.main,
-    marginTop: 8,
-  },
-  bullet: {
-    flexDirection: 'row',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 3,
+    marginTop: 7,
   },
   issueText: {
     flex: 1,
@@ -1341,7 +1404,24 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
 
-  // ITEMS
+  // Empty State
+  emptyStateContainer: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  emptyStateText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: 4,
+  },
+  emptyStateSubtext: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+  },
+
+  // Inventory
   itemsList: {
     gap: 0,
   },
@@ -1350,7 +1430,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   itemInfo: {
     flex: 1,
@@ -1359,7 +1439,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: 3,
+    marginBottom: 4,
   },
   itemIssue: {
     fontSize: 13,
@@ -1369,464 +1449,305 @@ const styles = StyleSheet.create({
   scoreBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   scoreBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   thinDivider: {
     height: 1,
     backgroundColor: colors.border.light,
   },
 
-  // PHOTO QUALITY
-  photoQualityScores: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  qualityMetric: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: colors.background.secondary,
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  metricLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.text.secondary,
-    marginBottom: 6,
-  },
-  metricValue: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  qualityIssues: {
-    gap: 16,
-  },
-  qualityIssueItem: {
-    gap: 4,
-  },
-  qualityIssueLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  qualityIssueText: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.text.secondary,
-  },
-
-  // PHOTOS
-  photoGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 20,
-  },
-  photoWrapper: {
-    width: (width - 112) / 3,
-    aspectRatio: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: colors.border.light,
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
-  },
-  roomSelectorCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 12,
-    marginBottom: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  roomGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  roomTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: '#F8FAFC',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    minWidth: 140,
-  },
-  roomTabSelected: {
-    backgroundColor: '#215EEA',
-    borderColor: '#215EEA',
-  },
-  roomTabText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  roomTabTextSelected: {
-    color: '#FFFFFF',
-  },
-  editButton: {
-    backgroundColor: colors.primary.main,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-
-  shareReportButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  redoButton: {
-    backgroundColor: '#F59E0B',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  redoButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  rejectButton: {
-    backgroundColor: '#DC2626',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  rejectButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  roomResultsList: {
-    marginTop: 12,
-  },
-  roomResultCard: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  roomResultHeader: {
-    marginBottom: 12,
-  },
-  roomResultTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  roomResultName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text.primary,
-  },
-  roomResultType: {
-    fontSize: 14,
-    color: colors.text.secondary,
-    fontStyle: 'italic',
-  },
-  roomResultScoreRow: {
+  // Instructions
+  adherenceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  roomResultScore: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
-  roomStatusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  roomStatusText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  roomIssues: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  roomIssuesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.secondary,
     marginBottom: 8,
   },
-  roomIssueItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 6,
-    paddingLeft: 8,
-  },
-  roomIssueText: {
-    flex: 1,
-    fontSize: 14,
+  adherenceLabel: {
+    fontSize: 15,
+    fontWeight: '700',
     color: colors.text.primary,
-    lineHeight: 20,
-  },
-  roomPhotoCount: {
-    fontSize: 12,
-    color: colors.text.muted,
-    marginTop: 12,
-    fontStyle: 'italic',
-  },
-  emptyStateContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    backgroundColor: colors.background.secondary,
-    borderRadius: 10,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  emptyStateSubtext: {
-    fontSize: 12,
-    color: colors.text.muted,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  photosGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-    marginHorizontal: -4,
-  },
-  photoContainer: {
-    width: '48%',
-    marginHorizontal: '1%',
-    marginBottom: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: colors.background.secondary,
-  },
-  photoThumbnail: {
-    width: '100%',
-    height: 120,
-    backgroundColor: '#F0F0F0',
-  },
-  photoRoomLabel: {
-    fontSize: 10,
-    color: colors.text.secondary,
-    padding: 4,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  },
-
-  // Critical Error Banner Styles
-  criticalErrorBanner: {
-    backgroundColor: '#FFEBEE',
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    marginHorizontal: 12,
-    marginTop: 4,
-    marginBottom: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: '#C62828',
-  },
-  criticalErrorHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  criticalErrorTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#C62828',
-    flex: 1,
-  },
-  criticalErrorText: {
-    fontSize: 12,
-    lineHeight: 16,
-    color: '#C62828',
-    marginBottom: 2,
-    paddingLeft: 24,
-  },
-  criticalErrorMoreText: {
-    fontSize: 11,
-    color: '#C62828',
-    paddingLeft: 24,
-    marginTop: 2,
-  },
-  criticalErrorAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-    paddingLeft: 24,
-  },
-  criticalErrorActionText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#C62828',
-    fontWeight: '600',
-  },
-
-  // Photo Quality Feedback Styles
-  feedbackSection: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  feedbackTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginBottom: 8,
-  },
-  feedbackText: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#475569',
-  },
-  feedbackRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-    paddingLeft: 4,
-  },
-  feedbackTipRow: {
-    marginBottom: 6,
-  },
-  feedbackTipText: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#475569',
-  },
-
-  // Instruction Adherence Styles
-  sectionHeaderWithScore: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
   },
   adherenceScoreBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   adherenceScoreText: {
     fontSize: 14,
     fontWeight: '700',
   },
-  requirementsSection: {
-    marginTop: 12,
+  feedbackSection: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 8,
   },
-  requirementsSectionTitle: {
-    fontSize: 14,
+  feedbackTitle: {
+    fontSize: 13,
     fontWeight: '700',
     color: colors.text.primary,
-    marginBottom: 10,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  feedbackText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
+  },
+  feedbackTipRow: {
+    marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  feedbackTipText: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  feedbackSubtext: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  requirementsSection: {
+    marginTop: 8,
+    gap: 10,
+  },
+  requirementsSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text.primary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+  },
+  feedbackSectionCompact: {
+    marginBottom: 12,
+  },
+  feedbackTitleCompact: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.text.tertiary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  bulletDotSmall: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.text.tertiary,
+    marginTop: 8,
+  },
+  missedSectionClean: {
+    marginBottom: 16,
+  },
+  missedTitleClean: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#DC2626',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  missedItemClean: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 6,
+  },
+  missedTextClean: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text.primary,
+    flex: 1,
   },
   requirementItem: {
-    backgroundColor: colors.background.secondary,
     padding: 10,
     borderRadius: 8,
-    marginBottom: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.primary.main,
+    borderWidth: 1,
+    borderColor: colors.border.light,
   },
   requirementHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 6,
-    marginBottom: 4,
-  },
-  requirementIcon: {
-    fontSize: 14,
-    marginTop: 2,
+    gap: 8,
   },
   requirementText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 14,
     color: colors.text.primary,
-    lineHeight: 18,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   requirementEvidence: {
     fontSize: 12,
     color: colors.text.secondary,
-    marginTop: 3,
-    marginLeft: 20,
-    lineHeight: 18,
+    marginTop: 6,
     fontStyle: 'italic',
+    paddingLeft: 24,
   },
-  requirementNotes: {
+
+  // Photo Quality
+  photoQualityScores: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  qualityMetric: {
+    flex: 1,
+    minWidth: '45%',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.light,
+  },
+  coveragePercentageSection: {
+    padding: 12,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  coveragePercentageLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  coveragePercentageValue: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  coveragePercentageHint: {
     fontSize: 12,
     color: colors.text.secondary,
-    marginTop: 3,
-    marginLeft: 20,
-    lineHeight: 18,
   },
-  missedSection: {
-    marginTop: 12,
+
+  // Photos
+  photoDisclaimer: {
+    marginBottom: 16,
     padding: 10,
-    backgroundColor: '#FFF4E6',
+    backgroundColor: colors.background.secondary,
     borderRadius: 8,
-    borderLeftWidth: 3,
-    borderLeftColor: '#F57F17',
   },
-  missedTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#E65100',
-    marginBottom: 6,
-  },
-  bulletPoint: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginBottom: 3,
-  },
-  missedText: {
-    flex: 1,
+  photoDisclaimerText: {
     fontSize: 12,
-    lineHeight: 18,
-    color: '#E65100',
+    color: colors.text.secondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
-  // Modal styles
+  photosGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  photoWrapper: {
+    width: (width - 32 - 16) / 3, // Screen - padding (16*2) - gaps (8*2) / 3
+    aspectRatio: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.border.light,
+    position: 'relative',
+  },
+  photo: {
+    width: '100%',
+    height: '100%',
+  },
+  roomLabel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+  },
+  roomLabelText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  // Bottom Bar
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    paddingTop: 8,
+    paddingHorizontal: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 8,
+    borderWidth: 1,
+  },
+  shareBtn: {
+    backgroundColor: colors.accent.blueLight,
+    borderColor: colors.accent.blueLight,
+  },
+  shareBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.primary.main,
+  },
+  pdfBtn: {
+    backgroundColor: '#F0F9FF',
+    borderColor: '#007AFF',
+  },
+  pdfBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#007AFF',
+  },
+  generatingOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    gap: 10,
+  },
+  generatingText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.secondary,
+  },
+
+  // Modal Styles (Kept largely the same but refreshed)
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -1836,14 +1757,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
+    padding: 24,
     maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   modalTitle: {
     fontSize: 20,
@@ -1851,27 +1772,27 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   modalSubtitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text.primary,
     marginBottom: 12,
   },
   modalRoomList: {
     maxHeight: 200,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   modalRoomItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    borderRadius: 10,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.border.light,
     gap: 12,
   },
   modalRoomItemSelected: {
-    backgroundColor: colors.primary.main + '10',
+    backgroundColor: '#F0F9FF',
     borderColor: colors.primary.main,
   },
   modalRoomText: {
@@ -1892,13 +1813,14 @@ const styles = StyleSheet.create({
   modalInput: {
     borderWidth: 1,
     borderColor: colors.border.light,
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 12,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text.primary,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F2F2F7',
     textAlignVertical: 'top',
-    marginBottom: 16,
+    marginBottom: 20,
+    minHeight: 80,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -1906,8 +1828,8 @@ const styles = StyleSheet.create({
   },
   modalCancelButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border.light,
@@ -1919,8 +1841,8 @@ const styles = StyleSheet.create({
   },
   modalSubmitButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: 'center',
     backgroundColor: '#DC2626',
   },
@@ -1931,37 +1853,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
-  },
-  // Coverage Percentage Section
-  coveragePercentageSection: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    alignItems: 'center',
-  },
-  coveragePercentageLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.text.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  coveragePercentageValue: {
-    fontSize: 26,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  coveragePercentageHint: {
-    fontSize: 11,
-    color: colors.text.secondary,
-  },
-  feedbackSubtext: {
-    fontSize: 12,
-    color: colors.text.secondary,
-    lineHeight: 18,
   },
 });

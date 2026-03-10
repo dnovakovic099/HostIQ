@@ -32,12 +32,12 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
     } else {
       setRefreshing(true);
     }
-    
+
     try {
       const response = await api.get('/owner/assignments', {
         params: { cleaner_id: cleanerId }
       });
-      
+
       if (response.data && Array.isArray(response.data)) {
         setAssignments(response.data);
       } else {
@@ -64,22 +64,22 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
     const upperStatus = status?.toUpperCase();
     switch (upperStatus) {
       case 'PENDING':
-        return '#FFB000'; // Orange
+        return colors.status.warning; // Orange
       case 'SCHEDULED':
-        return '#215EEA'; // Blue
+        return colors.primary.main; // Blue
       case 'IN_PROGRESS':
       case 'STARTED':
-        return '#F59E0B'; // Orange
+        return colors.status.warning; // Orange
       case 'COMPLETED':
       case 'APPROVED':
-        return '#33D39C'; // Green
+        return colors.status.success; // Green
       case 'SUBMITTED':
-        return '#8B5CF6'; // Purple
+        return colors.ios.purple; // Purple
       case 'CANCELLED':
       case 'REJECTED':
-        return '#EF4444'; // Red
+        return colors.status.error; // Red
       default:
-        return '#6B7280'; // Gray
+        return colors.text.tertiary; // Gray
     }
   };
 
@@ -111,11 +111,11 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'No date';
-    
+
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'Invalid date';
-      
+
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -145,7 +145,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
               Alert.alert('Success', 'Assignment cancelled successfully');
             } catch (error) {
               console.error('Error deleting assignment:', error);
-              
+
               // Handle specific error cases
               if (error.response?.status === 404) {
                 Alert.alert('Error', 'Assignment not found');
@@ -166,7 +166,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
     if (['COMPLETED', 'SUBMITTED', 'APPROVED'].includes(assignment.status?.toUpperCase())) {
       // Get unit_id from nested unit object if not directly available
       const unitId = assignment.unit_id || assignment.unit?.id;
-      
+
       // Debug: Log assignment structure
       console.log('🔍 Assignment object:', {
         id: assignment.id,
@@ -178,35 +178,17 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
         inspection: assignment.inspection,
         allKeys: Object.keys(assignment)
       });
-      
+
       // Try to get inspection ID from assignment
       let inspectionId = assignment.inspection_id || assignment.inspection?.id;
-      
+
       // If no inspection_id on assignment, try to find it by assignment_id
       if (!inspectionId && unitId) {
         try {
           // Fetch inspections for this unit and find the one linked to this assignment
-          let inspections = [];
-          try {
-            const response = await api.get(`/owner/inspections/recent?limit=500`);
-            inspections = response.data || [];
-          } catch (timeoutError) {
-            // If timeout, try with smaller limit
-            if (timeoutError.code === 'ECONNABORTED' || timeoutError.message?.includes('timeout')) {
-              console.warn('Timeout fetching 500 inspections, trying with 100...');
-              try {
-                const fallbackResponse = await api.get(`/owner/inspections/recent?limit=100`);
-                inspections = fallbackResponse.data || [];
-              } catch (fallbackError) {
-                console.error('Error fetching inspections (fallback):', fallbackError);
-                // Continue with empty array - inspection won't be found but won't crash
-                inspections = [];
-              }
-            } else {
-              throw timeoutError;
-            }
-          }
-          
+          const response = await api.get(`/owner/inspections/recent?limit=500`);
+          const inspections = response.data || [];
+
           console.log('🔍 Searching through inspections:', {
             totalInspections: inspections.length,
             assignmentId: assignment.id,
@@ -214,20 +196,20 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
             matchingByAssignmentId: inspections.filter(i => String(i.assignment_id) === String(assignment.id)),
             matchingByUnitId: inspections.filter(i => String(i.unit_id) === String(unitId))
           });
-          
+
           // First try to find by assignment_id (most specific)
           let relatedInspection = inspections.find(
             i => String(i.assignment_id) === String(assignment.id)
           );
-          
+
           // If not found, try by unit_id and status (less specific but should work)
           if (!relatedInspection && unitId) {
             // Get all inspections for this unit with completed status
             const unitInspections = inspections.filter(
-              i => String(i.unit_id) === String(unitId) && 
-                   ['COMPLETE', 'APPROVED', 'SUBMITTED', 'COMPLETED'].includes(i.status?.toUpperCase())
+              i => String(i.unit_id) === String(unitId) &&
+                ['COMPLETE', 'APPROVED', 'SUBMITTED', 'COMPLETED'].includes(i.status?.toUpperCase())
             );
-            
+
             // Sort by created_at descending and get the most recent one
             if (unitInspections.length > 0) {
               unitInspections.sort((a, b) => {
@@ -238,17 +220,17 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
               relatedInspection = unitInspections[0];
             }
           }
-          
+
           // Last resort: check if inspection has assignment nested object
           if (!relatedInspection) {
             relatedInspection = inspections.find(
               i => String(i.assignment?.id) === String(assignment.id) &&
-                   ['COMPLETE', 'APPROVED', 'SUBMITTED', 'COMPLETED'].includes(i.status?.toUpperCase())
+                ['COMPLETE', 'APPROVED', 'SUBMITTED', 'COMPLETED'].includes(i.status?.toUpperCase())
             );
           }
-          
+
           inspectionId = relatedInspection?.id;
-          
+
           if (relatedInspection) {
             console.log('✅ Found inspection:', {
               inspectionId: relatedInspection.id,
@@ -277,9 +259,9 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
       } else {
         console.log('✅ Using inspection_id from assignment:', inspectionId);
       }
-      
+
       if (inspectionId) {
-        navigation.navigate('InspectionDetail', { 
+        navigation.navigate('InspectionDetail', {
           inspectionId: inspectionId,
           userRole: 'owner'
         });
@@ -327,7 +309,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
 
         <View style={styles.detailsRow}>
           <View style={styles.detailItem}>
-            <Ionicons name="location" size={16} color="#215EEA" />
+            <Ionicons name="location" size={16} color={colors.primary.main} />
             <Text style={styles.detailText} numberOfLines={1}>
               {item.unit?.property?.address || 'No address'}
             </Text>
@@ -336,7 +318,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
 
         <View style={styles.detailsRow}>
           <View style={styles.detailItem}>
-            <Ionicons name="calendar" size={16} color="#215EEA" />
+            <Ionicons name="calendar" size={16} color={colors.primary.main} />
             <Text style={styles.detailText}>
               Due: {formatDate(item.due_at || item.scheduled_for)}
             </Text>
@@ -346,7 +328,7 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
         {item.created_at && (
           <View style={styles.detailsRow}>
             <View style={styles.detailItem}>
-              <Ionicons name="time" size={16} color="#215EEA" />
+              <Ionicons name="time" size={16} color={colors.primary.main} />
               <Text style={styles.detailTextSmall}>
                 Assigned: {formatDate(item.created_at)}
               </Text>
@@ -361,18 +343,18 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
               style={[styles.actionButton, styles.viewButton]}
               onPress={() => handleViewInspection(item)}
             >
-              <Ionicons name="document-text" size={18} color="#215EEA" />
+              <Ionicons name="document-text" size={18} color={colors.primary.main} />
               <Text style={styles.actionButtonText}>View Report</Text>
             </TouchableOpacity>
           )}
-          
+
           {isPending && (
             <TouchableOpacity
               style={[styles.actionButton, styles.deleteButton]}
               onPress={() => handleDeleteAssignment(item)}
             >
-              <Ionicons name="trash-outline" size={18} color="#EF4444" />
-              <Text style={[styles.actionButtonText, { color: '#EF4444' }]}>Cancel</Text>
+              <Ionicons name="trash-outline" size={18} color={colors.status.error} />
+              <Text style={[styles.actionButtonText, { color: colors.status.error }]}>Cancel</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -383,14 +365,13 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#215EEA" />
+        <ActivityIndicator size="large" color={colors.primary.main} />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={colors.gradients.dashboardHeader}
@@ -399,15 +380,24 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
         end={{ x: 1, y: 1 }}
         style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
+        {/* Decorative element */}
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="clipboard-outline" size={70} color={colors.decorative.icon1} />
+        </View>
         <SafeAreaView>
-          <View style={styles.headerContent}>
+          <View style={styles.headerGradient}>
             <TouchableOpacity
-              style={styles.backButton}
               onPress={() => navigation.goBack()}
+              style={styles.headerBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              <Ionicons name="chevron-back" size={26} color={colors.text.inverse} />
             </TouchableOpacity>
-            
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="clipboard-outline" size={22} color={colors.text.inverse} />
+              </View>
+            </View>
             <View style={styles.headerTextWrapper}>
               <Text style={styles.headerTitle}>{cleanerName}</Text>
               <Text style={styles.headerSubtitle}>
@@ -427,19 +417,19 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => fetchCleanerAssignments(false)}
-            tintColor="#215EEA"
-            colors={['#215EEA']}
+            tintColor={colors.primary.main}
+            colors={[colors.primary.main]}
           />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
             <LinearGradient
-              colors={['#DBEAFE', '#93C5FD']}
+              colors={colors.gradients.lightBlue}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.emptyIcon}
             >
-              <Ionicons name="calendar-outline" size={48} color="#215EEA" />
+              <Ionicons name="calendar-outline" size={48} color={colors.primary.main} />
             </LinearGradient>
             <Text style={styles.emptyText}>No assignments yet</Text>
             <Text style={styles.emptySubtext}>
@@ -455,70 +445,91 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background.primary,
   },
   loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.background.primary,
   },
   headerWrapper: {
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     overflow: 'hidden',
+    position: 'relative',
   },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 18,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  headerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
+  },
+  headerBackButton: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIconWrapper: {
     marginRight: 12,
+  },
+  headerIconInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTextWrapper: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    marginBottom: 4,
-    letterSpacing: 0.3,
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text.inverse,
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    fontSize: 14,
-    color: '#FFFFFF',
+    fontSize: 13,
+    color: colors.text.inverse,
     fontWeight: '500',
-    opacity: 0.9,
+    opacity: 0.85,
   },
   list: {
     padding: 16,
   },
   assignmentCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E0E7FF',
     ...Platform.select({
       ios: {
-        shadowColor: '#215EEA',
+        borderWidth: 0.5,
+        borderColor: colors.border.light,
+        shadowColor: colors.shadow.card,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
+        shadowOpacity: 0.04,
         shadowRadius: 8,
       },
       android: {
-        elevation: 2,
+        elevation: 0,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
       },
     }),
   },
@@ -535,12 +546,12 @@ const styles = StyleSheet.create({
   propertyName: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text.primary,
     marginBottom: 4,
   },
   unitName: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.text.secondary,
     fontWeight: '500',
   },
   statusBadge: {
@@ -558,7 +569,7 @@ const styles = StyleSheet.create({
   },
   cardDivider: {
     height: 1,
-    backgroundColor: '#E0E7FF',
+    backgroundColor: colors.border.light,
     marginBottom: 12,
   },
   detailsRow: {
@@ -571,12 +582,12 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: colors.text.secondary,
     flex: 1,
   },
   detailTextSmall: {
     fontSize: 13,
-    color: '#9CA3AF',
+    color: colors.text.tertiary,
     flex: 1,
   },
   actionButtons: {
@@ -584,7 +595,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0E7FF',
+    borderTopColor: colors.border.light,
     gap: 8,
   },
   actionButton: {
@@ -598,15 +609,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   viewButton: {
-    backgroundColor: '#EFF6FF',
+    backgroundColor: colors.accent.blueLight,
   },
   deleteButton: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.accent.errorLight,
   },
   actionButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#215EEA',
+    color: colors.primary.main,
   },
   empty: {
     alignItems: 'center',
@@ -623,10 +634,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Platform.select({
       ios: {
-        shadowColor: '#215EEA',
+        shadowColor: colors.shadow.blue,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 12,
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
       },
       android: {
         elevation: 6,
@@ -636,12 +647,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
+    color: colors.text.primary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#6B7280',
+    color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
   },

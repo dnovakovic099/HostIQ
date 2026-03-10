@@ -109,9 +109,9 @@ export const colors = {
       '#1E3AFF',
       '#215EEA',
       '#2CB5E9',
-      '#33D39c',
+      '#5AC8FA',
     ],
-  
+
 
 
 
@@ -299,6 +299,12 @@ export const getGradeColor = (grade) => {
     F: colors.status.error,
   };
   return gradeColors[grade] || colors.text.secondary;
+};
+
+export const getPassRateColor = (rate) => {
+  if (rate >= 90) return colors.status.success;
+  if (rate >= 70) return colors.status.warning;
+  return colors.status.error;
 };
 
 export default colors;

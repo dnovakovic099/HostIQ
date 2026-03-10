@@ -362,20 +362,6 @@ export default function CleanerHistoryScreen({ navigation }) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
 
-      {/* Gradient Header */}
-      <LinearGradient
-        colors={colors.gradients.dashboardHeader}
-        locations={colors.gradients.dashboardHeaderLocations}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}
-      >
-        <View style={styles.headerContent}>
-          <Text style={styles.welcomeGreeting}>Hello!</Text>
-          <Text style={styles.welcomeName}>{userName}</Text>
-        </View>
-      </LinearGradient>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -383,6 +369,28 @@ export default function CleanerHistoryScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={COLORS.accent} />
         }
       >
+        {/* Welcome Header */}
+        <LinearGradient
+          colors={colors.gradients.dashboardHeader}
+          locations={colors.gradients.dashboardHeaderLocations}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.headerGradient, { paddingTop: insets.top + 12 }]}
+        >
+          {/* Decorative elements */}
+          <View style={styles.decorativeCircle1}>
+            <Ionicons name="sparkles" size={100} color={colors.decorative?.icon1 || 'rgba(255,255,255,0.06)'} />
+          </View>
+          <View style={styles.decorativeCircle2}>
+            <Ionicons name="checkmark-done" size={70} color={colors.decorative?.icon1 || 'rgba(255,255,255,0.04)'} />
+          </View>
+
+          <View style={styles.welcomeContent}>
+            <Text style={styles.welcomeGreeting}>Hello, </Text>
+            <Text style={styles.welcomeName}>{userName}!</Text>
+          </View>
+          <Text style={styles.welcomeSubtitle}>Your cleaning history at a glance</Text>
+        </LinearGradient>
 
         {/* Stats Grid */}
         <View style={styles.statsSection}>
@@ -493,7 +501,7 @@ export default function CleanerHistoryScreen({ navigation }) {
               activeOpacity={0.8}
             >
               <LinearGradient
-                colors={['#33D39C', '#2CB5E9']}
+                colors={['#5AC8FA', '#0A84FF']}
                 style={styles.quickActionCircle}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -594,61 +602,51 @@ const styles = StyleSheet.create({
   headerGradient: {
     paddingHorizontal: 24,
     paddingBottom: 24,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  welcomeSection: {
-    paddingHorizontal: 24,
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 40 : 60,
-    paddingBottom: 32,
     position: 'relative',
-    overflow: 'hidden',
+    overflow: 'visible',
   },
   decorativeCircle1: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(59, 130, 246, 0.06)',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(10, 132, 255, 0.08)',
     top: -60,
     right: -40,
   },
   decorativeCircle2: {
     position: 'absolute',
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(16, 185, 129, 0.04)',
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: 'rgba(16, 185, 129, 0.05)',
     bottom: -30,
     left: -30,
-  },
-  decorativeIcon1: {
-    position: 'absolute',
-    top: 40,
-    right: 30,
-  },
-  decorativeIcon2: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
   },
   welcomeContent: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    zIndex: 1,
+    flexWrap: 'wrap',
+    zIndex: 20,
+    marginTop: 12,
+    marginBottom: 8,
   },
   welcomeGreeting: {
     fontSize: 28,
-    fontWeight: '300',
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginRight: 6,
+    fontWeight: '400',
+    color: '#FFFFFF',
   },
   welcomeName: {
     fontSize: 28,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  welcomeSubtitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.85)',
+    marginTop: 4,
+    zIndex: 20,
   },
 
   // Stats Section

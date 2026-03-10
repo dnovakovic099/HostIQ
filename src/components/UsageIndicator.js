@@ -22,7 +22,7 @@ const COLORS = {
   progressBg: colors.border.light,
 };
 
-export default function UsageIndicator({ navigation, compact = false }) {
+export default function UsageIndicator({ navigation, compact = false, inCard = false }) {
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -59,13 +59,11 @@ export default function UsageIndicator({ navigation, compact = false }) {
 
   const getProgressColor = () => {
     if (isAtLimit) return COLORS.error;
-    if (isNearLimit) return COLORS.warning;
-    return COLORS.primary;
+    return COLORS.success;
   };
 
   const getIconBg = () => {
     if (isAtLimit) return COLORS.errorLight;
-    if (isNearLimit) return COLORS.warningLight;
     return COLORS.primaryLight;
   };
 
@@ -97,7 +95,7 @@ export default function UsageIndicator({ navigation, compact = false }) {
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[styles.container, inCard && styles.containerInCard]}
       onPress={handlePress}
       activeOpacity={0.6}
     >
@@ -106,7 +104,7 @@ export default function UsageIndicator({ navigation, compact = false }) {
           <Ionicons
             name={isAtLimit ? 'alert-circle-outline' : 'images-outline'}
             size={22}
-            color={getProgressColor()}
+            color={isAtLimit ? COLORS.error : COLORS.primary}
           />
         </View>
         <View style={styles.textContainer}>
@@ -132,8 +130,8 @@ export default function UsageIndicator({ navigation, compact = false }) {
 
       {(isAtLimit || isNearLimit) && (
         <Text style={[styles.messageText, { color: getProgressColor() }]}>
-          {isAtLimit 
-            ? 'Limit reached. Upgrade to continue.' 
+          {isAtLimit
+            ? 'Limit reached. Upgrade to continue.'
             : `${usage.remaining_free_images} free images remaining`}
         </Text>
       )}
@@ -148,6 +146,10 @@ const styles = StyleSheet.create({
   },
   containerCompact: {
     padding: 8,
+  },
+  containerInCard: {
+    padding: 0,
+    gap: 10,
   },
   header: {
     flexDirection: 'row',

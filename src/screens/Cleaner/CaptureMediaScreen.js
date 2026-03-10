@@ -24,6 +24,7 @@ import api from '../../api/client';
 import { API_URL } from '../../config/api';
 import { useInspectionStore } from '../../store/inspectionStore';
 import { getRoomSuggestionByType } from '../../config/roomSuggestions';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import shadows from '../../theme/shadows';
@@ -58,6 +59,8 @@ export default function CaptureMediaScreen({ route, navigation }) {
     existingMedia = [],
     isEditing = false
   } = route.params;
+
+  const insets = useSafeAreaInsets();
   
   // Get propertyId from route params or assignment
   const propertyId = routePropertyId || assignment?.unit?.property?.id;
@@ -658,23 +661,30 @@ export default function CaptureMediaScreen({ route, navigation }) {
   if (!hasRooms) {
     return (
       <View style={styles.container}>
-        {/* Gradient Header for Error State */}
+        <StatusBar barStyle="light-content" />
         <LinearGradient
           colors={colors.gradients.dashboardHeader}
           locations={colors.gradients.dashboardHeaderLocations}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.headerWrapper}
+          style={[styles.headerWrapper, { paddingTop: insets.top }]}
         >
-          <StatusBar barStyle="light-content" />
+          {/* Decorative element */}
+          <View style={styles.decorativeCircle}>
+            <Ionicons name="camera" size={70} color={colors.decorative.icon1} />
+          </View>
           <SafeAreaView>
             <View style={styles.headerGradient}>
-              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.headerBackButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
               </TouchableOpacity>
               <View style={styles.headerIconWrapper}>
                 <View style={styles.headerIconInner}>
-                  <Ionicons name="camera" size={28} color="#FFFFFF" />
+                  <Ionicons name="camera" size={22} color="#FFFFFF" />
                 </View>
               </View>
               <View style={styles.headerTextWrapper}>
@@ -702,23 +712,30 @@ export default function CaptureMediaScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Beautiful Gradient Header */}
+      <StatusBar barStyle="light-content" />
       <LinearGradient
         colors={colors.gradients.dashboardHeader}
         locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.headerWrapper}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
       >
-        <StatusBar barStyle="light-content" />
+        {/* Decorative element */}
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="camera" size={70} color={colors.decorative.icon1} />
+        </View>
         <SafeAreaView>
           <View style={styles.headerGradient}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.headerBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
             </TouchableOpacity>
             <View style={styles.headerIconWrapper}>
               <View style={styles.headerIconInner}>
-                <Ionicons name="camera" size={28} color="#FFFFFF" />
+                <Ionicons name="camera" size={22} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.headerTextWrapper}>
@@ -1160,33 +1177,39 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingBottom: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
   },
-  backButton: {
-    marginRight: 12,
-  },
-  backButtonCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  headerBackButton: {
+    marginRight: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerIconWrapper: {
-    marginRight: 14,
+    marginRight: 12,
   },
   headerIconInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1194,16 +1217,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 4,
-    letterSpacing: 0.3,
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FFFFFF',
     fontWeight: '500',
+    opacity: 0.85,
   },
   header: {
     flexDirection: 'row',

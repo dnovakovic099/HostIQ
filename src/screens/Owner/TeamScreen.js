@@ -9,17 +9,27 @@ import {
   Alert,
   TextInput,
   Modal,
+  StatusBar,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
+import { useDataStore } from '../../store/dataStore';
+import colors from '../../theme/colors';
 
-export default function TeamScreen() {
-  const [invites, setInvites] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function TeamScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
+  const cachedInvites = useDataStore((s) => s.invites);
+  const invitesLoaded = useDataStore((s) => s.invitesLoaded);
+  const [invites, setInvites] = useState(cachedInvites);
+  const [loading, setLoading] = useState(!invitesLoaded);
   const [modalVisible, setModalVisible] = useState(false);
   const [newInvite, setNewInvite] = useState({ email: '', role: 'CLEANER' });
 
   useEffect(() => {
+    // Always refresh in background, but if cache exists we already have data to show
     fetchInvites();
   }, []);
 
@@ -27,8 +37,11 @@ export default function TeamScreen() {
     try {
       const response = await api.get('/invites');
       setInvites(response.data);
+      useDataStore.getState().setInvites(response.data);
     } catch (error) {
-      Alert.alert('Error', 'Failed to load invites');
+      if (!invitesLoaded) {
+        Alert.alert('Error', 'Failed to load invites');
+      }
     } finally {
       setLoading(false);
     }
@@ -101,18 +114,42 @@ export default function TeamScreen() {
     </View>
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color="#215EEA" />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Team Members</Text>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={colors.gradients.dashboardHeader}
+        locations={colors.gradients.dashboardHeaderLocations}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerWrapper, { paddingTop: insets.top }]}
+      >
+        <View style={styles.decorativeCircle}>
+          <Ionicons name="people" size={70} color={colors.decorative.icon1} />
+        </View>
+        <SafeAreaView>
+          <View style={styles.headerGradient}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.headerBackButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.headerIconWrapper}>
+              <View style={styles.headerIconInner}>
+                <Ionicons name="people" size={22} color="#FFFFFF" />
+              </View>
+            </View>
+            <View style={styles.headerTextWrapper}>
+              <Text style={styles.headerTitle}>Team Members</Text>
+              <Text style={styles.headerSubtitle}>Manage your team members</Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+
+      <View style={styles.inviteBar}>
         <TouchableOpacity
           style={styles.inviteButton}
           onPress={() => setModalVisible(true)}
@@ -122,7 +159,11 @@ export default function TeamScreen() {
         </TouchableOpacity>
       </View>
 
-      {invites.length === 0 ? (
+      {loading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color="#215EEA" />
+        </View>
+      ) : invites.length === 0 ? (
         <View style={styles.empty}>
           <Ionicons name="people-outline" size={64} color="#ccc" />
           <Text style={styles.emptyText}>No team members yet</Text>
@@ -221,19 +262,67 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  headerWrapper: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  decorativeCircle: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: colors.decorative.circle1,
+    top: -30,
+    right: -30,
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+  },
+  headerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: 14,
+  },
+  headerBackButton: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerIconWrapper: {
+    marginRight: 12,
+  },
+  headerIconInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTextWrapper: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 2,
+    letterSpacing: 0.2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    opacity: 0.85,
+  },
+  inviteBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    padding: 15,
+    paddingBottom: 0,
   },
   inviteButton: {
     flexDirection: 'row',

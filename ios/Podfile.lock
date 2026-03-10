@@ -575,7 +575,8 @@ PODS:
     - React-Core
   - RNIap (12.16.4):
     - React-Core
-  - RNScreens (3.22.1):
+  - RNScreens (3.31.1):
+    - RCT-Folly (= 2021.07.22.00)
     - React-Core
     - React-RCTImage
   - RNSVG (13.14.0):
@@ -919,7 +920,7 @@ SPEC CHECKSUMS:
   RNGestureHandler: 627182485becfd74f122c83f93cce2be20c2e8c8
   RNGoogleSignin: b8f09e3ec56e09497e1e53b0ff66d5a45916c6b1
   RNIap: 65051c94a29a17bd8356bcf16a878821862eecd0
-  RNScreens: 39db1910d2ea9ae885dcda43086818e9f8b714d0
+  RNScreens: 448026fcd1beb88770b0a67a871a3d1bf9cdde0a
   RNSVG: 4cab00c621b328a4a2fedaaedc15d8822216723e
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
   Yoga: d0003f849d2b5224c072cef6568b540d8bb15cd3

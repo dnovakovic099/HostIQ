@@ -6,6 +6,7 @@ import * as Crypto from 'expo-crypto';
 import api from '../api/client';
 import biometricAuth from '../services/biometricAuth';
 import { useOnboardingStore } from './onboardingStore';
+import { useDataStore } from './dataStore';
 import GoogleSignin, { getIsConfigured, getReversedClientIdForInfoPlist } from '../config/googleAuth';
 
 export const useAuthStore = create((set, get) => ({
@@ -23,12 +24,12 @@ export const useAuthStore = create((set, get) => ({
       if (refreshToken) {
         await SecureStore.setItemAsync('refreshToken', refreshToken);
       }
-      set({ 
-        accessToken, 
-        refreshToken, 
-        user, 
+      set({
+        accessToken,
+        refreshToken,
+        user,
         isAuthenticated: true,
-        isLoading: false 
+        isLoading: false
       });
     } catch (error) {
       console.error('Error saving tokens:', error);
@@ -40,20 +41,20 @@ export const useAuthStore = create((set, get) => ({
       // Check biometric availability
       const { available } = await biometricAuth.isAvailable();
       const enabled = await biometricAuth.isBiometricEnabled();
-      
+
       const accessToken = await SecureStore.getItemAsync('accessToken');
       const refreshToken = await SecureStore.getItemAsync('refreshToken');
-      
+
       if (accessToken) {
         // Try to get user info
         try {
           const response = await api.get('/auth/me', {
             headers: { Authorization: `Bearer ${accessToken}` }
           });
-          set({ 
-            accessToken, 
-            refreshToken, 
-            user: response.data, 
+          set({
+            accessToken,
+            refreshToken,
+            user: response.data,
             isAuthenticated: true,
             isLoading: false,
             biometricAvailable: available,
@@ -64,8 +65,8 @@ export const useAuthStore = create((set, get) => ({
           if (refreshToken) {
             await get().refreshAccessToken();
           } else {
-            set({ 
-              isLoading: false, 
+            set({
+              isLoading: false,
               isAuthenticated: false,
               biometricAvailable: available,
               biometricEnabled: enabled
@@ -73,8 +74,8 @@ export const useAuthStore = create((set, get) => ({
           }
         }
       } else {
-        set({ 
-          isLoading: false, 
+        set({
+          isLoading: false,
           isAuthenticated: false,
           biometricAvailable: available,
           biometricEnabled: enabled
@@ -112,7 +113,7 @@ export const useAuthStore = create((set, get) => ({
       const response = await api.post('/auth/login', { email, password });
       const { accessToken, refreshToken, user } = response.data;
       await get().setTokens(accessToken, refreshToken, user);
-      
+
       // Save or clear credentials based on rememberMe
       if (rememberMe) {
         await biometricAuth.storeValue('saved_email', email);
@@ -123,11 +124,11 @@ export const useAuthStore = create((set, get) => ({
         await biometricAuth.deleteStoredValue('saved_password');
         await biometricAuth.deleteStoredValue('remember_me');
       }
-      
+
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
-      
+
       // Check if error is due to unverified account
       if (error.response?.data?.requiresVerification) {
         return {
@@ -136,10 +137,10 @@ export const useAuthStore = create((set, get) => ({
           requiresVerification: true
         };
       }
-      
+
       // Better error handling for different error types
       let errorMessage = 'Login failed';
-      
+
       if (error.response) {
         // Server responded with error status
         errorMessage = error.response.data?.error || `Server error: ${error.response.status}`;
@@ -150,9 +151,9 @@ export const useAuthStore = create((set, get) => ({
         // Something else went wrong
         errorMessage = error.message || 'Login failed';
       }
-      
-      return { 
-        success: false, 
+
+      return {
+        success: false,
         error: errorMessage
       };
     }
@@ -161,7 +162,7 @@ export const useAuthStore = create((set, get) => ({
   signInWithGoogle: async (role) => {
     try {
       set({ isLoading: true });
-      
+
       // Check if GoogleSignin module is available
       if (!GoogleSignin || typeof GoogleSignin.signIn !== 'function') {
         throw new Error('Google Sign-In module is not available. Please rebuild the app after installing the package.');
@@ -180,8 +181,8 @@ export const useAuthStore = create((set, get) => ({
       }
 
       // Verify configuration exists - this is critical to prevent crashes
-      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || 
-                         process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
+        process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
       if (!webClientId || webClientId === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') {
         throw new Error('Google Sign-In is not configured. Please set EXPO_PUBLIC_GOOGLE_CLIENT_ID in your environment variables or set DIRECT_CLIENT_ID in src/config/googleAuth.js');
       }
@@ -191,7 +192,7 @@ export const useAuthStore = create((set, get) => ({
       console.log('🔵 signIn function available:', typeof GoogleSignin.signIn === 'function');
       console.log('🔵 Client ID configured:', webClientId ? 'YES' : 'NO');
       console.log('🔵 GoogleSignin.configure() called:', getIsConfigured() ? 'YES' : 'NO');
-      
+
       // Additional diagnostic check for iOS
       if (Platform.OS === 'ios') {
         try {
@@ -230,7 +231,7 @@ export const useAuthStore = create((set, get) => ({
       try {
         console.log('🔵 Calling GoogleSignin.signIn()...');
         console.log('🔵 This should open the Google Sign-In modal');
-        
+
         // For iOS, double-check configuration before calling native method
         if (Platform.OS === 'ios') {
           const reversedClientId = getReversedClientIdForInfoPlist();
@@ -240,7 +241,7 @@ export const useAuthStore = create((set, get) => ({
           console.log('🔵 REVERSED_CLIENT_ID:', reversedClientId);
           console.log('🔵 ⚠️ Make sure this value is added to Info.plist CFBundleURLSchemes!');
         }
-        
+
         // Wrap signIn in additional error handling to catch native crashes
         let signInPromise;
         try {
@@ -251,7 +252,7 @@ export const useAuthStore = create((set, get) => ({
           console.error('❌ Immediate error calling signIn():', immediateError);
           throw new Error(`Failed to initiate Google Sign-In: ${immediateError?.message || 'Unknown error'}. Make sure REVERSED_CLIENT_ID is in Info.plist.`);
         }
-        
+
         // Timeout after 60 seconds - modal should appear immediately if configured correctly
         // Store timeout ID so we can clear it if sign-in succeeds
         let timeoutId;
@@ -262,7 +263,7 @@ export const useAuthStore = create((set, get) => ({
             reject(new Error(`Google Sign-In timeout. The sign-in modal did not appear. This usually means:\n\n1. The app needs to be rebuilt after Info.plist changes\n2. REVERSED_CLIENT_ID in Info.plist: ${reversedClientId || 'NOT FOUND'}\n3. Make sure you've run: cd ios && pod install && cd ..\n4. Rebuild the app completely (not just reload)\n\nIf Info.plist is correct, try:\n- Clean build folder\n- Delete derived data\n- Rebuild app`));
           }, 60000);
         });
-        
+
         try {
           userInfo = await Promise.race([signInPromise, timeoutPromise]);
           // Clear timeout if sign-in succeeded (prevents timeout from firing and causing unhandled rejection)
@@ -283,7 +284,7 @@ export const useAuthStore = create((set, get) => ({
         console.error('Error code:', signInError?.code);
         console.error('Error message:', signInError?.message);
         console.error('Error name:', signInError?.name);
-        
+
         // Handle timeout errors with helpful message
         if (signInError?.message?.includes('timeout')) {
           const reversedClientId = getReversedClientIdForInfoPlist();
@@ -292,22 +293,22 @@ export const useAuthStore = create((set, get) => ({
             error: signInError.message || 'Google Sign-In timed out. The sign-in modal did not appear. This usually means the app needs to be rebuilt after Info.plist changes. Make sure to:\n\n1. Clean build (Product > Clean Build Folder in Xcode)\n2. Rebuild the app completely (not just reload)\n3. Verify REVERSED_CLIENT_ID in Info.plist matches your Client ID'
           };
         }
-        
+
         // Handle cancellation gracefully
-        if (signInError?.code === 'SIGN_IN_CANCELLED' || 
-            signInError?.code === '-5' ||
-            signInError?.code === '10' ||
-            signInError?.message?.includes('cancelled') ||
-            signInError?.message?.includes('user_cancelled')) {
-          return { 
-            success: false, 
-            error: 'Sign in was cancelled' 
+        if (signInError?.code === 'SIGN_IN_CANCELLED' ||
+          signInError?.code === '-5' ||
+          signInError?.code === '10' ||
+          signInError?.message?.includes('cancelled') ||
+          signInError?.message?.includes('user_cancelled')) {
+          return {
+            success: false,
+            error: 'Sign in was cancelled'
           };
         }
-        
+
         // Handle configuration errors
-        if (signInError?.message?.includes('not configured') || 
-            signInError?.message?.includes('configuration')) {
+        if (signInError?.message?.includes('not configured') ||
+          signInError?.message?.includes('configuration')) {
           const reversedClientId = getReversedClientIdForInfoPlist();
           let errorMsg = 'Google Sign-In is not properly configured. Please check your Client ID settings.';
           if (reversedClientId && Platform.OS === 'ios') {
@@ -318,23 +319,23 @@ export const useAuthStore = create((set, get) => ({
             error: errorMsg
           };
         }
-        
+
         // Handle iOS-specific URL scheme errors
         if (Platform.OS === 'ios') {
           const reversedClientId = getReversedClientIdForInfoPlist();
-          
+
           // Check for URL scheme related errors
           if (signInError?.message?.includes('URL scheme') ||
-              signInError?.message?.includes('CFBundleURLSchemes') ||
-              signInError?.code === '10' || // Common iOS configuration error code
-              signInError?.message?.includes('REVERSED_CLIENT_ID') ||
-              signInError?.name === 'NativeError') {
+            signInError?.message?.includes('CFBundleURLSchemes') ||
+            signInError?.code === '10' || // Common iOS configuration error code
+            signInError?.message?.includes('REVERSED_CLIENT_ID') ||
+            signInError?.name === 'NativeError') {
             return {
               success: false,
               error: `iOS configuration error: Missing REVERSED_CLIENT_ID in Info.plist.\n\nTo fix:\n1. Open ios/HostIQ/Info.plist\n2. Add this inside CFBundleURLTypes array:\n<dict>\n  <key>CFBundleURLSchemes</key>\n  <array>\n    <string>${reversedClientId || 'YOUR_REVERSED_CLIENT_ID'}</string>\n  </array>\n</dict>\n\nYour REVERSED_CLIENT_ID: ${reversedClientId || 'Check console logs on app start'}`
             };
           }
-          
+
           // Generic iOS crash - likely missing URL scheme
           if (!signInError?.code && !signInError?.message) {
             return {
@@ -343,7 +344,7 @@ export const useAuthStore = create((set, get) => ({
             };
           }
         }
-        
+
         // Re-throw to be handled by outer catch
         throw signInError;
       }
@@ -369,16 +370,16 @@ export const useAuthStore = create((set, get) => ({
       try {
         console.log('🔵 Preparing to send request to backend...');
         console.log('🔵 ID Token length:', idToken?.length || 0);
-        
+
         const requestBody = {
           idToken: idToken,
         };
-        
+
         // Include role if provided
         if (role) {
           requestBody.role = role;
         }
-        
+
         response = await api.post('/auth/google/mobile', requestBody, {
           timeout: 60000, // 60 seconds timeout (increased for slower networks)
         });
@@ -389,12 +390,12 @@ export const useAuthStore = create((set, get) => ({
         console.error('Error message:', backendError.message);
         console.error('Response status:', backendError.response?.status);
         console.error('Response data:', backendError.response?.data);
-        
+
         // Handle request aborted/cancelled errors
-        if (backendError.code === 'ECONNABORTED' || 
-            backendError.message?.includes('aborted') ||
-            backendError.message?.includes('cancelled') ||
-            backendError.name === 'CanceledError') {
+        if (backendError.code === 'ECONNABORTED' ||
+          backendError.message?.includes('aborted') ||
+          backendError.message?.includes('cancelled') ||
+          backendError.name === 'CanceledError') {
           // Check if it's a timeout
           if (backendError.message?.includes('timeout')) {
             return {
@@ -407,7 +408,7 @@ export const useAuthStore = create((set, get) => ({
             error: 'Request was cancelled. Please try again. Make sure you have a stable internet connection.'
           };
         }
-        
+
         // Handle timeout errors
         if (backendError.code === 'ETIMEDOUT' || backendError.message?.includes('timeout')) {
           return {
@@ -415,31 +416,31 @@ export const useAuthStore = create((set, get) => ({
             error: 'Backend request timed out. Please:\n\n1. Check your internet connection\n2. Verify the backend server is running and accessible\n3. Try again in a moment'
           };
         }
-        
+
         // Handle network errors
-        if (backendError.code === 'ERR_NETWORK' || 
-            (backendError.request && !backendError.response)) {
+        if (backendError.code === 'ERR_NETWORK' ||
+          (backendError.request && !backendError.response)) {
           return {
             success: false,
             error: 'Cannot reach server. Please check your internet connection and ensure the backend is running.'
           };
         }
-        
+
         // Handle specific backend errors
         if (backendError.response?.status === 400) {
           const errors = backendError.response.data?.errors;
           const errorMessage = backendError.response.data?.error;
-          
+
           // Check if error requires role selection
-          if (errorMessage === 'requiresRoleSelection' || 
-              errorMessage?.includes('role selection') ||
-              errorMessage?.includes('role is required')) {
+          if (errorMessage === 'requiresRoleSelection' ||
+            errorMessage?.includes('role selection') ||
+            errorMessage?.includes('role is required')) {
             return {
               success: false,
               error: 'requiresRoleSelection'
             };
           }
-          
+
           if (errors && Array.isArray(errors)) {
             const errorMsg = errors.map(e => e.msg).join(', ');
             return {
@@ -452,21 +453,21 @@ export const useAuthStore = create((set, get) => ({
             error: errorMessage || 'Invalid ID token. Please try again.'
           };
         }
-        
+
         if (backendError.response?.status === 500) {
           return {
             success: false,
             error: backendError.response.data?.error || 'Server error during authentication. Please try again.'
           };
         }
-        
+
         if (backendError.response?.data?.error) {
           return {
             success: false,
             error: backendError.response.data.error
           };
         }
-        
+
         // Generic error
         return {
           success: false,
@@ -495,7 +496,7 @@ export const useAuthStore = create((set, get) => ({
 
       // Store tokens securely
       await get().setTokens(accessToken, refreshToken, user);
-      
+
       // Reset onboarding state for new users
       const onboardingStore = useOnboardingStore.getState();
       await onboardingStore.resetOnboarding();
@@ -509,9 +510,9 @@ export const useAuthStore = create((set, get) => ({
       if (error.stack) {
         console.error('Error stack:', error.stack);
       }
-      
+
       let errorMessage = 'Google sign-in failed';
-      
+
       if (error.code === 'SIGN_IN_CANCELLED') {
         errorMessage = 'Sign in was cancelled';
       } else if (error.code === 'IN_PROGRESS') {
@@ -527,9 +528,9 @@ export const useAuthStore = create((set, get) => ({
       } else {
         errorMessage = error.message || 'Google sign-in failed. Please check your configuration.';
       }
-      
-      return { 
-        success: false, 
+
+      return {
+        success: false,
         error: errorMessage
       };
     } finally {
@@ -667,7 +668,7 @@ export const useAuthStore = create((set, get) => ({
       // Get stored credentials
       const email = await biometricAuth.getBiometricEmail();
       const password = await biometricAuth.getBiometricPassword();
-      
+
       if (!email || !password) {
         await biometricAuth.disableBiometric();
         return { success: false, error: 'No stored credentials found. Please login again.' };
@@ -725,35 +726,35 @@ export const useAuthStore = create((set, get) => ({
 
   register: async (email, password, name, role) => {
     try {
-      const response = await api.post('/auth/register', { 
-        email, 
-        password, 
-        name, 
-        role 
+      const response = await api.post('/auth/register', {
+        email,
+        password,
+        name,
+        role
       });
-      
+
       // Check if verification is required
       if (response.data.requiresVerification) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           requiresVerification: true,
           message: response.data.message || 'Please check your email to verify your account.'
         };
       }
-      
+
       const { accessToken, refreshToken, user } = response.data;
       await get().setTokens(accessToken, refreshToken, user);
-      
+
       // Reset onboarding state for new users so they see the welcome modal
       const onboardingStore = useOnboardingStore.getState();
       await onboardingStore.resetOnboarding();
-      
+
       return { success: true };
     } catch (error) {
       console.error('Register error:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Registration failed' 
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Registration failed'
       };
     }
   },
@@ -764,9 +765,9 @@ export const useAuthStore = create((set, get) => ({
       return { success: true, message: 'Verification email sent' };
     } catch (error) {
       console.error('Resend verification error:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Failed to resend verification email' 
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to resend verification email'
       };
     }
   },
@@ -776,24 +777,24 @@ export const useAuthStore = create((set, get) => ({
       const response = await api.post('/auth/verify-code', { email, code });
       const { accessToken, refreshToken, user } = response.data;
       await get().setTokens(accessToken, refreshToken, user);
-      
+
       // Reset onboarding state for new users so they see the welcome modal
       const onboardingStore = useOnboardingStore.getState();
       await onboardingStore.resetOnboarding();
-      
+
       return { success: true };
     } catch (error) {
       console.error('Verify code error:', error);
-      return { 
-        success: false, 
-        error: error.response?.data?.error || 'Invalid verification code' 
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Invalid verification code'
       };
     }
   },
 
   logout: async () => {
     const { refreshToken, accessToken } = get();
-    
+
     try {
       // Sign out from Google if signed in
       try {
@@ -816,14 +817,17 @@ export const useAuthStore = create((set, get) => ({
 
     await SecureStore.deleteItemAsync('accessToken');
     await SecureStore.deleteItemAsync('refreshToken');
-    
+
     // Keep biometric settings intact on logout
     const biometricEnabled = await biometricAuth.isBiometricEnabled();
-    
-    set({ 
-      user: null, 
-      accessToken: null, 
-      refreshToken: null, 
+
+    // Clear cached data
+    useDataStore.getState().clear();
+
+    set({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
       biometricEnabled
     });
@@ -831,7 +835,7 @@ export const useAuthStore = create((set, get) => ({
 
   deleteAccount: async () => {
     const { accessToken } = get();
-    
+
     try {
       // Call the delete account endpoint
       await api.delete('/auth/account', {
@@ -851,7 +855,7 @@ export const useAuthStore = create((set, get) => ({
       // Clear all stored tokens and credentials
       await SecureStore.deleteItemAsync('accessToken');
       await SecureStore.deleteItemAsync('refreshToken');
-      
+
       // Clear biometric credentials
       try {
         await biometricAuth.deleteStoredValue('saved_email');
@@ -860,12 +864,12 @@ export const useAuthStore = create((set, get) => ({
       } catch (error) {
         console.log('Biometric cleanup error (non-critical):', error);
       }
-      
+
       // Reset auth state
-      set({ 
-        user: null, 
-        accessToken: null, 
-        refreshToken: null, 
+      set({
+        user: null,
+        accessToken: null,
+        refreshToken: null,
         isAuthenticated: false,
         biometricEnabled: false
       });
@@ -873,7 +877,7 @@ export const useAuthStore = create((set, get) => ({
       return { success: true };
     } catch (error) {
       console.error('Delete account error:', error);
-      
+
       let errorMessage = 'Failed to delete account';
       if (error.response) {
         errorMessage = error.response.data?.error || `Server error: ${error.response.status}`;
@@ -882,9 +886,9 @@ export const useAuthStore = create((set, get) => ({
       } else {
         errorMessage = error.message || 'Failed to delete account';
       }
-      
-      return { 
-        success: false, 
+
+      return {
+        success: false,
         error: errorMessage
       };
     }
