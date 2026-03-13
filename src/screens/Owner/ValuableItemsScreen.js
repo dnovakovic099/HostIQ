@@ -21,7 +21,38 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../api/client';
+import { API_URL } from '../../config/api';
 import colors from '../../theme/colors';
+
+// Helper function to fix image URLs (convert relative paths to full URLs)
+const fixImageUrl = (url) => {
+  if (!url) return url;
+
+  const originalUrl = String(url).trim();
+  url = originalUrl;
+
+  const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
+
+  let fixedUrl;
+
+  if (isFullUrl) {
+    const productionDomain = 'roomify-server-production.up.railway.app';
+    const baseUrl = API_URL.replace('/api', '');
+
+    if (url.includes(productionDomain) && !baseUrl.includes('roomify-server-production')) {
+      const path = url.replace(`https://${productionDomain}`, '').replace(`http://${productionDomain}`, '');
+      fixedUrl = baseUrl + path;
+    } else {
+      fixedUrl = url;
+    }
+  } else {
+    const baseUrl = API_URL.replace('/api', '');
+    const path = url.startsWith('/') ? url : '/' + url;
+    fixedUrl = baseUrl + path;
+  }
+
+  return fixedUrl;
+};
 
 const COLORS = {
   bg: '#F8FAFC',
@@ -144,7 +175,7 @@ export default function ValuableItemsScreen({ route, navigation }) {
     setEditingItem(item);
     setItemName(item.name);
     setItemDescription(item.description || '');
-    setReferencePhoto(item.reference_photo);
+    setReferencePhoto(item.reference_photo ? fixImageUrl(item.reference_photo) : null);
     setModalVisible(true);
   };
 
@@ -372,12 +403,12 @@ export default function ValuableItemsScreen({ route, navigation }) {
               <View key={item.id} style={styles.itemCard}>
                 <TouchableOpacity
                   style={styles.itemPhotoContainer}
-                  onPress={() => item.reference_photo && setViewingPhoto(item.reference_photo)}
+                  onPress={() => item.reference_photo && setViewingPhoto(fixImageUrl(item.reference_photo))}
                   activeOpacity={0.7}
                 >
                   {item.reference_photo ? (
                     <Image
-                      source={{ uri: item.reference_photo }}
+                      source={{ uri: fixImageUrl(item.reference_photo) }}
                       style={styles.itemPhoto}
                     />
                   ) : (

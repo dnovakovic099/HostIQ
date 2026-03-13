@@ -22,6 +22,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Camera } from 'expo-camera';
 import api from '../../api/client';
 import { API_URL } from '../../config/api';
+import * as SecureStore from 'expo-secure-store';
 import { useInspectionStore } from '../../store/inspectionStore';
 import { getRoomSuggestionByType } from '../../config/roomSuggestions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -102,6 +103,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const [valuableItemNotes, setValuableItemNotes] = useState('');
   const [showValuableItemModal, setShowValuableItemModal] = useState(false);
   const [collapsedRooms, setCollapsedRooms] = useState(new Set());
+  const [resolvedRefPhotoUrls, setResolvedRefPhotoUrls] = useState({}); // { itemId: fixedUrl }
   
   // Listen for updates from RoomCaptureScreen
   React.useEffect(() => {
@@ -174,6 +176,48 @@ export default function CaptureMediaScreen({ route, navigation }) {
     
     fetchValuableItems();
   }, [assignment?.unit_id, unitId]);
+
+  // Resolve reference photo URLs with auth token for valuable items
+  React.useEffect(() => {
+    if (valuableItems.length === 0) return;
+
+    const resolveUrls = async () => {
+      const token = await SecureStore.getItemAsync('accessToken').catch(() => null);
+      const resolved = {};
+
+      for (const item of valuableItems) {
+        if (!item.reference_photo) continue;
+
+        let url = String(item.reference_photo).trim();
+        const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
+
+        if (isFullUrl) {
+          const productionUrl = 'https://roomify-server-production.up.railway.app';
+          const baseUrl = API_URL.replace('/api', '');
+          if (url.includes(productionUrl) && !baseUrl.includes('roomify-server-production')) {
+            const path = url.replace(productionUrl, '');
+            url = baseUrl + path;
+          }
+        } else {
+          const baseUrl = API_URL.replace('/api', '');
+          const path = url.startsWith('/') ? url : '/' + url;
+          url = baseUrl + path;
+        }
+
+        // Append auth token
+        if (token) {
+          const separator = url.includes('?') ? '&' : '?';
+          url = `${url}${separator}token=${encodeURIComponent(token)}`;
+        }
+
+        resolved[item.id] = url;
+      }
+
+      setResolvedRefPhotoUrls(resolved);
+    };
+
+    resolveUrls();
+  }, [valuableItems]);
 
   // Load existing photos when editing
   React.useEffect(() => {
@@ -864,41 +908,9 @@ export default function CaptureMediaScreen({ route, navigation }) {
             
             {valuableItems.map((item) => {
               const hasPhoto = !!valuableItemPhotos[item.id]?.uri;
-              // Fix reference photo URL - backend may return relative path or full URL
-              let referencePhotoUrl = item.reference_photo;
-              if (referencePhotoUrl) {
-                // Ensure it's a string and trim whitespace
-                referencePhotoUrl = String(referencePhotoUrl).trim();
-                
-                
-                const isFullUrl = referencePhotoUrl.startsWith('http://') || referencePhotoUrl.startsWith('https://');
-                
-                if (isFullUrl) {                  
-                  const productionUrl = 'https://roomify-server-production.up.railway.app';
-                  const baseUrl = API_URL.replace('/api', '');
-                  
-                  
-                  if (referencePhotoUrl.includes(productionUrl)) {
-                    if (!baseUrl.includes('roomify-server-production')) {
-                      
-                      const path = referencePhotoUrl.replace(productionUrl, '');
-                      referencePhotoUrl = baseUrl + path;
-                    }
-                    
-                  }
-                  
-                } else {
-                 
-                  const baseUrl = API_URL.replace('/api', '');
-                  const path = referencePhotoUrl.startsWith('/') ? referencePhotoUrl : '/' + referencePhotoUrl;
-                  referencePhotoUrl = baseUrl + path;
-                }
-              } else {
-                console.log(`   ⚠️ No reference_photo found for this item`);
-              }
-              
-           
-              
+              // Use pre-resolved reference photo URL (with auth token)
+              const referencePhotoUrl = resolvedRefPhotoUrls[item.id] || null;
+
               return (
                 <View key={item.id} style={[
                   styles.valuableItemCard,

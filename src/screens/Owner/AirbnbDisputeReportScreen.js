@@ -180,16 +180,27 @@ const fixImageUrl = async (url) => {
   return fixedUrl;
 };
 
-// Component to handle image loading (simplified like other screens)
-// NOTE: This requires the backend to serve static files from /uploads/ folder.
-// If images fail to load with 404 errors, the backend needs to configure static file serving.
+// Component to handle image loading with auth token support
 const AuthenticatedImage = ({ media, index, inspection, onError }) => {
   const [imageError, setImageError] = useState(false);
+  const [imageUrl, setImageUrl] = useState(null);
   const imageKey = media.id || index;
-  
-  // Use the same approach as InspectionDetailScreen - just fix the URL and use Image component
-  // The backend must serve static files from the uploads directory for this to work
-  const imageUrl = fixImageUrlSync(media.url);
+
+  // Use async fixImageUrl to append auth token for authenticated image access
+  React.useEffect(() => {
+    let mounted = true;
+    const loadUrl = async () => {
+      try {
+        const url = await fixImageUrl(media.url);
+        if (mounted) setImageUrl(url);
+      } catch (e) {
+        // Fallback to sync version without auth
+        if (mounted) setImageUrl(fixImageUrlSync(media.url));
+      }
+    };
+    loadUrl();
+    return () => { mounted = false; };
+  }, [media.url]);
 
   if (imageError) {
     return (
@@ -200,20 +211,26 @@ const AuthenticatedImage = ({ media, index, inspection, onError }) => {
     );
   }
 
+  if (!imageUrl) {
+    return (
+      <View style={[styles.photo, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F7' }]}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+      </View>
+    );
+  }
+
   return (
-    <Image 
-      source={{ uri: imageUrl }} 
-      style={styles.photo} 
+    <Image
+      source={{ uri: imageUrl }}
+      style={styles.photo}
       resizeMode="cover"
       onLoad={() => {
-        console.log(`✅ Image ${index + 1} loaded successfully from: ${imageUrl}`);
+        console.log(`✅ Image ${index + 1} loaded successfully`);
       }}
       onError={(error) => {
         console.error(`❌ Failed to load image ${index + 1}:`, {
-          url: imageUrl,
           originalUrl: media.url,
           error: error.nativeEvent?.error || error.nativeEvent,
-          note: 'Backend must serve static files from /uploads/ folder'
         });
         setImageError(true);
         if (onError) onError(imageKey);

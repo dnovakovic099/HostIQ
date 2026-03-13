@@ -247,22 +247,13 @@ export default function ManageCleanersScreen({ navigation }) {
     };
 
     return (
-      <TouchableOpacity
-        style={styles.cleanerCard}
-        activeOpacity={0.7}
-        onPress={navigateToAssignments}
-      >
+      <View style={styles.cleanerCard}>
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity
             style={styles.editButton}
-            onPress={(e) => {
+            onPress={() => {
               console.log('🔐 Edit password button pressed for cleaner:', item.id);
-              e.stopPropagation();
-              e.preventDefault();
               handleEditPassword(item);
-            }}
-            onPressIn={(e) => {
-              e.stopPropagation();
             }}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
@@ -270,17 +261,18 @@ export default function ManageCleanersScreen({ navigation }) {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.removeButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleRemoveCleaner(item);
-            }}
+            onPress={() => handleRemoveCleaner(item)}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <Ionicons name="trash-outline" size={18} color="#EF4444" />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.cleanerHeader}>
+        <TouchableOpacity
+          style={styles.cleanerHeader}
+          activeOpacity={0.7}
+          onPress={navigateToAssignments}
+        >
           <LinearGradient
             colors={['#E3F2FD', '#BBDEFB']}
             start={{ x: 0, y: 0 }}
@@ -291,36 +283,33 @@ export default function ManageCleanersScreen({ navigation }) {
               {item.name.charAt(0).toUpperCase()}
             </Text>
           </LinearGradient>
-          
+
           <View style={styles.cleanerInfo}>
             <Text style={styles.cleanerName}>{item.name}</Text>
             <Text style={styles.cleanerEmail}>{item.email}</Text>
-            <TouchableOpacity
-              style={styles.statPill}
-              onPress={navigateToAssignments}
-            >
+            <View style={styles.statPill}>
               <Ionicons name="calendar-outline" size={14} color="#0A84FF" />
               <Text style={styles.cleanerStats}>
                 {item._count?.assignments || 0} {(item._count?.assignments || 0) === 1 ? 'assignment' : 'assignments'}
               </Text>
               <Ionicons name="arrow-forward" size={14} color="#0A84FF" />
-            </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.assignButton}
-          onPress={(e) => {
-            e.stopPropagation();
+          onPress={() => {
             navigation.navigate('AssignCleaner', { cleanerId: item.id, cleanerName: item.name });
           }}
+          activeOpacity={0.7}
         >
           <View style={styles.assignButtonContent}>
             <Ionicons name="add-circle-outline" size={20} color="#0A84FF" />
             <Text style={styles.assignButtonText}>Assign New</Text>
           </View>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </View>
     );
   };
 
