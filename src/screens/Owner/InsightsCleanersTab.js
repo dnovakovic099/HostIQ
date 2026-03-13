@@ -306,7 +306,7 @@ export default function InsightsCleanersTab({ navigation }) {
             <Text style={styles.cleanerName}>{item.name}</Text>
             <Text style={styles.cleanerEmail}>{item.email}</Text>
           </View>
-          {item.avgScore && (
+          {item.avgScore != null && (
             <View style={styles.avgScoreBadge}>
               <Text style={styles.avgScoreText}>{item.avgScore}</Text>
               <Text style={styles.avgScoreLabel}>avg</Text>

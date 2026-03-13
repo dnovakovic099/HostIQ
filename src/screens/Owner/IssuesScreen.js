@@ -420,7 +420,7 @@ const IssuesScreen = () => {
       )}
 
       <View style={styles.issueFooter}>
-        {item.aiConfidence && (
+        {item.aiConfidence != null && (
           <Text style={styles.confidenceText}>
             AI Confidence: {Math.round(item.aiConfidence * 100)}%
           </Text>
