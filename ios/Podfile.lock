@@ -20,66 +20,8 @@ PODS:
   - EXImageLoader (4.3.0):
     - ExpoModulesCore
     - React-Core
-  - EXJSONUtils (0.7.1)
-  - EXManifests (0.7.2):
-    - ExpoModulesCore
   - Expo (49.0.23):
     - ExpoModulesCore
-  - expo-dev-client (2.4.13):
-    - EXManifests
-    - expo-dev-launcher
-    - expo-dev-menu
-    - expo-dev-menu-interface
-    - EXUpdatesInterface
-  - expo-dev-launcher (2.4.15):
-    - EXManifests
-    - expo-dev-launcher/Main (= 2.4.15)
-    - expo-dev-menu
-    - expo-dev-menu-interface
-    - ExpoModulesCore
-    - EXUpdatesInterface
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-    - React-RCTAppDelegate
-  - expo-dev-launcher/Main (2.4.15):
-    - EXManifests
-    - expo-dev-launcher/Unsafe
-    - expo-dev-menu
-    - expo-dev-menu-interface
-    - ExpoModulesCore
-    - EXUpdatesInterface
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-    - React-RCTAppDelegate
-  - expo-dev-launcher/Unsafe (2.4.15):
-    - EXManifests
-    - expo-dev-menu
-    - expo-dev-menu-interface
-    - ExpoModulesCore
-    - EXUpdatesInterface
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-    - React-RCTAppDelegate
-  - expo-dev-menu (3.2.4):
-    - expo-dev-menu/Main (= 3.2.4)
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-  - expo-dev-menu-interface (1.3.0)
-  - expo-dev-menu/Main (3.2.4):
-    - EXManifests
-    - expo-dev-menu-interface
-    - expo-dev-menu/Vendored
-    - ExpoModulesCore
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-  - expo-dev-menu/SafeAreaView (3.2.4):
-    - ExpoModulesCore
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
-  - expo-dev-menu/Vendored (3.2.4):
-    - expo-dev-menu/SafeAreaView
-    - RCT-Folly (= 2021.07.22.00)
-    - React-Core
   - ExpoAdapterGoogleSignIn (11.0.1):
     - ExpoModulesCore
     - GoogleSignIn (~> 7.0)
@@ -121,7 +63,6 @@ PODS:
     - ExpoModulesCore
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
-  - EXUpdatesInterface (0.10.1)
   - FBLazyVector (0.72.10)
   - FBReactNativeSpec (0.72.10):
     - RCT-Folly (= 2021.07.22.00)
@@ -575,11 +516,10 @@ PODS:
     - React-Core
   - RNIap (12.16.4):
     - React-Core
-  - RNScreens (3.31.1):
-    - RCT-Folly (= 2021.07.22.00)
+  - RNScreens (3.22.1):
     - React-Core
     - React-RCTImage
-  - RNSVG (13.14.0):
+  - RNSVG (13.14.1):
     - React-Core
   - SocketRocket (0.6.1)
   - Yoga (1.14.0)
@@ -593,13 +533,7 @@ DEPENDENCIES:
   - EXFileSystem (from `../node_modules/expo-file-system/ios`)
   - EXFont (from `../node_modules/expo-font/ios`)
   - EXImageLoader (from `../node_modules/expo-image-loader/ios`)
-  - EXJSONUtils (from `../node_modules/expo-json-utils/ios`)
-  - EXManifests (from `../node_modules/expo-manifests/ios`)
   - Expo (from `../node_modules/expo`)
-  - expo-dev-client (from `../node_modules/expo-dev-client/ios`)
-  - expo-dev-launcher (from `../node_modules/expo-dev-launcher`)
-  - expo-dev-menu (from `../node_modules/expo-dev-menu`)
-  - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface/ios`)
   - "ExpoAdapterGoogleSignIn (from `../node_modules/@react-native-google-signin/google-signin/expo/ios`)"
   - ExpoAppleAuthentication (from `../node_modules/expo-apple-authentication/ios`)
   - ExpoBlur (from `../node_modules/expo-blur/ios`)
@@ -616,7 +550,6 @@ DEPENDENCIES:
   - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - EXSplashScreen (from `../node_modules/expo-splash-screen/ios`)
-  - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - FBReactNativeSpec (from `../node_modules/react-native/React/FBReactNativeSpec`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
@@ -694,20 +627,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-font/ios"
   EXImageLoader:
     :path: "../node_modules/expo-image-loader/ios"
-  EXJSONUtils:
-    :path: "../node_modules/expo-json-utils/ios"
-  EXManifests:
-    :path: "../node_modules/expo-manifests/ios"
   Expo:
     :path: "../node_modules/expo"
-  expo-dev-client:
-    :path: "../node_modules/expo-dev-client/ios"
-  expo-dev-launcher:
-    :path: "../node_modules/expo-dev-launcher"
-  expo-dev-menu:
-    :path: "../node_modules/expo-dev-menu"
-  expo-dev-menu-interface:
-    :path: "../node_modules/expo-dev-menu-interface/ios"
   ExpoAdapterGoogleSignIn:
     :path: "../node_modules/@react-native-google-signin/google-signin/expo/ios"
   ExpoAppleAuthentication:
@@ -740,8 +661,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-sharing/ios"
   EXSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
-  EXUpdatesInterface:
-    :path: "../node_modules/expo-updates-interface/ios"
   FBLazyVector:
     :path: "../node_modules/react-native/Libraries/FBLazyVector"
   FBReactNativeSpec:
@@ -847,13 +766,7 @@ SPEC CHECKSUMS:
   EXFileSystem: 1aeed803248e2b62c5cde8b8d8c6cb1525fc40c1
   EXFont: aa39b3f790e2b3188986ac5e8684cf6003c00a18
   EXImageLoader: 2c79db9355756be7494a2257648235ee47dc0f9c
-  EXJSONUtils: 6802be4282d42b97c51682468ddc1026a06f8276
-  EXManifests: bb8592a34f5339c860b6c4bc71ad583d490374fb
   Expo: 7bde63b84d4f6502de1e7963182333f39bedbf94
-  expo-dev-client: 3902515adf9d7a59e63600f16095649bef48378b
-  expo-dev-launcher: 02fc55fccaee6d2a97ee1c739a0e4946090e4b37
-  expo-dev-menu: cc50dfc09a654cb5d74ac3482f0c49ca1268117d
-  expo-dev-menu-interface: 22ea9639725e26dfebcb16ea631ddec660827374
   ExpoAdapterGoogleSignIn: 3a02de846d07a35ed9d505bb45f66592d20c1de0
   ExpoAppleAuthentication: 944b1e3a31b4068fbae09f030323a468a71a2319
   ExpoBlur: 98f8c3ead7693fa429e9e036957ee3527abedd5b
@@ -870,7 +783,6 @@ SPEC CHECKSUMS:
   ExpoSecureStore: 4682182dd6bdbd73dde41e91d0a4e205a96b819f
   ExpoSharing: 2a0c99d8b3b2e99a47196d8dda2b62ccd9829d38
   EXSplashScreen: 84a7d9a965a2203e138528326fc3a511818e3fd1
-  EXUpdatesInterface: 82ed48d417cdcd376c12ca1c2ce390d35500bed6
   FBLazyVector: f91d538f197fa71a7d5b77ec2069d49550c0eb96
   FBReactNativeSpec: b13d1c23d6ed82d6b66aad7a253edf8ba76c4a4c
   fmt: ff9d55029c625d3757ed641535fd4a75fedc7ce9
@@ -920,8 +832,8 @@ SPEC CHECKSUMS:
   RNGestureHandler: 627182485becfd74f122c83f93cce2be20c2e8c8
   RNGoogleSignin: b8f09e3ec56e09497e1e53b0ff66d5a45916c6b1
   RNIap: 65051c94a29a17bd8356bcf16a878821862eecd0
-  RNScreens: 448026fcd1beb88770b0a67a871a3d1bf9cdde0a
-  RNSVG: 4cab00c621b328a4a2fedaaedc15d8822216723e
+  RNScreens: 39db1910d2ea9ae885dcda43086818e9f8b714d0
+  RNSVG: ae50dd253f44447b32d0f5a3657a97859f289891
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
   Yoga: d0003f849d2b5224c072cef6568b540d8bb15cd3
 

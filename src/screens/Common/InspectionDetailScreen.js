@@ -18,55 +18,132 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as SecureStore from 'expo-secure-store';
 import api from '../../api/client';
 import { API_URL } from '../../config/api';
 import colors, { getScoreColor } from '../../theme/colors';
 
 const { width } = Dimensions.get('window');
 
-// Helper function to fix image URLs (convert production URLs to local when using local API)
-const fixImageUrl = (url) => {
+// Sync version for logging only (no auth token)
+const fixImageUrlSync = (url) => {
   if (!url) return url;
-
-  // Ensure it's a string and trim whitespace
   const originalUrl = String(url).trim();
   url = originalUrl;
-
-  // Check if it's already a full URL
   const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
-
   let fixedUrl;
 
   if (isFullUrl) {
-    // Backend returned a full URL
-    // If it's pointing to production but we're using local API, replace it
     const productionUrl = 'https://roomify-server-production.up.railway.app';
     const baseUrl = API_URL.replace('/api', '');
-
-    // Only replace if URL contains production domain AND we're using local API
     if (url.includes(productionUrl) && !baseUrl.includes('roomify-server-production')) {
-      // Extract the path from the production URL and use local base
       const path = url.replace(productionUrl, '');
       fixedUrl = baseUrl + path;
     } else {
-      // Otherwise use the full URL as-is
       fixedUrl = url;
     }
   } else {
-    // It's a relative path (starts with /), construct full URL
+    const baseUrl = API_URL.replace('/api', '');
+    const path = url.startsWith('/') ? url : '/' + url;
+    fixedUrl = baseUrl + path;
+  }
+  return fixedUrl;
+};
+
+// Async version that appends auth token for authenticated image access
+const fixImageUrl = async (url) => {
+  if (!url) return url;
+
+  const originalUrl = String(url).trim();
+  url = originalUrl;
+  const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
+  let fixedUrl;
+
+  if (isFullUrl) {
+    const productionDomain = 'roomify-server-production.up.railway.app';
+    const baseUrl = API_URL.replace('/api', '');
+    const isProductionUrl = url.includes(productionDomain);
+
+    if (isProductionUrl) {
+      if (!baseUrl.includes('roomify-server-production')) {
+        const path = url.replace(`https://${productionDomain}`, '').replace(`http://${productionDomain}`, '');
+        fixedUrl = baseUrl + path;
+      } else {
+        fixedUrl = url;
+      }
+    } else {
+      fixedUrl = url;
+    }
+  } else {
     const baseUrl = API_URL.replace('/api', '');
     const path = url.startsWith('/') ? url : '/' + url;
     fixedUrl = baseUrl + path;
   }
 
-  // Print URL transformation
-  console.log('🖼️  Image URL:', {
-    original: originalUrl,
-    fixed: fixedUrl,
-    changed: originalUrl !== fixedUrl
-  });
+  // Append auth token for authenticated image access
+  try {
+    const token = await SecureStore.getItemAsync('accessToken');
+    if (token && fixedUrl) {
+      const separator = fixedUrl.includes('?') ? '&' : '?';
+      fixedUrl = `${fixedUrl}${separator}token=${encodeURIComponent(token)}`;
+    }
+  } catch (error) {
+    console.log('Could not append auth token to image URL:', error);
+  }
+
+  if (originalUrl !== fixedUrl) {
+    console.log('🖼️  Image URL fixed:', {
+      original: originalUrl,
+      fixed: fixedUrl.replace(/token=[^&]+/, 'token=***'),
+    });
+  }
 
   return fixedUrl;
+};
+
+// Component to handle authenticated image loading
+const AuthenticatedImage = ({ media, index, style }) => {
+  const [imageError, setImageError] = React.useState(false);
+  const [imageUrl, setImageUrl] = React.useState(null);
+
+  React.useEffect(() => {
+    let mounted = true;
+    const loadUrl = async () => {
+      try {
+        const url = await fixImageUrl(media.url);
+        if (mounted) setImageUrl(url);
+      } catch (e) {
+        if (mounted) setImageUrl(fixImageUrlSync(media.url));
+      }
+    };
+    loadUrl();
+    return () => { mounted = false; };
+  }, [media.url]);
+
+  if (imageError) {
+    return (
+      <View style={[style, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F7' }]}>
+        <Ionicons name="image-outline" size={24} color={colors.text.tertiary} />
+      </View>
+    );
+  }
+
+  if (!imageUrl) {
+    return (
+      <View style={[style, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F7' }]}>
+        <ActivityIndicator size="small" color={colors.primary.main} />
+      </View>
+    );
+  }
+
+  return (
+    <Image
+      source={{ uri: imageUrl }}
+      style={style}
+      resizeMode="cover"
+      onError={() => setImageError(true)}
+    />
+  );
 };
 
 export default function InspectionDetailScreen({ route, navigation }) {
@@ -147,7 +224,7 @@ export default function InspectionDetailScreen({ route, navigation }) {
           console.log(`       Room ID: ${media.room_id || 'N/A'}`);
           console.log(`       Room Name: ${media.room_name || 'N/A'}`);
           if (media.url) {
-            const fixed = fixImageUrl(media.url);
+            const fixed = fixImageUrlSync(media.url);
             console.log(`       Fixed URL: ${fixed}`);
           }
           console.log('   ---');
@@ -947,13 +1024,12 @@ export default function InspectionDetailScreen({ route, navigation }) {
                 {expandedSections.photos ? (
                   <View style={styles.photosGrid}>
                     {roomMedia.map((media, index) => {
-                      const imageUrl = fixImageUrl(media.url);
                       return (
                         <View key={media.id || index} style={styles.photoWrapper}>
-                          <Image
-                            source={{ uri: imageUrl }}
+                          <AuthenticatedImage
+                            media={media}
+                            index={index}
                             style={styles.photo}
-                            resizeMode="cover"
                           />
                           {media.room_name && (
                             <View style={styles.roomLabel}>

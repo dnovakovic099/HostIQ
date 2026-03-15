@@ -25,7 +25,6 @@
     "expo-blur": "~12.4.1",
     "expo-camera": "~13.4.4",
     "expo-crypto": "~12.4.1",
-    "expo-dev-client": "~2.4.13",
     "expo-document-picker": "~11.5.4",
     "expo-file-system": "~15.4.5",
     "expo-image-manipulator": "~11.3.0",
@@ -52,7 +51,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "@react-native-community/cli": "^20.0.2",
+    "@react-native-community/cli": "11.3.10",
     "patch-package": "^8.0.1"
   },
   "private": true
