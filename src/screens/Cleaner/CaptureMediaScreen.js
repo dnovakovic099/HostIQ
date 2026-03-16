@@ -177,25 +177,37 @@ export default function CaptureMediaScreen({ route, navigation }) {
     fetchValuableItems();
   }, [assignment?.unit_id, unitId]);
 
+  // Auth token for image headers
+  const [authToken, setAuthToken] = React.useState(null);
+
+  // Fetch auth token on mount
+  React.useEffect(() => {
+    SecureStore.getItemAsync('accessToken').then(token => {
+      if (token) setAuthToken(token);
+    }).catch(() => {});
+  }, []);
+
   // Resolve reference photo URLs with auth token for valuable items
   React.useEffect(() => {
     if (valuableItems.length === 0) return;
 
     const resolveUrls = async () => {
       const token = await SecureStore.getItemAsync('accessToken').catch(() => null);
+      if (token && !authToken) setAuthToken(token);
       const resolved = {};
 
       for (const item of valuableItems) {
         if (!item.reference_photo) continue;
 
         let url = String(item.reference_photo).trim();
+        console.log(`🖼️ Resolving valuable item "${item.name}" reference_photo:`, url);
         const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
 
         if (isFullUrl) {
-          const productionUrl = 'https://roomify-server-production.up.railway.app';
+          const productionDomain = 'roomify-server-production.up.railway.app';
           const baseUrl = API_URL.replace('/api', '');
-          if (url.includes(productionUrl) && !baseUrl.includes('roomify-server-production')) {
-            const path = url.replace(productionUrl, '');
+          if (url.includes(productionDomain) && !baseUrl.includes('roomify-server-production')) {
+            const path = url.replace(`https://${productionDomain}`, '').replace(`http://${productionDomain}`, '');
             url = baseUrl + path;
           }
         } else {
@@ -204,15 +216,22 @@ export default function CaptureMediaScreen({ route, navigation }) {
           url = baseUrl + path;
         }
 
-        // Append auth token
+        // Ensure HTTPS for production URLs (Android blocks cleartext HTTP in release builds)
+        if (url && url.includes('roomify-server-production.up.railway.app')) {
+          url = url.replace('http://', 'https://');
+        }
+
+        // Append auth token as query param (fallback for servers that support it)
         if (token) {
           const separator = url.includes('?') ? '&' : '?';
           url = `${url}${separator}token=${encodeURIComponent(token)}`;
         }
 
+        console.log(`🖼️ Resolved URL for "${item.name}":`, url.replace(/token=[^&]+/, 'token=***'));
         resolved[item.id] = url;
       }
 
+      console.log(`🖼️ Resolved ${Object.keys(resolved).length} valuable item reference photo URLs`);
       setResolvedRefPhotoUrls(resolved);
     };
 
@@ -266,42 +285,48 @@ export default function CaptureMediaScreen({ route, navigation }) {
   };
 
   const ensureInspection = async () => {
+    // Helper to create a new inspection with available unit_id
+    const createNewInspection = async (theUnitId) => {
+      if (!theUnitId) {
+        Alert.alert(
+          'Cannot Start Inspection',
+          'Missing unit information. Please go back and try again.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+        return null;
+      }
+      try {
+        const body = { unit_id: theUnitId };
+        if (assignment?.id) body.assignment_id = assignment.id;
+        const response = await api.post('/cleaner/inspections', body);
+        setInspection(response.data);
+        createInspection(response.data);
+        console.log('✅ Created new inspection:', response.data.id);
+        return response.data;
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to create inspection';
+        Alert.alert(
+          'Inspection Not Ready',
+          errorMessage,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+        return null;
+      }
+    };
+
     // If we have an inspection ID, check its status first
     if (inspectionId) {
       try {
         const inspectionResponse = await api.get(`/cleaner/inspections/${inspectionId}`);
         const inspectionData = inspectionResponse.data;
-        
+
         // If inspection is FAILED or REJECTED, we need to create a new one
         if (inspectionData.status === 'FAILED' || inspectionData.status === 'REJECTED') {
           console.log('⚠️ Inspection is FAILED/REJECTED, creating new inspection...');
-          
-          // Get unit_id from inspection or assignment
           const unitIdForNew = inspectionData.unit_id || assignment?.unit_id || unitId;
-          if (!unitIdForNew) {
-            throw new Error('Cannot create new inspection: missing unit_id');
-          }
-          
-          try {
-            const response = await api.post('/cleaner/inspections', {
-              unit_id: unitIdForNew,
-              assignment_id: assignment?.id,
-            });
-            setInspection(response.data);
-            createInspection(response.data);
-            console.log('✅ Created new inspection:', response.data.id);
-            return response.data;
-          } catch (createError) {
-            const errorMessage = createError.response?.data?.message || createError.response?.data?.error || 'Failed to create inspection';
-            Alert.alert(
-              'Inspection Not Ready',
-              errorMessage,
-              [{ text: 'OK', onPress: () => navigation.goBack() }]
-            );
-            return null;
-          }
+          return await createNewInspection(unitIdForNew);
         }
-        
+
         // Inspection is valid, use it
         setInspection(inspectionData);
         return inspectionData;
@@ -317,51 +342,13 @@ export default function CaptureMediaScreen({ route, navigation }) {
           return null;
         }
         // Fall through to create new inspection for other errors
+        console.log('⚠️ Could not fetch inspection, will create a new one...');
       }
     }
 
-    // Create new inspection if we don't have one or if previous check failed
-    if (assignment) {
-      try {
-        const response = await api.post('/cleaner/inspections', {
-          unit_id: assignment.unit_id,
-          assignment_id: assignment.id,
-        });
-        setInspection(response.data);
-        createInspection(response.data);
-        return response.data;
-      } catch (error) {
-        const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to create inspection';
-        Alert.alert(
-          'Cannot Start Inspection',
-          errorMessage,
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-        throw error;
-      }
-    }
-    
-    // If we have unitId but no assignment, create inspection with unitId
-    if (unitId && !inspection) {
-      try {
-        const response = await api.post('/cleaner/inspections', {
-          unit_id: unitId,
-        });
-        setInspection(response.data);
-        createInspection(response.data);
-        return response.data;
-      } catch (error) {
-        const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to create inspection';
-        Alert.alert(
-          'Cannot Start Inspection',
-          errorMessage,
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-        throw error;
-      }
-    }
-    
-    return inspection;
+    // Create new inspection using available unit_id
+    const theUnitId = assignment?.unit_id || unitId;
+    return await createNewInspection(theUnitId);
   };
 
   const resizeImage = async (uri) => {
@@ -499,16 +486,24 @@ export default function CaptureMediaScreen({ route, navigation }) {
       
       const currentInspection = await ensureInspection();
       if (!currentInspection) {
-        throw new Error('Failed to create inspection');
+        // ensureInspection already showed an alert to the user
+        return;
       }
 
       console.log(`📤 Starting bulk upload of ${photos.length} photos to inspection ${currentInspection.id}...`);
       console.log(`📤 Photos to upload:`, photos.map(p => ({ roomId: p.roomId, roomName: p.roomName })));
       setUploadProgress({ current: 0, total: photos.length });
 
-      // Upload all photos with room assignments
+      // Only upload new photos (skip existing server-URL photos that can't be re-uploaded via FormData)
+      const photosToUpload = photos.filter(p => !p.isExisting);
+      if (photosToUpload.length === 0) {
+        Alert.alert('No New Photos', 'Please take new photos before submitting.');
+        return;
+      }
+
       let uploadedCount = 0;
-      for (const photo of photos) {
+      setUploadProgress({ current: 0, total: photosToUpload.length });
+      for (const photo of photosToUpload) {
         const formData = new FormData();
         formData.append('files', {
           uri: photo.uri,
@@ -523,8 +518,8 @@ export default function CaptureMediaScreen({ route, navigation }) {
         });
 
         uploadedCount++;
-        setUploadProgress({ current: uploadedCount, total: photos.length });
-        console.log(`✅ Uploaded ${uploadedCount}/${photos.length}`);
+        setUploadProgress({ current: uploadedCount, total: photosToUpload.length });
+        console.log(`✅ Uploaded ${uploadedCount}/${photosToUpload.length}`);
       }
 
       console.log('🎉 All photos uploaded successfully!');
@@ -944,7 +939,10 @@ export default function CaptureMediaScreen({ route, navigation }) {
                         activeOpacity={0.7}
                       >
                         <Image
-                          source={{ uri: referencePhotoUrl }}
+                          source={{
+                            uri: referencePhotoUrl,
+                            headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+                          }}
                           style={styles.referencePhotoImage}
                           resizeMode="cover"
                           onError={(error) => {
@@ -1098,9 +1096,12 @@ export default function CaptureMediaScreen({ route, navigation }) {
             </View>
             <View style={styles.photoViewContainer}>
               {selectedPhotoForView && (
-                <Image 
-                  source={{ uri: selectedPhotoForView.uri }} 
-                  style={styles.photoViewImage} 
+                <Image
+                  source={{
+                    uri: selectedPhotoForView.uri,
+                    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+                  }}
+                  style={styles.photoViewImage}
                   resizeMode="contain"
                 />
               )}

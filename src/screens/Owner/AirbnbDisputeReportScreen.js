@@ -111,7 +111,12 @@ const fixImageUrlSync = (url) => {
     const path = url.startsWith('/') ? url : '/' + url;
     fixedUrl = baseUrl + path;
   }
-  
+
+  // Ensure HTTPS for production URLs (Android blocks cleartext HTTP in release builds)
+  if (fixedUrl && fixedUrl.includes('roomify-server-production.up.railway.app')) {
+    fixedUrl = fixedUrl.replace('http://', 'https://');
+  }
+
   return fixedUrl;
 };
 
@@ -157,7 +162,12 @@ const fixImageUrl = async (url) => {
     const path = url.startsWith('/') ? url : '/' + url;
     fixedUrl = baseUrl + path;
   }
-  
+
+  // Ensure HTTPS for production URLs (Android blocks cleartext HTTP in release builds)
+  if (fixedUrl && fixedUrl.includes('roomify-server-production.up.railway.app')) {
+    fixedUrl = fixedUrl.replace('http://', 'https://');
+  }
+
   // Try to append auth token as query parameter for image access
   try {
     const token = await SecureStore.getItemAsync('accessToken');
@@ -184,6 +194,7 @@ const fixImageUrl = async (url) => {
 const AuthenticatedImage = ({ media, index, inspection, onError }) => {
   const [imageError, setImageError] = useState(false);
   const [imageUrl, setImageUrl] = useState(null);
+  const [token, setToken] = useState(null);
   const imageKey = media.id || index;
 
   // Use async fixImageUrl to append auth token for authenticated image access
@@ -191,6 +202,8 @@ const AuthenticatedImage = ({ media, index, inspection, onError }) => {
     let mounted = true;
     const loadUrl = async () => {
       try {
+        const authToken = await SecureStore.getItemAsync('accessToken').catch(() => null);
+        if (mounted && authToken) setToken(authToken);
         const url = await fixImageUrl(media.url);
         if (mounted) setImageUrl(url);
       } catch (e) {
@@ -221,7 +234,10 @@ const AuthenticatedImage = ({ media, index, inspection, onError }) => {
 
   return (
     <Image
-      source={{ uri: imageUrl }}
+      source={{
+        uri: imageUrl,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }}
       style={styles.photo}
       resizeMode="cover"
       onLoad={() => {

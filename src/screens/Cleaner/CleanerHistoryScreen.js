@@ -66,14 +66,14 @@ export default function CleanerHistoryScreen({ navigation }) {
   );
 
   useEffect(() => {
-    if (!loading) {
+    if (!loading && filteredInspections.length > 0) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }).start();
     }
-  }, [loading]);
+  }, [loading, filteredInspections]);
 
   useEffect(() => {
     filterInspections();
@@ -165,7 +165,6 @@ export default function CleanerHistoryScreen({ navigation }) {
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fadeAnim.setValue(0);
     fetchInspections();
   };
 
@@ -379,7 +378,7 @@ export default function CleanerHistoryScreen({ navigation }) {
         >
           {/* Decorative elements */}
           <View style={styles.decorativeCircle1}>
-            <Ionicons name="sparkles" size={100} color={colors.decorative?.icon1 || 'rgba(255,255,255,0.06)'} />
+            <Ionicons name="star" size={100} color={colors.decorative?.icon1 || 'rgba(255,255,255,0.06)'} />
           </View>
           <View style={styles.decorativeCircle2}>
             <Ionicons name="checkmark-done" size={70} color={colors.decorative?.icon1 || 'rgba(255,255,255,0.04)'} />

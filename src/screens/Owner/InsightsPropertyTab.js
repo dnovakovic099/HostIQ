@@ -145,7 +145,7 @@ export default function InsightsPropertyTab({ navigation }) {
 
   const getIssueIcon = (category) => {
     switch (category?.toLowerCase()) {
-      case 'cleanliness': return 'sparkles';
+      case 'cleanliness': return 'star';
       case 'maintenance': return 'build';
       case 'amenities': return 'wifi';
       case 'communication': return 'chatbubbles';

@@ -48,6 +48,10 @@ const fixImageUrlSync = (url) => {
       const path = url.replace(productionUrl, '');
       return baseUrl + path;
     }
+    // Ensure HTTPS for production URLs
+    if (url.includes('roomify-server-production.up.railway.app')) {
+      return url.replace('http://', 'https://');
+    }
     return url;
   } else {
     const baseUrl = API_URL.replace('/api', '');
@@ -60,6 +64,11 @@ const fixImageUrlSync = (url) => {
 const fixImageUrl = async (url) => {
   if (!url) return url;
   let fixedUrl = fixImageUrlSync(url);
+
+  // Ensure HTTPS for production URLs (Android blocks cleartext HTTP in release builds)
+  if (fixedUrl && fixedUrl.includes('roomify-server-production.up.railway.app')) {
+    fixedUrl = fixedUrl.replace('http://', 'https://');
+  }
 
   try {
     const token = await SecureStore.getItemAsync('accessToken');
@@ -78,11 +87,14 @@ const fixImageUrl = async (url) => {
 const AuthenticatedImage = ({ photo, style, children }) => {
   const [imageError, setImageError] = React.useState(false);
   const [imageUrl, setImageUrl] = React.useState(null);
+  const [token, setToken] = React.useState(null);
 
   React.useEffect(() => {
     let mounted = true;
     const loadUrl = async () => {
       try {
+        const authToken = await SecureStore.getItemAsync('accessToken').catch(() => null);
+        if (mounted && authToken) setToken(authToken);
         const url = await fixImageUrl(photo.url);
         if (mounted) setImageUrl(url);
       } catch (e) {
@@ -114,7 +126,10 @@ const AuthenticatedImage = ({ photo, style, children }) => {
   return (
     <>
       <Image
-        source={{ uri: imageUrl }}
+        source={{
+          uri: imageUrl,
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }}
         style={style}
         resizeMode="cover"
         onError={() => setImageError(true)}
@@ -575,7 +590,7 @@ export default function CleaningReportScreen({ route, navigation }) {
         {report.ai_summary && (
           <View style={styles.card}>
             <View style={styles.cardLabelRow}>
-              <Ionicons name="sparkles" size={16} color={colors.primary.main} />
+              <Ionicons name="star" size={16} color={colors.primary.main} />
               <Text style={styles.cardLabel}>AI ANALYSIS</Text>
             </View>
             <Text style={styles.summaryText}>{report.ai_summary}</Text>

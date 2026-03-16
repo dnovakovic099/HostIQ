@@ -47,6 +47,12 @@ const fixImageUrlSync = (url) => {
     const path = url.startsWith('/') ? url : '/' + url;
     fixedUrl = baseUrl + path;
   }
+
+  // Ensure HTTPS for production URLs (Android blocks cleartext HTTP in release builds)
+  if (fixedUrl && fixedUrl.includes('roomify-server-production.up.railway.app')) {
+    fixedUrl = fixedUrl.replace('http://', 'https://');
+  }
+
   return fixedUrl;
 };
 
@@ -80,6 +86,11 @@ const fixImageUrl = async (url) => {
     fixedUrl = baseUrl + path;
   }
 
+  // Ensure HTTPS for production URLs (Android blocks cleartext HTTP in release builds)
+  if (fixedUrl && fixedUrl.includes('roomify-server-production.up.railway.app')) {
+    fixedUrl = fixedUrl.replace('http://', 'https://');
+  }
+
   // Append auth token for authenticated image access
   try {
     const token = await SecureStore.getItemAsync('accessToken');
@@ -105,11 +116,14 @@ const fixImageUrl = async (url) => {
 const AuthenticatedImage = ({ media, index, style }) => {
   const [imageError, setImageError] = React.useState(false);
   const [imageUrl, setImageUrl] = React.useState(null);
+  const [token, setToken] = React.useState(null);
 
   React.useEffect(() => {
     let mounted = true;
     const loadUrl = async () => {
       try {
+        const authToken = await SecureStore.getItemAsync('accessToken').catch(() => null);
+        if (mounted && authToken) setToken(authToken);
         const url = await fixImageUrl(media.url);
         if (mounted) setImageUrl(url);
       } catch (e) {
@@ -138,7 +152,10 @@ const AuthenticatedImage = ({ media, index, style }) => {
 
   return (
     <Image
-      source={{ uri: imageUrl }}
+      source={{
+        uri: imageUrl,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }}
       style={style}
       resizeMode="cover"
       onError={() => setImageError(true)}
@@ -281,17 +298,20 @@ export default function InspectionDetailScreen({ route, navigation }) {
     const isRejected = inspection?.status === 'REJECTED';
     const failedRoomIds = failed_room_ids || [];
 
-    // Navigate to CaptureMediaScreen with inspection data and existing photos
+    // Always start fresh when re-inspecting - user must take new photos
+    // Previous photos should not carry over to the re-inspection
     navigation.navigate('CaptureMedia', {
       inspectionId: inspectionId,
+      propertyId: unit?.property?.id,
       propertyName: unit?.property?.name || 'Property',
       unitName: unit?.name || 'Unit',
+      unitId: unit?.id || inspection?.unit_id,
       rooms: rooms,
       isRejected: isRejected,
       failedRoomIds: failedRoomIds,
       rejectionReason: inspection?.rejection_reason || '',
-      existingMedia: media || [],
-      isEditing: true
+      existingMedia: [],
+      isEditing: false
     });
   };
 
@@ -322,8 +342,10 @@ export default function InspectionDetailScreen({ route, navigation }) {
     // Navigate to CaptureMediaScreen with inspection data
     navigation.navigate('CaptureMedia', {
       inspectionId: inspectionId,
+      propertyId: unit?.property?.id,
       propertyName: unit?.property?.name || 'Property',
       unitName: unit?.name || 'Unit',
+      unitId: unit?.id || inspection?.unit_id,
       rooms: rooms,
       isRejected: isRejected,
       failedRoomIds: failedRoomIds,

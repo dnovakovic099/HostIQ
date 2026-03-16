@@ -20,12 +20,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import * as SecureStore from 'expo-secure-store';
 import api from '../../api/client';
 import { API_URL } from '../../config/api';
 import colors from '../../theme/colors';
 
-// Helper function to fix image URLs (convert relative paths to full URLs)
-const fixImageUrl = (url) => {
+// Sync helper to fix image URLs (no auth token - used for non-display purposes)
+const fixImageUrlSync = (url) => {
   if (!url) return url;
 
   const originalUrl = String(url).trim();
@@ -49,6 +50,29 @@ const fixImageUrl = (url) => {
     const baseUrl = API_URL.replace('/api', '');
     const path = url.startsWith('/') ? url : '/' + url;
     fixedUrl = baseUrl + path;
+  }
+
+  // Ensure HTTPS for production URLs (Android blocks cleartext HTTP in release builds)
+  if (fixedUrl && fixedUrl.includes('roomify-server-production.up.railway.app')) {
+    fixedUrl = fixedUrl.replace('http://', 'https://');
+  }
+
+  return fixedUrl;
+};
+
+// Async version that appends auth token for authenticated image access
+const fixImageUrl = async (url) => {
+  const fixedUrl = fixImageUrlSync(url);
+  if (!fixedUrl) return fixedUrl;
+
+  try {
+    const token = await SecureStore.getItemAsync('accessToken');
+    if (token) {
+      const separator = fixedUrl.includes('?') ? '&' : '?';
+      return `${fixedUrl}${separator}token=${encodeURIComponent(token)}`;
+    }
+  } catch (error) {
+    console.log('Could not append auth token to image URL:', error);
   }
 
   return fixedUrl;
@@ -95,12 +119,39 @@ export default function ValuableItemsScreen({ route, navigation }) {
   // Photo viewer
   const [viewingPhoto, setViewingPhoto] = useState(null);
 
+  // Resolved image URLs with auth tokens
+  const [resolvedImageUrls, setResolvedImageUrls] = useState({});
+  const [authToken, setAuthToken] = useState(null);
+
+  // Fetch auth token on mount
+  useEffect(() => {
+    SecureStore.getItemAsync('accessToken').then(token => {
+      if (token) setAuthToken(token);
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
     fetchItems();
   }, [roomId, roomName, propertyId, isAllRoomsMode]);
+
+  // Resolve image URLs with auth token whenever items change
+  useEffect(() => {
+    const resolveUrls = async () => {
+      const resolved = {};
+      for (const item of items) {
+        if (item.reference_photo) {
+          resolved[item.id] = await fixImageUrl(item.reference_photo);
+        }
+      }
+      setResolvedImageUrls(resolved);
+    };
+    if (items.length > 0) {
+      resolveUrls();
+    }
+  }, [items]);
 
   const fetchItems = async () => {
     try {
@@ -175,7 +226,7 @@ export default function ValuableItemsScreen({ route, navigation }) {
     setEditingItem(item);
     setItemName(item.name);
     setItemDescription(item.description || '');
-    setReferencePhoto(item.reference_photo ? fixImageUrl(item.reference_photo) : null);
+    setReferencePhoto(item.reference_photo ? (resolvedImageUrls[item.id] || fixImageUrlSync(item.reference_photo)) : null);
     setModalVisible(true);
   };
 
@@ -403,12 +454,15 @@ export default function ValuableItemsScreen({ route, navigation }) {
               <View key={item.id} style={styles.itemCard}>
                 <TouchableOpacity
                   style={styles.itemPhotoContainer}
-                  onPress={() => item.reference_photo && setViewingPhoto(fixImageUrl(item.reference_photo))}
+                  onPress={() => resolvedImageUrls[item.id] && setViewingPhoto(resolvedImageUrls[item.id])}
                   activeOpacity={0.7}
                 >
-                  {item.reference_photo ? (
+                  {resolvedImageUrls[item.id] ? (
                     <Image
-                      source={{ uri: fixImageUrl(item.reference_photo) }}
+                      source={{
+                        uri: resolvedImageUrls[item.id],
+                        headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+                      }}
                       style={styles.itemPhoto}
                     />
                   ) : (
@@ -608,7 +662,10 @@ export default function ValuableItemsScreen({ route, navigation }) {
           </TouchableOpacity>
           {viewingPhoto && (
             <Image
-              source={{ uri: viewingPhoto }}
+              source={{
+                uri: viewingPhoto,
+                headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+              }}
               style={styles.photoViewerImage}
               resizeMode="contain"
             />
