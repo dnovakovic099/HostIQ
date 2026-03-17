@@ -181,10 +181,11 @@ export const useAuthStore = create((set, get) => ({
       }
 
       // Verify configuration exists - this is critical to prevent crashes
-      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
+      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+        process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
         process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
       if (!webClientId || webClientId === 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') {
-        throw new Error('Google Sign-In is not configured. Please set EXPO_PUBLIC_GOOGLE_CLIENT_ID in your environment variables or set DIRECT_CLIENT_ID in src/config/googleAuth.js');
+        throw new Error('Google Sign-In is not configured. Please set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your environment variables or set DIRECT_CLIENT_ID in src/config/googleAuth.js');
       }
 
       console.log('🔵 Starting Google Sign-In...');

@@ -7,7 +7,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 // DIRECT_CLIENT_ID fallback - Set this directly in the file if env vars are not available
 // Format: 'YOUR_CLIENT_ID.apps.googleusercontent.com'
-const DIRECT_CLIENT_ID = null; // Set this if EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is not available
+const DIRECT_CLIENT_ID = '1084030815170-7ksf4de3pgi2e1td99fcne7hoes3qnr3.apps.googleusercontent.com'; // Web Application client ID (has client secret)
 
 // Get Web Client ID (the one with a secret in Google Cloud Console)
 // This is used for backend authentication
