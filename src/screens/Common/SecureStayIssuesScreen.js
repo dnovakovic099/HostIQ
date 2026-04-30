@@ -18,6 +18,7 @@ import {
   getAssignmentIssues,
   refreshAssignmentIssues,
 } from '../../api/securestay';
+import { renderableText, formatStars } from '../../api/securestayFormat';
 
 /**
  * Full SecureStay issues list for one assignment. Reachable from
@@ -149,11 +150,19 @@ function SummaryCard({ summary }) {
       {summary.recurring_categories?.length > 0 ? (
         <View style={styles.chipRow}>
           <Text style={styles.chipLabel}>Recurring categories:</Text>
-          {summary.recurring_categories.map((c) => (
-            <View key={c.category} style={styles.chip}>
-              <Text style={styles.chipText}>{c.category} · {c.count}</Text>
-            </View>
-          ))}
+          {summary.recurring_categories.map((c, idx) => {
+            const label = renderableText(c, ['category', 'name', 'label']);
+            if (!label) return null;
+            const count = typeof c?.count === 'number' ? c.count : null;
+            return (
+              <View key={`${label}-${idx}`} style={styles.chip}>
+                <Text style={styles.chipText}>
+                  {label}
+                  {count != null ? ` · ${count}` : ''}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       ) : null}
     </View>
@@ -174,27 +183,45 @@ function CleanerReportCard({ report }) {
       {report.headline ? <Text style={styles.reportSubhead}>{report.headline}</Text> : null}
       {watchFor.length > 0 ? (
         <View style={{ marginTop: spacing.sm }}>
-          {watchFor.slice(0, 8).map((line, i) => (
-            <View key={`w-${i}`} style={styles.bulletRow}>
-              <Text style={styles.bulletDot}>•</Text>
-              <Text style={styles.bulletText}>{line}</Text>
-            </View>
-          ))}
+          {watchFor.slice(0, 8).map((line, i) => {
+            const text = renderableText(line, ['text', 'message', 'title']);
+            if (!text) return null;
+            return (
+              <View key={`w-${i}`} style={styles.bulletRow}>
+                <Text style={styles.bulletDot}>•</Text>
+                <Text style={styles.bulletText}>{text}</Text>
+              </View>
+            );
+          })}
         </View>
       ) : null}
       {quotes.length > 0 ? (
         <View style={{ marginTop: spacing.md }}>
           <Text style={styles.quotesLabel}>Recent guest complaints</Text>
-          {quotes.slice(0, 3).map((q, i) => (
-            <View key={`q-${i}`} style={styles.quoteBox}>
-              <Text style={styles.quoteText} numberOfLines={3}>
-                "{q.quote || q.text || q}"
-              </Text>
-              {q.rating != null ? (
-                <Text style={styles.quoteMeta}>★ {q.rating}/10{q.guest_name ? ` · ${q.guest_name}` : ''}</Text>
-              ) : null}
-            </View>
-          ))}
+          {quotes.slice(0, 3).map((q, i) => {
+            const quote = renderableText(q, [
+              'public_quote',
+              'public_review',
+              'quote',
+              'private_quote',
+              'text',
+              'message',
+            ]);
+            if (!quote) return null;
+            return (
+              <View key={`q-${i}`} style={styles.quoteBox}>
+                <Text style={styles.quoteText} numberOfLines={3}>
+                  "{quote}"
+                </Text>
+                {typeof q?.rating === 'number' ? (
+                  <Text style={styles.quoteMeta}>
+                    {formatStars(q.rating)}
+                    {q.guest_name ? ` · ${q.guest_name}` : ''}
+                  </Text>
+                ) : null}
+              </View>
+            );
+          })}
         </View>
       ) : null}
     </View>

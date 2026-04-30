@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,17 +18,28 @@ import {
   getPreCleaningBrief,
   acknowledgePreCleaningBrief,
 } from '../../api/securestay';
+import {
+  renderableText,
+  formatStars,
+  LOW_RATING_THRESHOLD,
+} from '../../api/securestayFormat';
 import colors from '../../theme/colors';
 
 /**
- * Required pre-cleaning brief screen. Loads the SecureStay-derived
- * brief for the inspection's listing (recent issues, last guest,
- * recurring patterns, watch-for items) and forces the cleaner to
- * acknowledge before proceeding to media capture.
+ * Pre-Cleaning Brief — modern, scannable summary of what a cleaner
+ * needs to know before starting an inspection.
  *
- * Routed to instead of CaptureMedia. On acknowledge (or when no
- * brief is available), forwards to CaptureMedia with the same
- * route params via navigation.replace().
+ * Information hierarchy (top → bottom):
+ *   1. Header w/ property name (gradient).
+ *   2. Stats strip overlapping header (Open / Recurring / Last rating).
+ *   3. Priority banner (auto-generated from severity signals).
+ *   4. "What to watch for" — synthesized scannable cards (priority).
+ *   5. Last guest snapshot.
+ *   6. Recurring patterns (chip cloud).
+ *   7. Open issues.
+ *   8. Recent issues.
+ *   9. Recent guest complaints (low-rated quotes).
+ *  10. Counts footer + sticky acknowledge CTA.
  *
  * Route params:
  *   inspectionId: string  (required)
@@ -43,6 +57,8 @@ export default function PreCleaningBriefScreen({ route, navigation }) {
   const [state, setState] = useState({ loading: true, error: null, data: null });
   const [acknowledging, setAcknowledging] = useState(false);
   const proceededRef = useRef(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
 
   const proceed = (replace = true) => {
     if (proceededRef.current) return;
@@ -62,19 +78,29 @@ export default function PreCleaningBriefScreen({ route, navigation }) {
         const data = await getPreCleaningBrief(inspectionId);
         if (!alive) return;
         if (!data?.available) {
-          // No SS link or no integration — skip silently.
           proceed();
           return;
         }
         if (data.acknowledged_at) {
-          // Already acknowledged previously (refresh case).
           proceed();
           return;
         }
         setState({ loading: false, error: null, data });
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 360,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 360,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+        ]).start();
       } catch (err) {
         console.warn('[PreCleaningBrief] load failed:', err.message);
-        // On error, don't block the cleaner.
         proceed();
       }
     })();
@@ -112,186 +138,586 @@ export default function PreCleaningBriefScreen({ route, navigation }) {
     return null;
   }
 
-  const { listing, headline, last_guest, recurring_categories, open_issues, recent_issues, watch_for, low_rated_quotes, counts } = brief;
+  const {
+    listing,
+    headline,
+    last_guest,
+    recurring_categories = [],
+    open_issues = [],
+    recent_issues = [],
+    watch_for = [],
+    low_rated_quotes = [],
+    counts = {},
+  } = brief;
 
   return (
     <View style={styles.container}>
+      {/* Gradient header */}
       <LinearGradient
         colors={colors.gradients.dashboardHeader}
         locations={colors.gradients.dashboardHeaderLocations}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.header, { paddingTop: insets.top + 12 }]}
+        style={[styles.header, { paddingTop: insets.top + 4 }]}
       >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-        >
-          <Ionicons name="chevron-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <View style={styles.headerIconWrap}>
-            <Ionicons name="shield-checkmark" size={20} color="#fff" />
+        <View style={styles.headerTopRow}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backBtn}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="chevron-back" size={20} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.headerBadge}>
+            <Ionicons name="shield-checkmark" size={11} color="#fff" />
+            <Text style={styles.headerBadgeText}>Pre-Cleaning Brief</Text>
           </View>
-          <Text style={styles.headerTitle}>Pre-Cleaning Brief</Text>
-          <Text style={styles.headerSubtitle} numberOfLines={1}>
+          <View style={{ width: 28 }} />
+        </View>
+
+        <View style={styles.headerBody}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
             {listing?.name || 'Property'}
           </Text>
+          {listing?.address ? (
+            <View style={styles.headerAddressRow}>
+              <Ionicons name="location-outline" size={11} color="rgba(255,255,255,0.78)" />
+              <Text style={styles.headerAddress} numberOfLines={1}>
+                {listing.address}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </LinearGradient>
 
-      <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 140 }]}
-        showsVerticalScrollIndicator={false}
+      <Animated.View
+        style={[
+          { flex: 1 },
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
       >
-        {/* Headline card */}
-        <View style={styles.headlineCard}>
-          <Ionicons name="alert-circle-outline" size={20} color={colors.accent.info} />
-          <Text style={styles.headlineText}>{headline}</Text>
-        </View>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingBottom: insets.bottom + 140 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Stats strip overlapping header */}
+          <StatsStrip counts={counts} lastRating={last_guest?.review?.rating} />
 
-        {/* Last guest */}
-        {last_guest ? (
-          <Section
-            icon="person-outline"
-            title="Last guest"
-            tint={last_guest.notable ? colors.status.warning : colors.accent.info}
-          >
-            <Text style={styles.cardSubtext}>{last_guest.headline}</Text>
-            <View style={styles.metaRow}>
-              {last_guest.guest_name ? <Meta label="Guest" value={last_guest.guest_name} /> : null}
-              {last_guest.arrival_date ? (
-                <Meta
-                  label="Stay"
-                  value={`${fmtDate(last_guest.arrival_date)} – ${fmtDate(last_guest.departure_date)}`}
-                />
-              ) : null}
-              {typeof last_guest.review?.rating === 'number' ? (
-                <Meta label="Rating" value={`${last_guest.review.rating}/10`} />
-              ) : null}
-            </View>
-            {last_guest.review?.public_review ? (
-              <View style={styles.quoteBox}>
-                <Text style={styles.quoteText} numberOfLines={5}>
-                  "{last_guest.review.public_review}"
-                </Text>
-              </View>
-            ) : null}
-            {last_guest.issues_during_or_after_stay?.length > 0 ? (
-              <View style={{ marginTop: 12 }}>
-                <Text style={styles.subheading}>
-                  Issues from this stay ({last_guest.issues_during_or_after_stay.length})
-                </Text>
-                {last_guest.issues_during_or_after_stay.slice(0, 5).map((i) => (
-                  <IssueRow key={i.id} issue={i} />
-                ))}
-              </View>
-            ) : null}
-          </Section>
-        ) : null}
+          {/* Priority banner — auto-derived from severity */}
+          <PriorityBanner brief={brief} headline={headline} />
 
-        {/* Recurring patterns */}
-        {recurring_categories?.length > 0 ? (
-          <Section
-            icon="repeat"
-            title="Recurring patterns"
-            tint={colors.status.warning}
-            subtitle="Categories flagged 3+ times — give them extra attention"
-          >
-            <View style={styles.chipRow}>
-              {recurring_categories.slice(0, 6).map((c) => (
-                <View key={c.category} style={styles.chip}>
-                  <Text style={styles.chipText}>
-                    {c.category} · {c.count}
-                  </Text>
-                </View>
+          {/* WATCH FOR — actual reported issues, scannable */}
+          <WatchForSection
+            openIssues={open_issues}
+            lastGuest={last_guest}
+            recurring={recurring_categories}
+          />
+
+          {/* Last guest */}
+          {last_guest ? <LastGuestCard last_guest={last_guest} /> : null}
+
+          {/* Recurring */}
+          {recurring_categories.length > 0 ? (
+            <Section
+              icon="repeat"
+              title="Recurring patterns"
+              tint={colors.status.warning}
+              subtitle="Categories flagged 3+ times — give them extra attention"
+            >
+              <View style={styles.chipRow}>
+                {recurring_categories.slice(0, 8).map((c, idx) => {
+                  const label = renderableText(c, ['category', 'name', 'label']);
+                  if (!label) return null;
+                  const count = typeof c?.count === 'number' ? c.count : null;
+                  const severity = severityFromCount(count);
+                  return (
+                    <View
+                      key={`${label}-${idx}`}
+                      style={[
+                        styles.chip,
+                        { backgroundColor: severity.bg, borderColor: severity.border },
+                      ]}
+                    >
+                      <View style={[styles.chipDot, { backgroundColor: severity.dot }]} />
+                      <Text style={[styles.chipText, { color: severity.text }]}>
+                        {label.toUpperCase()}
+                      </Text>
+                      {count != null ? (
+                        <Text style={[styles.chipCount, { color: severity.text }]}>
+                          {count}
+                        </Text>
+                      ) : null}
+                    </View>
+                  );
+                })}
+              </View>
+            </Section>
+          ) : null}
+
+          {/* Recent issues (closed-but-recent) */}
+          {recent_issues.length > 0 ? (
+            <Section
+              icon="time-outline"
+              title="Recently resolved"
+              count={recent_issues.length}
+              tint={colors.accent.info}
+              subtitle="Closed in the last 30 days — verify the fix held"
+            >
+              {recent_issues.slice(0, 5).map((i, idx) => (
+                <IssueRow key={i.id || idx} issue={i} />
               ))}
+            </Section>
+          ) : null}
+
+          {/* Low-rated guest quotes */}
+          {low_rated_quotes.length > 0 ? (
+            <Section
+              icon="chatbubble-ellipses-outline"
+              title="Recent guest complaints"
+              tint={colors.status.warning}
+              subtitle={`Reviews ≤ ${LOW_RATING_THRESHOLD} ★ in the last ${brief.window_days || 90} days`}
+            >
+              {low_rated_quotes.slice(0, 3).map((q, idx) => {
+                const quote = renderableText(q, [
+                  'public_quote',
+                  'public_review',
+                  'quote',
+                  'private_quote',
+                  'message',
+                ]);
+                if (!quote) return null;
+                return (
+                  <View key={idx} style={styles.quoteCard}>
+                    <View style={styles.quoteHeaderRow}>
+                      <Ionicons
+                        name="chatbubble"
+                        size={12}
+                        color={colors.status.warning}
+                      />
+                      {typeof q?.rating === 'number' ? (
+                        <Text style={styles.quoteRating}>{formatStars(q.rating)}</Text>
+                      ) : null}
+                      {q.guest_name ? (
+                        <Text style={styles.quoteAuthor} numberOfLines={1}>
+                          · {q.guest_name}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text style={styles.quoteBody} numberOfLines={4}>
+                      “{quote}”
+                    </Text>
+                  </View>
+                );
+              })}
+            </Section>
+          ) : null}
+
+          {/* Counts footer */}
+          {counts ? (
+            <View style={styles.footerCard}>
+              <Text style={styles.footerHint}>Window: last {brief.window_days || 90} days</Text>
+              <View style={styles.footerRow}>
+                <FooterStat label="Open" value={counts.open_issues ?? 0} />
+                <FooterDot />
+                <FooterStat label="Recent" value={counts.recent_issues ?? 0} />
+                <FooterDot />
+                <FooterStat label="Recurring" value={counts.recurring_categories ?? 0} />
+                <FooterDot />
+                <FooterStat
+                  label="Low ★"
+                  value={`${counts.bad_reviews ?? 0}/${counts.reviews_window ?? 0}`}
+                />
+              </View>
             </View>
-          </Section>
-        ) : null}
+          ) : null}
+        </ScrollView>
+      </Animated.View>
 
-        {/* Open issues */}
-        {open_issues?.length > 0 ? (
-          <Section icon="alert-circle" title={`Open issues (${open_issues.length})`} tint={colors.status.error}>
-            {open_issues.map((i) => (
-              <IssueRow key={i.id} issue={i} />
-            ))}
-          </Section>
-        ) : null}
-
-        {/* Recent (closed-but-recent) issues */}
-        {recent_issues?.length > 0 ? (
-          <Section icon="time-outline" title={`Recent (last 30 days)`} tint={colors.accent.info}>
-            {recent_issues.slice(0, 5).map((i) => (
-              <IssueRow key={i.id} issue={i} />
-            ))}
-          </Section>
-        ) : null}
-
-        {/* Watch-for bullets */}
-        {watch_for?.length > 0 ? (
-          <Section icon="bulb-outline" title="What to watch for" tint={colors.accent.info}>
-            {watch_for.slice(0, 8).map((w, idx) => (
-              <View key={idx} style={styles.bulletRow}>
-                <Text style={styles.bulletDot}>•</Text>
-                <Text style={styles.bulletText}>{w.text || w}</Text>
-              </View>
-            ))}
-          </Section>
-        ) : null}
-
-        {/* Low-rated quotes */}
-        {low_rated_quotes?.length > 0 ? (
-          <Section icon="chatbubble-ellipses-outline" title="Recent guest complaints" tint={colors.status.warning}>
-            {low_rated_quotes.slice(0, 3).map((q, idx) => (
-              <View key={idx} style={styles.quoteBox}>
-                <Text style={styles.quoteText} numberOfLines={4}>"{q.public_review || q.quote || q}"</Text>
-                {typeof q.rating === 'number' ? (
-                  <Text style={styles.quoteMeta}>★ {q.rating}/10{q.guest_name ? ` · ${q.guest_name}` : ''}</Text>
-                ) : null}
-              </View>
-            ))}
-          </Section>
-        ) : null}
-
-        {/* Counts footer */}
-        {counts ? (
-          <Text style={styles.countsLine}>
-            Window: last {brief.window_days || 90} days · {counts.open_issues} open · {counts.recent_issues} recent · {counts.recurring_categories} recurring categories · {counts.bad_reviews}/{counts.reviews_window} low ratings
-          </Text>
-        ) : null}
-      </ScrollView>
-
-      <View style={[styles.acknowledgeBar, { paddingBottom: insets.bottom + 12 }]}>
+      {/* Sticky acknowledge CTA */}
+      <View style={[styles.ackBar, { paddingBottom: insets.bottom + 12 }]}>
         <TouchableOpacity
-          style={[styles.acknowledgeBtn, acknowledging && styles.acknowledgeBtnDisabled]}
+          activeOpacity={0.9}
           onPress={onAcknowledge}
           disabled={acknowledging}
-          activeOpacity={0.85}
+          style={styles.ackBtnTouchable}
         >
-          {acknowledging ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle" size={20} color="#fff" />
-              <Text style={styles.acknowledgeText}>I've reviewed this — start cleaning</Text>
-            </>
-          )}
+          <LinearGradient
+            colors={
+              acknowledging
+                ? [colors.text.tertiary, colors.text.tertiary]
+                : [colors.primary.vibrant, colors.primary.dark]
+            }
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.ackBtn}
+          >
+            {acknowledging ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <Text style={styles.ackBtnText}>I've reviewed this — start cleaning</Text>
+              </>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-function Section({ icon, title, subtitle, tint, children }) {
+/* -------------------- Sub-components -------------------- */
+
+function StatsStrip({ counts = {}, lastRating }) {
+  const open = counts.open_issues ?? 0;
+  const recurring = counts.recurring_categories ?? 0;
+  const ratingStr =
+    typeof lastRating === 'number' ? `${lastRating}` : '—';
+  const ratingColor =
+    typeof lastRating !== 'number'
+      ? colors.text.tertiary
+      : lastRating <= LOW_RATING_THRESHOLD
+      ? colors.status.error
+      : lastRating >= 5
+      ? colors.status.success
+      : colors.status.warning;
+
   return (
-    <View style={styles.sectionCard}>
+    <View style={styles.statsStrip}>
+      <StatTile
+        value={open}
+        label="OPEN"
+        sub="issues"
+        accent={open > 0 ? colors.status.error : colors.text.tertiary}
+        icon="alert-circle"
+      />
+      <View style={styles.statDivider} />
+      <StatTile
+        value={recurring}
+        label="RECURRING"
+        sub="patterns"
+        accent={recurring > 0 ? colors.status.warning : colors.text.tertiary}
+        icon="repeat"
+      />
+      <View style={styles.statDivider} />
+      <StatTile
+        value={ratingStr}
+        label="LAST"
+        sub={typeof lastRating === 'number' ? '★ rating' : 'no review'}
+        accent={ratingColor}
+        icon="star"
+      />
+    </View>
+  );
+}
+
+function StatTile({ value, label, sub, accent, icon }) {
+  return (
+    <View style={styles.statTile}>
+      <View style={[styles.statIconWrap, { backgroundColor: accent + '15' }]}>
+        <Ionicons name={icon} size={14} color={accent} />
+      </View>
+      <Text style={[styles.statValue, { color: accent }]}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statSub}>{sub}</Text>
+    </View>
+  );
+}
+
+function PriorityBanner({ brief, headline }) {
+  const tone = derivePriorityTone(brief);
+  if (!tone) return null;
+  return (
+    <LinearGradient
+      colors={tone.gradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.priorityBanner}
+    >
+      <View style={styles.priorityIconWrap}>
+        <Ionicons name={tone.icon} size={18} color="#fff" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.priorityLabel}>{tone.label}</Text>
+        <Text style={styles.priorityText} numberOfLines={3}>
+          {headline}
+        </Text>
+      </View>
+    </LinearGradient>
+  );
+}
+
+function derivePriorityTone(brief) {
+  const open = brief?.counts?.open_issues || 0;
+  const lastRating = brief?.last_guest?.review?.rating;
+  const lastNotable = brief?.last_guest?.notable;
+
+  if (lastNotable && typeof lastRating === 'number' && lastRating <= LOW_RATING_THRESHOLD) {
+    return {
+      label: 'High priority',
+      icon: 'warning',
+      gradient: ['#FF3B30', '#C92518'],
+    };
+  }
+  if (open >= 3) {
+    return {
+      label: 'High priority',
+      icon: 'warning',
+      gradient: ['#FF3B30', '#C92518'],
+    };
+  }
+  if (open > 0 || lastNotable) {
+    return {
+      label: 'Heads up',
+      icon: 'alert-circle',
+      gradient: ['#FF9500', '#FF7A00'],
+    };
+  }
+  return {
+    label: 'All clear',
+    icon: 'checkmark-circle',
+    gradient: [colors.secondary.main, colors.secondary.dark],
+  };
+}
+
+/**
+ * "What to watch for" — the priority list of *actual* issues for the
+ * cleaner. Surfaces, in order:
+ *   1. Open issues reported by guests (highest urgency).
+ *   2. Issues from the last guest's stay that aren't already listed
+ *      as open (could be marked resolved but still worth a look).
+ *   3. Recurring category patterns (last, as historical context).
+ * Dedupe is by issue.id, then by description fingerprint.
+ */
+function WatchForSection({
+  openIssues = [],
+  lastGuest = null,
+  recurring = [],
+}) {
+  const items = useMemo(
+    () => buildWatchList({ openIssues, lastGuest, recurring }),
+    [openIssues, lastGuest, recurring]
+  );
+  if (items.length === 0) return null;
+
+  return (
+    <Section
+      icon="eye"
+      title="What to watch for"
+      tint={colors.primary.main}
+      subtitle="Reported issues + recurring patterns — handle these first"
+      featured
+    >
+      {items.map((it, idx) => (
+        <WatchItem key={it.key} item={it} first={idx === 0} />
+      ))}
+    </Section>
+  );
+}
+
+function WatchItem({ item, first }) {
+  // Build a single tidy meta line: SOURCE · CATEGORY · DATE · GUEST.
+  const metaParts = [];
+  if (item.tags && item.tags.length > 0) {
+    item.tags.forEach((t) => {
+      if (t.label) metaParts.push(t.label);
+    });
+  }
+  return (
+    <View style={[styles.watchItem, first && { borderTopWidth: 0 }]}>
+      {item.badge ? (
+        <View style={[styles.watchBadge, { backgroundColor: item.color }]}>
+          <Text style={styles.watchBadgeText}>{item.badge}</Text>
+        </View>
+      ) : (
+        <View style={[styles.watchDot, { backgroundColor: item.color }]} />
+      )}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.watchTitle} numberOfLines={3}>
+          {item.title}
+        </Text>
+        {item.detail ? (
+          <Text style={styles.watchDetail} numberOfLines={3}>
+            {item.detail}
+          </Text>
+        ) : null}
+        {metaParts.length > 0 ? (
+          <Text style={styles.watchMeta} numberOfLines={1}>
+            {metaParts.join('  ·  ')}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Build the prioritized list of real items for "What to watch for".
+ * Each item: { key, icon, color, title, detail?, tags?[] }
+ */
+function buildWatchList({ openIssues, lastGuest, recurring }) {
+  const items = [];
+  const seenIds = new Set();
+  const seenFingerprints = new Set();
+
+  const fingerprint = (s) =>
+    String(s || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]+/g, '')
+      .trim()
+      .slice(0, 80);
+
+  const pushIssue = (issue, { source }) => {
+    if (!issue) return;
+    if (issue.id && seenIds.has(issue.id)) return;
+    const description = renderableText(issue.description, ['text', 'message']);
+    const category = renderableText(issue.category, ['name', 'label']);
+    if (!description && !category) return;
+    const fp = fingerprint(description || category);
+    if (fp && seenFingerprints.has(fp)) return;
+    if (issue.id) seenIds.add(issue.id);
+    if (fp) seenFingerprints.add(fp);
+
+    const status = renderableText(issue.status, ['name', 'label']);
+    const guestName = renderableText(issue.guest_name, ['name']);
+    const isOpen = source === 'open';
+    const color = isOpen
+      ? colors.status.error
+      : source === 'last-guest'
+      ? colors.status.warning
+      : statusColor(status) || colors.status.warning;
+    const badge = isOpen
+      ? 'OPEN'
+      : source === 'last-guest'
+      ? 'LAST GUEST'
+      : null;
+
+    const tags = [];
+    if (category) tags.push({ label: category.toUpperCase() });
+    if (issue.reported_at) tags.push({ label: fmtDate(issue.reported_at) });
+    if (!isOpen && guestName) tags.push({ label: guestName });
+
+    items.push({
+      key: issue.id || `${source}-${items.length}`,
+      color,
+      badge,
+      title: description || category || 'Reported issue',
+      detail: null,
+      tags,
+    });
+  };
+
+  // 1. All open issues (already filtered for cleaning relevance server-side).
+  openIssues.forEach((i) => pushIssue(i, { source: 'open' }));
+
+  // 2. Last guest's reported issues not already shown.
+  (lastGuest?.issues_during_or_after_stay || []).forEach((i) =>
+    pushIssue(i, { source: 'last-guest' })
+  );
+
+  // 3. Recurring category patterns (max 3) — historical context.
+  recurring.slice(0, 3).forEach((c) => {
+    const cat = renderableText(c, ['category', 'name', 'label']);
+    if (!cat) return;
+    const count = typeof c?.count === 'number' ? c.count : null;
+    const sev = severityFromCount(count);
+    items.push({
+      key: `recurring-${cat}`,
+      color: sev.dot,
+      badge: 'PATTERN',
+      title: `Recurring ${cat.toLowerCase()} issues`,
+      detail:
+        count != null
+          ? `Reported ${count}× historically — give it extra attention this visit.`
+          : `Flagged repeatedly — give it extra attention.`,
+      tags: [{ label: cat.toUpperCase() }],
+    });
+  });
+
+  return items.slice(0, 8);
+}
+
+function LastGuestCard({ last_guest }) {
+  const rating = last_guest.review?.rating;
+  const tone =
+    typeof rating === 'number' && rating <= LOW_RATING_THRESHOLD
+      ? colors.status.error
+      : last_guest.notable
+      ? colors.status.warning
+      : colors.secondary.main;
+  const reviewQuote = renderableText(last_guest.review, [
+    'public_review',
+    'public_quote',
+    'quote',
+    'private_quote',
+    'message',
+  ]);
+
+  return (
+    <Section icon="person-outline" title="Last guest" tint={tone}>
+      <Text style={styles.lastGuestHeadline}>{last_guest.headline}</Text>
+
+      <View style={styles.metaRow}>
+        {last_guest.guest_name ? (
+          <Meta icon="person-circle-outline" label="Guest" value={last_guest.guest_name} />
+        ) : null}
+        {last_guest.arrival_date ? (
+          <Meta
+            icon="calendar-outline"
+            label="Stay"
+            value={`${fmtDate(last_guest.arrival_date)} – ${fmtDate(last_guest.departure_date)}`}
+          />
+        ) : null}
+        {typeof rating === 'number' ? (
+          <Meta icon="star-outline" label="Rating" value={formatStars(rating)} accent={tone} />
+        ) : null}
+      </View>
+
+      {reviewQuote ? (
+        <View style={[styles.quoteCard, { borderLeftColor: tone }]}>
+          <Text style={styles.quoteBody} numberOfLines={6}>
+            “{reviewQuote}”
+          </Text>
+        </View>
+      ) : null}
+
+      {last_guest.issues_during_or_after_stay?.length > 0 ? (
+        <View style={{ marginTop: 14 }}>
+          <Text style={styles.subheading}>
+            Issues from this stay · {last_guest.issues_during_or_after_stay.length}
+          </Text>
+          {last_guest.issues_during_or_after_stay.slice(0, 5).map((i, idx) => (
+            <IssueRow key={i.id || idx} issue={i} />
+          ))}
+        </View>
+      ) : null}
+    </Section>
+  );
+}
+
+function Section({ icon, title, subtitle, tint, count, featured, children }) {
+  const tintColor = tint || colors.primary.main;
+  return (
+    <View style={[styles.sectionCard, featured && styles.sectionCardFeatured]}>
+      {featured ? (
+        <View style={[styles.sectionAccentBar, { backgroundColor: tintColor }]} />
+      ) : null}
       <View style={styles.sectionHeader}>
-        <View style={[styles.sectionIconWrap, { backgroundColor: (tint || colors.accent.info) + '22' }]}>
-          <Ionicons name={icon} size={16} color={tint || colors.accent.info} />
+        <View style={[styles.sectionIconWrap, { backgroundColor: tintColor + '18' }]}>
+          <Ionicons name={icon} size={16} color={tintColor} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.sectionTitle}>{title}</Text>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            {typeof count === 'number' ? (
+              <View style={[styles.countPill, { backgroundColor: tintColor + '18' }]}>
+                <Text style={[styles.countPillText, { color: tintColor }]}>{count}</Text>
+              </View>
+            ) : null}
+          </View>
           {subtitle ? <Text style={styles.sectionSubtitle}>{subtitle}</Text> : null}
         </View>
       </View>
@@ -301,47 +727,80 @@ function Section({ icon, title, subtitle, tint, children }) {
 }
 
 function IssueRow({ issue }) {
+  const description = renderableText(issue?.description, ['text', 'message']);
+  const category = renderableText(issue?.category, ['name', 'label']);
+  const status = renderableText(issue?.status, ['name', 'label']);
+  const guestName = renderableText(issue?.guest_name, ['name']);
+  const line = description || category || 'Issue';
+  const tone = statusColor(status);
+  const meta = [
+    category ? category.toUpperCase() : null,
+    status,
+    issue?.reported_at ? fmtDate(issue.reported_at) : null,
+    guestName ? guestName : null,
+  ]
+    .filter(Boolean)
+    .join('  ·  ');
   return (
     <View style={styles.issueRow}>
-      <View style={[styles.statusDot, { backgroundColor: statusColor(issue.status) }]} />
+      <View style={[styles.issueDot, { backgroundColor: tone }]} />
       <View style={{ flex: 1 }}>
         <Text style={styles.issueLine} numberOfLines={3}>
-          {issue.description || issue.category || 'Issue'}
+          {line}
         </Text>
-        <Text style={styles.issueMeta}>
-          {[
-            issue.category,
-            issue.status,
-            issue.reported_at ? fmtDate(issue.reported_at) : null,
-            issue.guest_name ? `Guest: ${issue.guest_name}` : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
-        </Text>
+        {meta ? (
+          <Text style={styles.issueMeta} numberOfLines={1}>
+            {meta}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
 }
 
-function Meta({ label, value }) {
+function Meta({ icon, label, value, accent }) {
   return (
     <View style={styles.metaPill}>
+      {icon ? (
+        <Ionicons
+          name={icon}
+          size={12}
+          color={accent || colors.text.tertiary}
+          style={{ marginBottom: 2 }}
+        />
+      ) : null}
       <Text style={styles.metaLabel}>{label}</Text>
-      <Text style={styles.metaValue} numberOfLines={1}>
+      <Text style={[styles.metaValue, accent && { color: accent }]} numberOfLines={1}>
         {value}
       </Text>
     </View>
   );
 }
 
+function FooterStat({ label, value }) {
+  return (
+    <View style={styles.footerStat}>
+      <Text style={styles.footerStatValue}>{value}</Text>
+      <Text style={styles.footerStatLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function FooterDot() {
+  return <View style={styles.footerDot} />;
+}
+
+/* -------------------- helpers -------------------- */
+
 function fmtDate(d) {
   if (!d) return '—';
   try {
-    return new Date(d).toLocaleDateString();
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch {
     return String(d);
   }
 }
+
 function statusColor(status) {
   if (status === 'New' || status === 'Open') return colors.status.error;
   if (status === 'In Progress') return colors.status.warning;
@@ -350,138 +809,490 @@ function statusColor(status) {
   return colors.text.tertiary;
 }
 
+function severityFromCount(count) {
+  const c = typeof count === 'number' ? count : 0;
+  if (c >= 50) {
+    return {
+      bg: 'rgba(255, 59, 48, 0.10)',
+      border: 'rgba(255, 59, 48, 0.25)',
+      text: colors.status.error,
+      dot: colors.status.error,
+    };
+  }
+  if (c >= 10) {
+    return {
+      bg: 'rgba(255, 149, 0, 0.10)',
+      border: 'rgba(255, 149, 0, 0.25)',
+      text: colors.status.warning,
+      dot: colors.status.warning,
+    };
+  }
+  return {
+    bg: 'rgba(0, 122, 255, 0.10)',
+    border: 'rgba(0, 122, 255, 0.20)',
+    text: colors.primary.main,
+    dot: colors.primary.main,
+  };
+}
+
+/* -------------------- styles -------------------- */
+
+const cardShadow = Platform.select({
+  ios: {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 20,
+  },
+  android: { elevation: 2 },
+});
+
+const ctaShadow = Platform.select({
+  ios: {
+    shadowColor: colors.primary.main,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 18,
+  },
+  android: { elevation: 8 },
+});
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.primary },
-  header: {
-    paddingHorizontal: 16,
-    paddingBottom: 18,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  backBtn: { padding: 6, marginTop: 4 },
-  headerCenter: { flex: 1, marginLeft: 8 },
-  headerIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '700', letterSpacing: -0.4 },
-  headerSubtitle: { color: 'rgba(255,255,255,0.85)', fontSize: 13, marginTop: 2 },
 
   loaderBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   loaderText: { color: colors.text.secondary, fontSize: 14 },
 
-  scroll: { padding: 16 },
-  headlineCard: {
+  /* Header */
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 22,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+  },
+  headerTopRow: {
     flexDirection: 'row',
-    gap: 10,
-    backgroundColor: colors.background.elevated,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border.light,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
-  headlineText: { flex: 1, color: colors.text.primary, fontSize: 14, fontWeight: '600', lineHeight: 20 },
-
-  sectionCard: {
-    backgroundColor: colors.background.secondary,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: colors.border.light,
+  backBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  sectionIconWrap: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { color: colors.text.primary, fontSize: 15, fontWeight: '700' },
-  sectionSubtitle: { color: colors.text.secondary, fontSize: 12, marginTop: 2 },
-  cardSubtext: { color: colors.text.primary, fontSize: 14, lineHeight: 20 },
-  subheading: {
-    color: colors.text.tertiary,
-    fontSize: 11,
+  headerBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  headerBadgeText: {
+    color: '#fff',
+    fontSize: 9.5,
     fontWeight: '700',
     letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  headerBody: { paddingRight: 8 },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+    lineHeight: 21,
+  },
+  headerAddressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
+  headerAddress: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 10.5,
+    flexShrink: 1,
+  },
+
+  /* Stats strip overlapping header */
+  scroll: { paddingHorizontal: 14, paddingTop: 0 },
+  statsStrip: {
+    marginTop: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    ...cardShadow,
+  },
+  statTile: { flex: 1, alignItems: 'center', paddingVertical: 2 },
+  statIconWrap: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 5,
+  },
+  statValue: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3, lineHeight: 22 },
+  statLabel: {
+    color: colors.text.tertiary,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    marginTop: 2,
+  },
+  statSub: { color: colors.text.tertiary, fontSize: 9, marginTop: 1 },
+  statDivider: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.light,
+    marginVertical: 6,
+  },
+
+  /* Priority banner */
+  priorityBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    paddingVertical: 11,
+    paddingHorizontal: 13,
+    borderRadius: 14,
+    marginBottom: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#0F172A',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.10,
+        shadowRadius: 10,
+      },
+      android: { elevation: 2 },
+    }),
+  },
+  priorityIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  priorityLabel: {
+    color: 'rgba(255,255,255,0.88)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  priorityText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 17,
+  },
+
+  /* Section card */
+  sectionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    ...cardShadow,
+    overflow: 'hidden',
+  },
+  sectionCardFeatured: {
+    paddingLeft: 16,
+  },
+  sectionAccentBar: {
+    position: 'absolute',
+    top: 12,
+    bottom: 12,
+    left: 0,
+    width: 3,
+    borderTopRightRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  sectionIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sectionTitle: {
+    color: colors.text.primary,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  sectionSubtitle: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  countPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+    borderRadius: 999,
+    minWidth: 22,
+    alignItems: 'center',
+  },
+  countPillText: { fontSize: 11, fontWeight: '800' },
+
+  /* Watch for items */
+  watchItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    paddingVertical: 11,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.light,
+  },
+  watchBadge: {
+    minWidth: 50,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  watchBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  watchDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 7,
+    marginLeft: 4,
+    marginRight: 4,
+  },
+  watchTitle: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 18,
+    letterSpacing: -0.1,
+  },
+  watchDetail: {
+    color: colors.text.secondary,
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 3,
+  },
+  watchMeta: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 6,
+    letterSpacing: 0.1,
+  },
+
+  /* Last guest */
+  lastGuestHeadline: {
+    color: colors.text.primary,
+    fontSize: 13.5,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  metaPill: {
+    backgroundColor: colors.background.elevated,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.light,
+    minWidth: 88,
+  },
+  metaLabel: {
+    color: colors.text.tertiary,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  metaValue: {
+    color: colors.text.primary,
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+
+  subheading: {
+    color: colors.text.tertiary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
     textTransform: 'uppercase',
     marginBottom: 6,
   },
 
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
-  metaPill: {
-    backgroundColor: colors.background.elevated,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-  },
-  metaLabel: { color: colors.text.tertiary, fontSize: 10, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
-  metaValue: { color: colors.text.primary, fontSize: 13, fontWeight: '600', marginTop: 2 },
-
-  quoteBox: {
+  /* Quote card */
+  quoteCard: {
     backgroundColor: colors.background.elevated,
     borderRadius: 10,
-    padding: 10,
+    padding: 11,
     marginTop: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.status.warning,
   },
-  quoteText: { color: colors.text.primary, fontSize: 13, fontStyle: 'italic', lineHeight: 18 },
-  quoteMeta: { color: colors.text.tertiary, fontSize: 11, marginTop: 4 },
+  quoteHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 5,
+  },
+  quoteRating: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.status.warning,
+  },
+  quoteAuthor: {
+    fontSize: 11,
+    color: colors.text.tertiary,
+    fontWeight: '600',
+  },
+  quoteBody: {
+    color: colors.text.primary,
+    fontSize: 12.5,
+    fontStyle: 'italic',
+    lineHeight: 18,
+  },
 
+  /* Recurring chips */
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   chip: {
-    backgroundColor: colors.accent.warningLight,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
     borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  chipText: { color: colors.status.warning, fontSize: 12, fontWeight: '700' },
+  chipDot: { width: 5, height: 5, borderRadius: 2.5 },
+  chipText: { fontSize: 10.5, fontWeight: '800', letterSpacing: 0.3 },
+  chipCount: { fontSize: 10.5, fontWeight: '800', opacity: 0.7 },
 
+  /* Issue row */
   issueRow: {
     flexDirection: 'row',
     gap: 10,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border.light,
+    alignItems: 'flex-start',
   },
-  statusDot: { width: 8, height: 8, borderRadius: 4, marginTop: 6 },
-  issueLine: { color: colors.text.primary, fontSize: 13, lineHeight: 18 },
-  issueMeta: { color: colors.text.tertiary, fontSize: 11, marginTop: 3 },
+  issueDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 7,
+    marginLeft: 4,
+    marginRight: 2,
+  },
+  issueLine: {
+    color: colors.text.primary,
+    fontSize: 13.5,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  issueMeta: {
+    color: colors.text.tertiary,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 5,
+    letterSpacing: 0.1,
+  },
 
-  bulletRow: { flexDirection: 'row', gap: 8, marginBottom: 6 },
-  bulletDot: { color: colors.accent.info, fontSize: 14, lineHeight: 18 },
-  bulletText: { flex: 1, color: colors.text.primary, fontSize: 13, lineHeight: 18 },
+  /* Footer card */
+  footerCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    alignItems: 'center',
+    ...cardShadow,
+  },
+  footerHint: {
+    color: colors.text.tertiary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  footerRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  footerStat: { alignItems: 'center', minWidth: 46 },
+  footerStatValue: {
+    color: colors.text.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  footerStatLabel: {
+    color: colors.text.tertiary,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    marginTop: 1,
+  },
+  footerDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.text.quaternary,
+  },
 
-  countsLine: { color: colors.text.tertiary, fontSize: 11, marginTop: 12, textAlign: 'center' },
-
-  acknowledgeBar: {
+  /* Acknowledge bar */
+  ackBar: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.background.primary,
-    borderTopWidth: 1,
-    borderTopColor: colors.border.light,
     paddingTop: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(242,242,247,0.96)',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.light,
   },
-  acknowledgeBtn: {
-    backgroundColor: colors.primary.main,
+  ackBtnTouchable: {
+    borderRadius: 14,
+    ...ctaShadow,
+  },
+  ackBtn: {
     borderRadius: 14,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: colors.primary.main,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
   },
-  acknowledgeBtnDisabled: { opacity: 0.6 },
-  acknowledgeText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  ackBtnText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
 });
