@@ -788,101 +788,96 @@ export default function CaptureMediaScreen({ route, navigation }) {
       </LinearGradient>
 
 
-      {/* Rejection Warning Banner */}
-      {isRejected && (
-        <View style={styles.rejectionBanner}>
-          <Ionicons name="alert-circle" size={18} color="#DC2626" />
-          <View style={styles.rejectionTextContainer}>
-            <Text style={styles.rejectionTitle}>Inspection Rejected</Text>
-            {rejectionReason && (
-              <Text style={styles.rejectionReason}>{rejectionReason}</Text>
-            )}
-            <Text style={styles.rejectionInstruction}>
-              Re-upload photos for the highlighted rooms below
-            </Text>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Rejection Warning Banner */}
+        {isRejected && (
+          <View style={styles.rejectionBanner}>
+            <Ionicons name="alert-circle" size={18} color="#DC2626" />
+            <View style={styles.rejectionTextContainer}>
+              <Text style={styles.rejectionTitle}>Inspection Rejected</Text>
+              {rejectionReason && (
+                <Text style={styles.rejectionReason}>{rejectionReason}</Text>
+              )}
+              <Text style={styles.rejectionInstruction}>
+                Re-upload photos for the highlighted rooms below
+              </Text>
+            </View>
           </View>
-        </View>
-      )}
+        )}
 
-      {/* Rooms & Cleaning Tips - REDESIGNED */}
-      <View style={styles.roomsOverviewCard}>
-        <View style={styles.roomsOverviewHeader}>
-          <LinearGradient
-            colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.08)']}
-            style={styles.roomsHeaderIcon}
-          >
-            <Ionicons name="bed" size={20} color="#215EEA" />
-          </LinearGradient>
-          <Text style={styles.roomsOverviewTitle}>Rooms to Clean</Text>
-          <View style={styles.roomsCountBadge}>
-            <Text style={styles.roomsCountText}>{rooms.length}</Text>
-          </View>
-        </View>
-
-        {rooms.map((room) => {
-          const roomPhotos = photos.filter(p => p.roomId === room.id);
-          const isComplete = roomPhotos.length > 0;
-          
-          return (
-            <TouchableOpacity
-              key={room.id}
-              style={[
-                styles.modernRoomCard,
-                isComplete && styles.modernRoomCardComplete,
-                failedRoomIdsSet.has(room.id) && styles.modernRoomCardFailed
-              ]}
-              onPress={() => navigation.navigate('RoomCapture', {
-                room,
-                assignment,
-                inspectionId,
-                propertyId,
-                propertyName,
-                unitName,
-                unitId,
-                rooms,
-                isRejected,
-                failedRoomIds,
-                rejectionReason,
-                existingMedia: existingMedia.filter(m => m.room_id === room.id),
-                isEditing,
-                allPhotos: photos, // Pass all photos to maintain state
-              })}
-              activeOpacity={0.7}
+        {/* Rooms & Cleaning Tips - REDESIGNED */}
+        <View style={styles.roomsOverviewCard}>
+          <View style={styles.roomsOverviewHeader}>
+            <LinearGradient
+              colors={['rgba(59, 130, 246, 0.15)', 'rgba(59, 130, 246, 0.08)']}
+              style={styles.roomsHeaderIcon}
             >
-              <View style={styles.modernRoomHeader}>
-                <View style={styles.modernRoomTitleRow}>
-                  <Text style={styles.modernRoomName}>{room.name}</Text>
-                  {isComplete && (
-                    <View style={styles.completeBadge}>
-                      <Ionicons name="checkmark-circle" size={16} color="#33D39C" />
-                      <Text style={styles.completeBadgeText}>{roomPhotos.length} photo{roomPhotos.length > 1 ? 's' : ''}</Text>
-                    </View>
+              <Ionicons name="bed" size={20} color="#215EEA" />
+            </LinearGradient>
+            <Text style={styles.roomsOverviewTitle}>Rooms to Clean</Text>
+            <View style={styles.roomsCountBadge}>
+              <Text style={styles.roomsCountText}>{rooms.length}</Text>
+            </View>
+          </View>
+
+          {rooms.map((room) => {
+            const roomPhotos = photos.filter(p => p.roomId === room.id);
+            const isComplete = roomPhotos.length > 0;
+            
+            return (
+              <TouchableOpacity
+                key={room.id}
+                style={[
+                  styles.modernRoomCard,
+                  isComplete && styles.modernRoomCardComplete,
+                  failedRoomIdsSet.has(room.id) && styles.modernRoomCardFailed
+                ]}
+                onPress={() => navigation.navigate('RoomCapture', {
+                  room,
+                  assignment,
+                  inspectionId,
+                  propertyId,
+                  propertyName,
+                  unitName,
+                  unitId,
+                  rooms,
+                  isRejected,
+                  failedRoomIds,
+                  rejectionReason,
+                  existingMedia: existingMedia.filter(m => m.room_id === room.id),
+                  isEditing,
+                  allPhotos: photos, // Pass all photos to maintain state
+                })}
+                activeOpacity={0.7}
+              >
+                <View style={styles.modernRoomHeader}>
+                  <View style={styles.modernRoomTitleRow}>
+                    <Text style={styles.modernRoomName}>{room.name}</Text>
+                    {isComplete && (
+                      <View style={styles.completeBadge}>
+                        <Ionicons name="checkmark-circle" size={16} color="#33D39C" />
+                        <Text style={styles.completeBadgeText}>{roomPhotos.length} photo{roomPhotos.length > 1 ? 's' : ''}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {room.tips && (
+                    <Text style={styles.modernRoomTips} numberOfLines={2}>
+                      {room.tips}
+                    </Text>
                   )}
                 </View>
-                {room.tips && (
-                  <Text style={styles.modernRoomTips} numberOfLines={2}>
-                    {room.tips}
+
+                <View style={styles.roomCardFooter}>
+                  <Text style={styles.roomCardActionText}>
+                    {isComplete ? 'View & Edit Photos' : 'Add Photos'}
                   </Text>
-                )}
-              </View>
+                  <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-              <View style={styles.roomCardFooter}>
-                
-                <Text style={styles.roomCardActionText}>
-                  {isComplete ? 'View & Edit Photos' : 'Add Photos'}
-                </Text>
-                <Ionicons name="chevron-forward" size={18} color={COLORS.primary} />
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      
-   
-
-      {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Valuable Items Section */}
         {valuableItems.length > 0 && (
           <View style={styles.valuableItemsCard}>

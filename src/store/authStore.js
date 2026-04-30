@@ -7,7 +7,7 @@ import api from '../api/client';
 import biometricAuth from '../services/biometricAuth';
 import { useOnboardingStore } from './onboardingStore';
 import { useDataStore } from './dataStore';
-import GoogleSignin, { getIsConfigured, getReversedClientIdForInfoPlist } from '../config/googleAuth';
+import GoogleSignin, { configureGoogleSignin, getIsConfigured, getReversedClientIdForInfoPlist } from '../config/googleAuth';
 
 export const useAuthStore = create((set, get) => ({
   user: null,
@@ -162,6 +162,9 @@ export const useAuthStore = create((set, get) => ({
   signInWithGoogle: async (role) => {
     try {
       set({ isLoading: true });
+
+      // Lazy native setup avoids iOS startup crashes when Google iOS config is missing.
+      configureGoogleSignin();
 
       // Check if GoogleSignin module is available
       if (!GoogleSignin || typeof GoogleSignin.signIn !== 'function') {

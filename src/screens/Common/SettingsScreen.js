@@ -220,6 +220,14 @@ export default function SettingsScreen({ navigation }) {
                       screen: 'PMSSettings'
                     })}
                   />
+                  <View style={styles.divider} />
+                  <SettingsItem
+                    icon="shield-checkmark-outline"
+                    title="SecureStay Issues"
+                    onPress={() => navigation.navigate('Inspections', {
+                      screen: 'SecureStaySettings'
+                    })}
+                  />
                 </View>
               </View>
             )}

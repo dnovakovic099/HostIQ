@@ -13,6 +13,7 @@ import PaymentSettingsScreen from '../screens/Cleaner/PaymentSettingsScreen';
 import PaymentHistoryScreen from '../screens/Common/PaymentHistoryScreen';
 import InventoryUpdateScreen from '../screens/Cleaner/InventoryUpdateScreen';
 import CleaningReportScreen from '../screens/Common/CleaningReportScreen';
+import SecureStayIssuesScreen from '../screens/Common/SecureStayIssuesScreen';
 
 const Stack = createStackNavigator();
 
@@ -103,6 +104,11 @@ export default function CleanerStack() {
       <Stack.Screen 
         name="CleaningReport" 
         component={CleaningReportScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SecureStayIssues"
+        component={SecureStayIssuesScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

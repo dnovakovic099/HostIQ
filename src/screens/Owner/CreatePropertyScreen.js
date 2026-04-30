@@ -17,6 +17,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
 import { ROOM_SUGGESTIONS, getRoomSuggestionByType } from '../../config/roomSuggestions';
+import SecureStayListingPicker from '../../components/SecureStayListingPicker';
+import { getStatus as getSecureStayStatus } from '../../api/securestay';
 
 export default function CreatePropertyScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -42,10 +44,14 @@ export default function CreatePropertyScreen({ navigation }) {
   // Loading
   const [loading, setLoading] = useState(false);
 
+  // SecureStay quick-import
+  const [secureStayConnected, setSecureStayConnected] = useState(false);
+  const [showSecureStayPicker, setShowSecureStayPicker] = useState(false);
+  const [importedFromSecureStay, setImportedFromSecureStay] = useState(null);
+
   // Reset form when screen is focused (for adding new property)
   useFocusEffect(
     useCallback(() => {
-      // Reset form state when screen comes into focus
       setStep(1);
       setPropertyName('');
       setAddress('');
@@ -55,8 +61,39 @@ export default function CreatePropertyScreen({ navigation }) {
       setShowTemplatePicker(false);
       setSelectedRoomType(null);
       setTemplates([]);
+      setImportedFromSecureStay(null);
+
+      (async () => {
+        try {
+          const s = await getSecureStayStatus();
+          setSecureStayConnected(!!s?.connected);
+        } catch {
+          setSecureStayConnected(false);
+        }
+      })();
     }, [])
   );
+
+  const applySecureStayTemplate = (template) => {
+    if (!template) return;
+    setPropertyName(template.name || '');
+    setAddress(template.address || '');
+    const tplRooms = template.units?.[0]?.rooms || [];
+    setRooms(
+      tplRooms.map((r, i) => ({
+        id: `ss-${Date.now()}-${i}`,
+        name: r.name,
+        room_type: r.room_type,
+        tips: r.tips || '',
+        exampleTips: getRoomSuggestionByType(r.room_type)?.exampleTips || [],
+      }))
+    );
+    setImportedFromSecureStay({
+      id: template.securestay_listing_id,
+      name: template.name,
+      counts: template.counts,
+    });
+  };
 
   const addRoomFromType = async (roomType) => {
     setSelectedRoomType(roomType);
@@ -186,6 +223,7 @@ export default function CreatePropertyScreen({ navigation }) {
     const payload = {
       name: propertyName,
       address,
+      securestay_listing_id: importedFromSecureStay?.id || null,
       units: [{
         name: 'Main Property',
         notes: '',
@@ -315,6 +353,56 @@ export default function CreatePropertyScreen({ navigation }) {
           Enter basic information about your property
         </Text>
       </View>
+
+      <TouchableOpacity
+        style={[
+          styles.ssImportButton,
+          !secureStayConnected && styles.ssImportButtonDisabled,
+        ]}
+        onPress={() => {
+          if (secureStayConnected) {
+            setShowSecureStayPicker(true);
+          } else {
+            Alert.alert(
+              'Connect SecureStay first',
+              'Add your SecureStay API key in Settings to auto-fill properties from your listings.',
+              [
+                { text: 'Not now', style: 'cancel' },
+                {
+                  text: 'Open Settings',
+                  onPress: () => navigation.navigate('SecureStaySettings'),
+                },
+              ]
+            );
+          }
+        }}
+        activeOpacity={0.85}
+      >
+        <View style={styles.ssImportIcon}>
+          <Ionicons
+            name={secureStayConnected ? 'shield-checkmark' : 'link-outline'}
+            size={22}
+            color="#fff"
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.ssImportTitle}>
+            {!secureStayConnected
+              ? 'Connect SecureStay'
+              : importedFromSecureStay
+              ? 'Imported from SecureStay'
+              : 'Search SecureStay listings'}
+          </Text>
+          <Text style={styles.ssImportSubtitle}>
+            {!secureStayConnected
+              ? 'Auto-fill properties from your SecureStay catalog'
+              : importedFromSecureStay
+              ? `${importedFromSecureStay.name} · tap to pick a different listing`
+              : 'Type an address to autocomplete and pre-fill rooms'}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color="#fff" />
+      </TouchableOpacity>
 
       <View style={styles.formGroup}>
         <Text style={styles.label}>Property Name<Text style={styles.required}> *</Text></Text>
@@ -747,6 +835,15 @@ export default function CreatePropertyScreen({ navigation }) {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <SecureStayListingPicker
+        visible={showSecureStayPicker}
+        onClose={() => setShowSecureStayPicker(false)}
+        onPicked={(template) => {
+          applySecureStayTemplate(template);
+          setShowSecureStayPicker(false);
+        }}
+      />
     </View>
   );
 }
@@ -755,6 +852,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  ssImportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#215EEA',
+    marginBottom: 18,
+    shadowColor: '#215EEA',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  ssImportButtonDisabled: {
+    backgroundColor: '#7A8AA8',
+    shadowOpacity: 0.1,
+  },
+  ssImportIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ssImportTitle: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  ssImportSubtitle: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 12,
+    marginTop: 2,
   },
   // Modern Enhanced Progress Bar
   progressContainer: {

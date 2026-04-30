@@ -2,7 +2,7 @@
   "expo": {
     "name": "HostIQ",
     "slug": "roomify",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
     "userInterfaceStyle": "automatic",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hostiq.app",
-      "buildNumber": "35",
+      "buildNumber": "46",
       "deploymentTarget": "18.0",
       "infoPlist": {
         "NSCameraUsageDescription": "HostIQ needs access to your camera to capture inspection photos and videos.",
@@ -71,11 +71,11 @@
         }
       ]
     ],
+    "owner": "dnovakovic099",
     "extra": {
       "eas": {
-        "projectId": "114be218-d7fa-47d3-80c5-b90d037184b9"
+        "projectId": "981b4db7-ecd2-4520-8f6e-5ddcd4fd8fc1"
       }
-    },
-    "owner": "faizan1041"
+    }
   }
 }

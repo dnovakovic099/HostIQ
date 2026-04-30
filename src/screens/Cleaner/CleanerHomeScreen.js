@@ -17,6 +17,7 @@ import colors from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import shadows from '../../theme/shadows';
 import { spacing, borderRadius } from '../../theme/spacing';
+import SecureStayIssuesCard from '../../components/SecureStayIssuesCard';
 
 export default function CleanerHomeScreen({ navigation }) {
   const [jobs, setJobs] = useState([]);
@@ -186,6 +187,21 @@ export default function CleanerHomeScreen({ navigation }) {
               <Text style={styles.notesText}>{item.unit.notes}</Text>
             </View>
           )}
+
+          {/* SecureStay-detected issues for this property (only for assignments;
+              in-progress inspections without an assignment id are skipped). */}
+          {item.type === 'assignment' && item.id ? (
+            <SecureStayIssuesCard
+              assignmentId={item.id}
+              hideWhenEmpty
+              onPress={() =>
+                navigation.navigate('SecureStayIssues', {
+                  assignmentId: item.id,
+                  propertyName: propertyName,
+                })
+              }
+            />
+          ) : null}
 
           {/* Check if unit has rooms before showing Start Inspection button */}
           {(!item.unit?.rooms || item.unit.rooms.length === 0) && !isInProgress ? (

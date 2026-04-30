@@ -5,7 +5,6 @@ import * as SecureStore from 'expo-secure-store';
 console.log('════════════════════════════════════════════════════');
 console.log('🌐 API CLIENT INITIALIZATION');
 console.log('Base URL:', API_URL);
-console.log('Should be: https://roomify-server-production.up.railway.app/api');
 console.log('════════════════════════════════════════════════════');
 
 const client = axios.create({

@@ -18,6 +18,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 import colors from '../../theme/colors';
+import SecureStayIssuesCard from '../../components/SecureStayIssuesCard';
 
 export default function CleanerAssignmentsScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
@@ -335,6 +336,17 @@ export default function CleanerAssignmentsScreen({ route, navigation }) {
             </View>
           </View>
         )}
+
+        <SecureStayIssuesCard
+          assignmentId={item.id}
+          hideWhenEmpty
+          onPress={() =>
+            navigation.navigate('SecureStayIssues', {
+              assignmentId: item.id,
+              propertyName: item.unit?.property?.name,
+            })
+          }
+        />
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>

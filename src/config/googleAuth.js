@@ -1,4 +1,5 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { Platform } from 'react-native';
 
 // IMPORTANT: React Native Google Sign-In requires different Client IDs:
 // 1. Web Client ID (has secret) - Used for backend authentication (webClientId parameter)
@@ -49,8 +50,33 @@ let isConfigured = false;
 let configuredClientId = null;
 let reversedClientId = null;
 
-// Only configure if we have a valid Client ID
-if (webClientId && webClientId !== 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com') {
+const hasValidWebClientId =
+  !!webClientId && webClientId !== 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
+export const configureGoogleSignin = () => {
+  // Idempotent setup
+  if (isConfigured) return true;
+
+  // On iOS, calling configure without iosClientId (or GoogleService-Info.plist) causes a native error.
+  const canConfigureOnIOS = Platform.OS !== 'ios' || !!iosClientId;
+
+  if (!hasValidWebClientId) {
+    console.warn('⚠️ Google Sign-In not configured: Missing Web Client ID');
+    console.warn('   Options:');
+    console.warn('   1. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your .env file');
+    console.warn('   2. Set DIRECT_CLIENT_ID in src/config/googleAuth.js');
+    console.warn('   3. Set EXPO_PUBLIC_GOOGLE_CLIENT_ID (will be used as fallback)');
+    console.warn('   The Web Client ID is the one with a client secret (type: Web application)');
+    return false;
+  }
+
+  if (!canConfigureOnIOS) {
+    console.warn('⚠️ Google Sign-In disabled on iOS: Missing iOS Client ID');
+    console.warn('   Set EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID (or EXPO_PUBLIC_GOOGLE_CLIENT_ID)');
+    console.warn('   or add GoogleService-Info.plist for native iOS Google Sign-In setup.');
+    return false;
+  }
+
   try {
     GoogleSignin.configure({
       // Web Client ID (the one with a secret) - used for backend authentication
@@ -72,18 +98,13 @@ if (webClientId && webClientId !== 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent
       console.log('   REVERSED_CLIENT_ID (for Info.plist):', reversedClientId);
       console.log('   ⚠️ Make sure REVERSED_CLIENT_ID is added to Info.plist URL schemes!');
     }
+    return true;
   } catch (error) {
     console.error('❌ Error configuring Google Sign-In:', error);
     isConfigured = false;
+    return false;
   }
-} else {
-  console.warn('⚠️ Google Sign-In not configured: Missing Web Client ID');
-  console.warn('   Options:');
-  console.warn('   1. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your .env file');
-  console.warn('   2. Set DIRECT_CLIENT_ID in src/config/googleAuth.js');
-  console.warn('   3. Set EXPO_PUBLIC_GOOGLE_CLIENT_ID (will be used as fallback)');
-  console.warn('   The Web Client ID is the one with a client secret (type: Web application)');
-}
+};
 
 // Export helper functions
 export const getIsConfigured = () => isConfigured;

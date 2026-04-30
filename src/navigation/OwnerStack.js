@@ -24,6 +24,8 @@ import IssuesScreen from '../screens/Owner/IssuesScreen';
 import RoomTemplatesScreen from '../screens/Owner/RoomTemplatesScreen';
 import CleaningReportScreen from '../screens/Common/CleaningReportScreen';
 import AirbnbDisputeReportScreen from '../screens/Owner/AirbnbDisputeReportScreen';
+import SecureStayIssuesScreen from '../screens/Common/SecureStayIssuesScreen';
+import SecureStaySettingsScreen from '../screens/Owner/SecureStaySettingsScreen';
 import colors from '../theme/colors';
 
 // Custom header component matching PropertiesScreen style
@@ -256,6 +258,16 @@ export default function OwnerStack() {
         options={{ 
           header: (props) => <DisputeReportHeader {...props} />,
         }}
+      />
+      <Stack.Screen
+        name="SecureStayIssues"
+        component={SecureStayIssuesScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SecureStaySettings"
+        component={SecureStaySettingsScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );
