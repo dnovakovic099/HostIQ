@@ -29,6 +29,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import shadows from '../../theme/shadows';
+import { getPreCleaningBrief } from '../../api/securestay';
 
 const COLORS = {
   bg: '#F8FAFC',
@@ -67,6 +68,41 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const propertyId = routePropertyId || assignment?.unit?.property?.id;
   
   const [inspection, setInspection] = useState(inspectionId ? { id: inspectionId } : null);
+  const [briefGate, setBriefGate] = useState({ checking: !!inspectionId, redirected: false });
+
+  // Pre-cleaning brief gate: if the property is linked to SecureStay
+  // and the cleaner hasn't acknowledged the brief, redirect to it.
+  // After acknowledging, the user is sent back here and brief is skipped.
+  React.useEffect(() => {
+    let alive = true;
+    if (!inspectionId) return;
+    if (route.params?.briefAcknowledged) {
+      setBriefGate({ checking: false, redirected: false });
+      return;
+    }
+    (async () => {
+      try {
+        const data = await getPreCleaningBrief(inspectionId);
+        if (!alive) return;
+        if (data?.available && !data?.acknowledged_at) {
+          setBriefGate({ checking: false, redirected: true });
+          navigation.replace('PreCleaningBrief', {
+            inspectionId,
+            nextScreen: 'CaptureMedia',
+            nextParams: { ...route.params, briefAcknowledged: true },
+          });
+          return;
+        }
+        setBriefGate({ checking: false, redirected: false });
+      } catch (err) {
+        console.warn('[CaptureMedia] brief check failed:', err.message);
+        setBriefGate({ checking: false, redirected: false });
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [inspectionId]);
   
   // Log params only once when component mounts
   React.useEffect(() => {
@@ -745,6 +781,15 @@ export default function CaptureMediaScreen({ route, navigation }) {
             <Text style={styles.errorButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
+      </View>
+    );
+  }
+
+  // While we check (or are mid-redirect to) the SecureStay pre-cleaning brief.
+  if (briefGate.checking || briefGate.redirected) {
+    return (
+      <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }

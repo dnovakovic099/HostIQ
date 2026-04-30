@@ -48,3 +48,17 @@ export async function importSecureStayProperty(payload) {
   const { data } = await api.post('/securestay/import-property', payload);
   return data;
 }
+
+export async function getPreCleaningBrief(inspectionId, { refresh = false } = {}) {
+  const params = refresh ? { refresh: 1 } : undefined;
+  const { data } = await api.get(
+    `/securestay/inspections/${inspectionId}/pre-cleaning-brief`,
+    { params }
+  );
+  return data; // { available, brief?, acknowledged_at?, reason?, message? }
+}
+
+export async function acknowledgePreCleaningBrief(inspectionId) {
+  const { data } = await api.post(`/securestay/inspections/${inspectionId}/acknowledge`);
+  return data; // { success, acknowledged_at, acknowledged_by }
+}
