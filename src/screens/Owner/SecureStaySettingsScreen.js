@@ -81,7 +81,9 @@ export default function SecureStaySettingsScreen({ navigation }) {
     ]);
   }
 
+  const ownIntegration = status?.own_integration || status?.integration || null;
   const connected = !!status?.connected;
+  const inheritedFromOwner = !ownIntegration?.is_active && !!status?.inherited_from_owner;
 
   return (
     <View style={styles.outer}>
@@ -124,12 +126,20 @@ export default function SecureStaySettingsScreen({ navigation }) {
                   ]}
                 />
                 <Text style={styles.statusValue}>
-                  {connected ? 'Connected' : 'Not connected'}
+                  {connected
+                    ? inheritedFromOwner
+                      ? 'Connected via your owner'
+                      : 'Connected'
+                    : 'Not connected'}
                 </Text>
               </View>
-              {status?.integration?.last_tested_at ? (
+              {ownIntegration?.last_tested_at ? (
                 <Text style={styles.statusMeta}>
-                  Last verified {new Date(status.integration.last_tested_at).toLocaleString()}
+                  Last verified {new Date(ownIntegration.last_tested_at).toLocaleString()}
+                </Text>
+              ) : inheritedFromOwner ? (
+                <Text style={styles.statusMeta}>
+                  Using your owner's SecureStay key. You can also paste your own below.
                 </Text>
               ) : null}
             </View>
@@ -170,7 +180,7 @@ export default function SecureStaySettingsScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            {connected ? (
+            {ownIntegration?.is_active ? (
               <TouchableOpacity style={styles.dangerBtn} onPress={handleDisconnect}>
                 <Ionicons name="unlink" size={18} color={colors.status.error} />
                 <Text style={styles.dangerBtnText}>Disconnect SecureStay</Text>

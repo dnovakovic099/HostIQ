@@ -16,6 +16,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../api/client';
 import colors from '../../theme/colors';
+import SecureStayListingPicker from '../../components/SecureStayListingPicker';
+import {
+  getStatus as getSecureStayStatus,
+  importSecureStayProperty,
+} from '../../api/securestay';
+import { FEATURE_FLAGS } from '../../config/constants';
 
 export default function CreateInspectionScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -31,6 +37,15 @@ export default function CreateInspectionScreen({ navigation }) {
   const [propertyAddress, setPropertyAddress] = useState('');
   const [unitName, setUnitName] = useState('');
   const [unitNotes, setUnitNotes] = useState('');
+  // Pulled from SecureStay if the cleaner imports a listing.
+  const [importedListingId, setImportedListingId] = useState(null);
+  const [importedRooms, setImportedRooms] = useState([]); // [{ name, room_type, tips }]
+  const [importedHeadline, setImportedHeadline] = useState(null); // string for badge
+
+  // SecureStay
+  const [secureStayConnected, setSecureStayConnected] = useState(false);
+  const [showSSPicker, setShowSSPicker] = useState(false);
+  const [importingFromSS, setImportingFromSS] = useState(false);
 
   // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
   const tabBarHeight = 110 + insets.bottom;
@@ -40,6 +55,119 @@ export default function CreateInspectionScreen({ navigation }) {
       loadProperties();
     }
   }, [mode]);
+
+  // Check SecureStay status whenever we land on a mode where it matters.
+  useEffect(() => {
+    if (!FEATURE_FLAGS.ENABLE_SECURESTAY) return;
+    if (mode !== 'custom' && mode !== 'preset') return;
+    let alive = true;
+    (async () => {
+      try {
+        const s = await getSecureStayStatus();
+        if (!alive) return;
+        setSecureStayConnected(!!s?.connected);
+      } catch {
+        if (alive) setSecureStayConnected(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [mode]);
+
+  const applySecureStayTemplate = (template) => {
+    if (!template) return;
+    setPropertyName(template.name || '');
+    setPropertyAddress(template.address || '');
+    setUnitName('Main Property');
+    const tplRooms = template.units?.[0]?.rooms || [];
+    setImportedRooms(
+      tplRooms.map((r) => ({
+        name: r.name,
+        room_type: r.room_type || null,
+        tips: r.tips || '',
+      }))
+    );
+    setImportedListingId(template.securestay_listing_id || null);
+    const counts = template.counts || {};
+    const summaryBits = [];
+    if (typeof counts.bedrooms === 'number') summaryBits.push(`${counts.bedrooms} bd`);
+    if (typeof counts.bathrooms === 'number') summaryBits.push(`${counts.bathrooms} ba`);
+    summaryBits.push(`${tplRooms.length} rooms`);
+    setImportedHeadline(`${template.name} · ${summaryBits.join(' · ')}`);
+  };
+
+  const clearImport = () => {
+    setImportedListingId(null);
+    setImportedRooms([]);
+    setImportedHeadline(null);
+  };
+
+  const promptConnectSecureStay = () => {
+    Alert.alert(
+      'Connect SecureStay first',
+      'Add your SecureStay API key in Settings to import properties from your listings.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        {
+          text: 'Open Settings',
+          onPress: () => {
+            const parent = navigation.getParent();
+            if (parent) parent.navigate('Settings', { screen: 'SecureStaySettings' });
+            else navigation.navigate('Settings');
+          },
+        },
+      ]
+    );
+  };
+
+  // Preset-mode quick path: import a listing as a brand-new property under
+  // the cleaner's owner, auto-assign the cleaner, then refresh the list and
+  // pre-select the new property.
+  const handlePresetSecureStayImport = async (template) => {
+    setImportingFromSS(true);
+    try {
+      const tplRooms = template.units?.[0]?.rooms || [];
+      const created = await importSecureStayProperty({
+        name: template.name,
+        address: template.address,
+        timezone: 'America/Los_Angeles',
+        securestay_listing_id: template.securestay_listing_id,
+        units: [
+          {
+            name: 'Main Property',
+            rooms: tplRooms.map((r) => ({
+              name: r.name,
+              room_type: r.room_type,
+              tips: r.tips || '',
+            })),
+          },
+        ],
+      });
+      // Refresh property list and try to select the new one
+      await loadProperties();
+      const newId = created?.id;
+      if (newId) {
+        setSelectedProperty({
+          id: newId,
+          name: created.name,
+          address: created.address,
+        });
+      }
+      Alert.alert(
+        'Imported',
+        `${template.name} was added with ${tplRooms.length} rooms. Pick the unit to start cleaning.`
+      );
+    } catch (err) {
+      console.error('SecureStay preset import failed:', err);
+      Alert.alert(
+        'Import failed',
+        err.response?.data?.error || err.message || 'Could not import listing.'
+      );
+    } finally {
+      setImportingFromSS(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedProperty) {
@@ -88,24 +216,23 @@ export default function CreateInspectionScreen({ navigation }) {
 
     setLoading(true);
     try {
-      // Create custom property and unit
       await api.post('/cleaner/custom-property', {
         property_name: propertyName,
         property_address: propertyAddress,
         unit_name: unitName,
         unit_notes: unitNotes,
+        securestay_listing_id: importedListingId || null,
+        rooms: importedRooms.length > 0 ? importedRooms : undefined,
       });
 
-      Alert.alert(
-        'Success',
-        'Property created! Inspection will be done when the owner adds rooms.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      const successMsg =
+        importedRooms.length > 0
+          ? `Property created with ${importedRooms.length} rooms. You can start an inspection from "Select Property".`
+          : 'Property created! Inspection will be done when the owner adds rooms.';
+
+      Alert.alert('Success', successMsg, [
+        { text: 'OK', onPress: () => navigation.goBack() },
+      ]);
     } catch (error) {
       console.error('Create custom property error:', error);
       Alert.alert('Error', error.response?.data?.error || 'Failed to create property');
@@ -253,6 +380,47 @@ export default function CreateInspectionScreen({ navigation }) {
             </View>
           ) : !selectedProperty ? (
             <View>
+              {FEATURE_FLAGS.ENABLE_SECURESTAY && (
+                <TouchableOpacity
+                  style={[
+                    styles.ssImportButton,
+                    !secureStayConnected && styles.ssImportButtonDisabled,
+                  ]}
+                  onPress={() =>
+                    secureStayConnected ? setShowSSPicker(true) : promptConnectSecureStay()
+                  }
+                  activeOpacity={0.85}
+                  disabled={importingFromSS}
+                >
+                  <View style={styles.ssImportIcon}>
+                    {importingFromSS ? (
+                      <ActivityIndicator color="#fff" size="small" />
+                    ) : (
+                      <Ionicons
+                        name={secureStayConnected ? 'shield-checkmark' : 'link-outline'}
+                        size={22}
+                        color="#fff"
+                      />
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.ssImportTitle}>
+                      {!secureStayConnected
+                        ? 'Connect SecureStay'
+                        : importingFromSS
+                        ? 'Importing…'
+                        : '+ Add property from SecureStay'}
+                    </Text>
+                    <Text style={styles.ssImportSubtitle} numberOfLines={2}>
+                      {!secureStayConnected
+                        ? 'Connect in Settings to add new properties from your listings'
+                        : 'Auto-create the property + rooms in one tap'}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#fff" />
+                </TouchableOpacity>
+              )}
+
               <View style={styles.sectionHeader}>
                 <Ionicons name="business-outline" size={20} color="#215EEA" />
                 <Text style={styles.sectionHeaderText}>Choose a property</Text>
@@ -261,7 +429,7 @@ export default function CreateInspectionScreen({ navigation }) {
                 <View style={styles.emptyState}>
                   <Ionicons name="business-outline" size={48} color="#CBD5E1" />
                   <Text style={styles.emptyStateText}>No properties available</Text>
-                  <Text style={styles.emptyStateSubtext}>Contact your administrator to get assigned to properties</Text>
+                  <Text style={styles.emptyStateSubtext}>Contact your administrator or add one from SecureStay above.</Text>
                 </View>
               ) : (
                 properties.map((property) => (
@@ -400,6 +568,15 @@ export default function CreateInspectionScreen({ navigation }) {
             </View>
           )}
         </ScrollView>
+
+        <SecureStayListingPicker
+          visible={showSSPicker}
+          onClose={() => setShowSSPicker(false)}
+          onPicked={async (template) => {
+            setShowSSPicker(false);
+            await handlePresetSecureStayImport(template);
+          }}
+        />
       </View>
     );
   }
@@ -414,6 +591,56 @@ export default function CreateInspectionScreen({ navigation }) {
         style={styles.content}
         contentContainerStyle={[styles.contentContainer, { paddingBottom: tabBarHeight + 20 }]}
       >
+        {FEATURE_FLAGS.ENABLE_SECURESTAY && (
+          <TouchableOpacity
+            style={[
+              styles.ssImportButton,
+              !secureStayConnected && styles.ssImportButtonDisabled,
+            ]}
+            onPress={() =>
+              secureStayConnected ? setShowSSPicker(true) : promptConnectSecureStay()
+            }
+            activeOpacity={0.85}
+          >
+            <View style={styles.ssImportIcon}>
+              <Ionicons
+                name={secureStayConnected ? 'shield-checkmark' : 'link-outline'}
+                size={22}
+                color="#fff"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.ssImportTitle}>
+                {!secureStayConnected
+                  ? 'Connect SecureStay'
+                  : importedHeadline
+                  ? 'Imported from SecureStay'
+                  : 'Import from SecureStay'}
+              </Text>
+              <Text style={styles.ssImportSubtitle} numberOfLines={2}>
+                {!secureStayConnected
+                  ? 'Connect in Settings to auto-fill name, address and rooms'
+                  : importedHeadline
+                  ? `${importedHeadline} · tap to change`
+                  : 'Search your listings and pre-fill everything'}
+              </Text>
+            </View>
+            {importedHeadline ? (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  clearImport();
+                }}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
+                <Ionicons name="close-circle" size={22} color="#fff" />
+              </TouchableOpacity>
+            ) : (
+              <Ionicons name="chevron-forward" size={18} color="#fff" />
+            )}
+          </TouchableOpacity>
+        )}
+
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeaderIconContainer}>
             <Ionicons name="business-outline" size={20} color="#215EEA" />
@@ -482,6 +709,26 @@ export default function CreateInspectionScreen({ navigation }) {
           />
         </View>
 
+        {importedRooms.length > 0 && (
+          <View style={styles.importedRoomsBox}>
+            <View style={styles.importedRoomsHeader}>
+              <Ionicons name="bed-outline" size={16} color="#215EEA" />
+              <Text style={styles.importedRoomsTitle}>
+                Rooms from SecureStay ({importedRooms.length})
+              </Text>
+            </View>
+            {importedRooms.map((r, idx) => (
+              <Text key={`${r.name}-${idx}`} style={styles.importedRoomLine}>
+                • {r.name}
+                {r.room_type ? `  ·  ${r.room_type}` : ''}
+              </Text>
+            ))}
+            <Text style={styles.importedRoomsHint}>
+              These will be created with the property. You can adjust them after.
+            </Text>
+          </View>
+        )}
+
         <TouchableOpacity
           style={[
             styles.button,
@@ -497,11 +744,22 @@ export default function CreateInspectionScreen({ navigation }) {
           ) : (
             <>
               <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Create Property</Text>
+              <Text style={styles.buttonText}>
+                {importedRooms.length > 0 ? 'Create Property + Rooms' : 'Create Property'}
+              </Text>
             </>
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      <SecureStayListingPicker
+        visible={showSSPicker}
+        onClose={() => setShowSSPicker(false)}
+        onPicked={(template) => {
+          applySecureStayTemplate(template);
+          setShowSSPicker(false);
+        }}
+      />
     </View>
   );
 }
@@ -739,6 +997,72 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  ssImportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#215EEA',
+    marginBottom: 18,
+    shadowColor: '#215EEA',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  ssImportButtonDisabled: {
+    backgroundColor: '#7A8AA8',
+    shadowOpacity: 0.1,
+  },
+  ssImportIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ssImportTitle: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  ssImportSubtitle: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  importedRoomsBox: {
+    backgroundColor: '#F0F7FF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#D0E7FF',
+    padding: 14,
+    marginBottom: 16,
+  },
+  importedRoomsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  importedRoomsTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#215EEA',
+  },
+  importedRoomLine: {
+    fontSize: 13,
+    color: '#1F2937',
+    lineHeight: 20,
+  },
+  importedRoomsHint: {
+    marginTop: 8,
+    fontSize: 11,
+    color: '#6B7280',
+    fontStyle: 'italic',
   },
   loaderContainer: {
     flex: 1,

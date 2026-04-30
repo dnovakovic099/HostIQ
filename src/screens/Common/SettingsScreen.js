@@ -195,45 +195,46 @@ export default function SettingsScreen({ navigation }) {
 
         {/* Property Management (Owners Only) */}
         {(user?.role === 'OWNER' || user?.role === 'ADMIN') && (
-          <>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>PROPERTY MANAGEMENT</Text>
-              <View style={styles.card}>
-                <SettingsItem
-                  icon="bookmark-outline"
-                  title="Room Templates"
-                  onPress={() => navigation.navigate('Inspections', {
-                    screen: 'RoomTemplates'
-                  })}
-                />
-              </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>PROPERTY MANAGEMENT</Text>
+            <View style={styles.card}>
+              <SettingsItem
+                icon="bookmark-outline"
+                title="Room Templates"
+                onPress={() => navigation.navigate('Inspections', {
+                  screen: 'RoomTemplates'
+                })}
+              />
             </View>
+          </View>
+        )}
 
-            {FEATURE_FLAGS.ENABLE_SECURESTAY && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>INTEGRATIONS</Text>
-                <View style={styles.card}>
-                  <SettingsItem
-                    icon="shield-checkmark-outline"
-                    title="SecureStay"
-                    onPress={() => navigation.navigate('SecureStaySettings')}
-                  />
-                  {FEATURE_FLAGS.ENABLE_PMS_INTEGRATION && (
-                    <>
-                      <View style={styles.divider} />
-                      <SettingsItem
-                        icon="cloud-outline"
-                        title="PMS Integration"
-                        onPress={() => navigation.navigate('Inspections', {
-                          screen: 'PMSSettings'
-                        })}
-                      />
-                    </>
-                  )}
-                </View>
-              </View>
-            )}
-          </>
+        {/* Integrations (available to OWNER, ADMIN and CLEANER — cleaners
+            can connect their own SecureStay key or inherit the owner's). */}
+        {FEATURE_FLAGS.ENABLE_SECURESTAY && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>INTEGRATIONS</Text>
+            <View style={styles.card}>
+              <SettingsItem
+                icon="shield-checkmark-outline"
+                title="SecureStay"
+                onPress={() => navigation.navigate('SecureStaySettings')}
+              />
+              {(user?.role === 'OWNER' || user?.role === 'ADMIN') &&
+                FEATURE_FLAGS.ENABLE_PMS_INTEGRATION && (
+                  <>
+                    <View style={styles.divider} />
+                    <SettingsItem
+                      icon="cloud-outline"
+                      title="PMS Integration"
+                      onPress={() => navigation.navigate('Inspections', {
+                        screen: 'PMSSettings'
+                      })}
+                    />
+                  </>
+                )}
+            </View>
+          </View>
         )}
 
         {/* About Section */}
