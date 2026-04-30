@@ -209,25 +209,27 @@ export default function SettingsScreen({ navigation }) {
               </View>
             </View>
 
-            {FEATURE_FLAGS.ENABLE_PMS_INTEGRATION && (
+            {FEATURE_FLAGS.ENABLE_SECURESTAY && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>INTEGRATIONS</Text>
                 <View style={styles.card}>
                   <SettingsItem
-                    icon="cloud-outline"
-                    title="PMS Integration"
-                    onPress={() => navigation.navigate('Inspections', {
-                      screen: 'PMSSettings'
-                    })}
-                  />
-                  <View style={styles.divider} />
-                  <SettingsItem
                     icon="shield-checkmark-outline"
-                    title="SecureStay Issues"
-                    onPress={() => navigation.navigate('Inspections', {
-                      screen: 'SecureStaySettings'
-                    })}
+                    title="SecureStay"
+                    onPress={() => navigation.navigate('SecureStaySettings')}
                   />
+                  {FEATURE_FLAGS.ENABLE_PMS_INTEGRATION && (
+                    <>
+                      <View style={styles.divider} />
+                      <SettingsItem
+                        icon="cloud-outline"
+                        title="PMS Integration"
+                        onPress={() => navigation.navigate('Inspections', {
+                          screen: 'PMSSettings'
+                        })}
+                      />
+                    </>
+                  )}
                 </View>
               </View>
             )}

@@ -5,6 +5,7 @@ import TermsOfServiceScreen from '../screens/Common/TermsOfServiceScreen';
 import PrivacyPolicyScreen from '../screens/Common/PrivacyPolicyScreen';
 import EditProfileScreen from '../screens/Common/EditProfileScreen';
 import ChangePasswordScreen from '../screens/Common/ChangePasswordScreen';
+import SecureStaySettingsScreen from '../screens/Owner/SecureStaySettingsScreen';
 
 const Stack = createStackNavigator();
 
@@ -54,6 +55,11 @@ export default function SettingsStack() {
       <Stack.Screen 
         name="ChangePassword" 
         component={ChangePasswordScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SecureStaySettings"
+        component={SecureStaySettingsScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

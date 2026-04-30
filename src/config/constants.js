@@ -18,6 +18,7 @@ export const SUBSCRIPTION_CONFIG = {
 export const FEATURE_FLAGS = {
   ENABLE_AIRBNB_DISPUTE_REPORT: true,
   ENABLE_PMS_INTEGRATION: false,        // DISABLED for App Store
+  ENABLE_SECURESTAY: true,              // SecureStay integration (separate from PMS)
   ENABLE_ONBOARDING_POPUP: true,
   // === TEMPORARILY DISABLED FOR APP STORE REVIEW ===
   ENABLE_PAYMENTS: false,               // Stripe Connect payments
