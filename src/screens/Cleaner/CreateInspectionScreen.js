@@ -154,10 +154,17 @@ export default function CreateInspectionScreen({ navigation }) {
           address: created.address,
         });
       }
-      Alert.alert(
-        'Imported',
-        `${template.name} was added with ${tplRooms.length} rooms. Pick the unit to start cleaning.`
-      );
+      const ctx = created?.owner_context;
+      const lines = [`${template.name} was added with ${tplRooms.length} rooms.`];
+      if (ctx?.pending_owner_review) {
+        lines.push(
+          ctx.fallback_to_self
+            ? "You weren't linked to an owner, so this property is yours for now and will go to an owner for review."
+            : 'It will be sent to your owner for review.'
+        );
+      }
+      lines.push('Pick the unit to start cleaning.');
+      Alert.alert('Imported', lines.join('\n\n'));
     } catch (err) {
       console.error('SecureStay preset import failed:', err);
       Alert.alert(
@@ -216,7 +223,7 @@ export default function CreateInspectionScreen({ navigation }) {
 
     setLoading(true);
     try {
-      await api.post('/cleaner/custom-property', {
+      const resp = await api.post('/cleaner/custom-property', {
         property_name: propertyName,
         property_address: propertyAddress,
         unit_name: unitName,
@@ -225,12 +232,23 @@ export default function CreateInspectionScreen({ navigation }) {
         rooms: importedRooms.length > 0 ? importedRooms : undefined,
       });
 
-      const successMsg =
-        importedRooms.length > 0
-          ? `Property created with ${importedRooms.length} rooms. You can start an inspection from "Select Property".`
-          : 'Property created! Inspection will be done when the owner adds rooms.';
+      const ctx = resp?.data?.owner_context;
+      const lines = [];
+      if (importedRooms.length > 0) {
+        lines.push(`Property created with ${importedRooms.length} rooms.`);
+      } else {
+        lines.push('Property created.');
+      }
+      if (ctx?.pending_owner_review) {
+        lines.push(
+          ctx.fallback_to_self
+            ? "You weren't linked to an owner, so this property is yours for now and will go to an owner for review."
+            : 'It will be sent to your owner for review.'
+        );
+      }
+      lines.push('You can start an inspection from "Select Property".');
 
-      Alert.alert('Success', successMsg, [
+      Alert.alert('Success', lines.join('\n\n'), [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
