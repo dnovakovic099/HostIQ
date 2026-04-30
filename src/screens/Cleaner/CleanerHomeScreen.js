@@ -86,11 +86,18 @@ export default function CleanerHomeScreen({ navigation }) {
   const handleStartJob = async (job) => {
     if (job.type === 'assignment') {
       try {
-        await api.post(`/cleaner/assignments/${job.id}/start`);
-        navigation.navigate('CaptureMedia', { 
+        const startResp = await api.post(`/cleaner/assignments/${job.id}/start`);
+        navigation.navigate('CaptureMedia', {
           assignment: job,
           propertyId: job.unit?.property?.id,
           propertyName: job.unit?.property?.name,
+          unitName: job.unit?.name,
+          unitId: job.unit?.id,
+          rooms: job.unit?.rooms || [],
+          // Server now returns the inspection that was created/reused,
+          // so the SecureStay pre-cleaning brief gate has a real
+          // inspectionId to work with from the very first navigation.
+          inspectionId: startResp?.data?.inspection?.id,
         });
       } catch (error) {
         const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Failed to start assignment';
