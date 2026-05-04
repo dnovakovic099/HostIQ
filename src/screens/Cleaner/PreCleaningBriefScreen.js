@@ -209,11 +209,12 @@ export default function PreCleaningBriefScreen({ route, navigation }) {
           {/* Priority banner — auto-derived from severity */}
           <PriorityBanner brief={brief} headline={headline} />
 
-          {/* WATCH FOR — actual reported issues, scannable */}
+          {/* WATCH FOR — every cleaning-relevant issue + low-rated
+              review quote from the window, sorted recurring-first then
+              newest. Server-built; no client-side truncation. */}
           <WatchForSection
-            openIssues={open_issues}
-            lastGuest={last_guest}
-            recurring={recurring_categories}
+            items={watch_for}
+            windowDays={brief.window_days || 90}
           />
 
           {/* Last guest */}
@@ -484,34 +485,38 @@ function derivePriorityTone(brief) {
 }
 
 /**
- * "What to watch for" — the priority list of *actual* issues for the
- * cleaner. Surfaces, in order:
- *   1. Open issues reported by guests (highest urgency).
- *   2. Issues from the last guest's stay that aren't already listed
- *      as open (could be marked resolved but still worth a look).
- *   3. Recurring category patterns (last, as historical context).
- * Dedupe is by issue.id, then by description fingerprint.
+ * "What to watch for" — every cleaning/maintenance/house issue
+ * reported in the window plus every low-rated guest review quote.
+ *
+ * The server already:
+ *   - dropped admin/communication/booking categories,
+ *   - tagged each item with `is_recurring` when its category appears
+ *     2+ times in the window,
+ *   - sorted recurring items first then newest.
+ *
+ * The mobile UI just renders the list; no further filtering or
+ * truncation. The cleaner asked to see every single one.
  */
-function WatchForSection({
-  openIssues = [],
-  lastGuest = null,
-  recurring = [],
-}) {
-  const items = useMemo(
-    () => buildWatchList({ openIssues, lastGuest, recurring }),
-    [openIssues, lastGuest, recurring]
-  );
-  if (items.length === 0) return null;
+function WatchForSection({ items = [], windowDays = 90 }) {
+  const renderable = useMemo(() => normalizeWatchItems(items), [items]);
+  if (renderable.length === 0) return null;
+
+  const recurringCount = renderable.filter((it) => it.is_recurring).length;
+  const subtitle =
+    recurringCount > 0
+      ? `Every issue and low-rated review from the last ${windowDays} days · ${recurringCount} recurring`
+      : `Every issue and low-rated review from the last ${windowDays} days`;
 
   return (
     <Section
       icon="eye"
       title="What to watch for"
+      count={renderable.length}
       tint={colors.primary.main}
-      subtitle="Reported issues + recurring patterns — handle these first"
+      subtitle={subtitle}
       featured
     >
-      {items.map((it, idx) => (
+      {renderable.map((it, idx) => (
         <WatchItem key={it.key} item={it} first={idx === 0} />
       ))}
     </Section>
@@ -519,34 +524,33 @@ function WatchForSection({
 }
 
 function WatchItem({ item, first }) {
-  // Build a single tidy meta line: SOURCE · CATEGORY · DATE · GUEST.
-  const metaParts = [];
-  if (item.tags && item.tags.length > 0) {
-    item.tags.forEach((t) => {
-      if (t.label) metaParts.push(t.label);
-    });
-  }
   return (
     <View style={[styles.watchItem, first && { borderTopWidth: 0 }]}>
-      {item.badge ? (
-        <View style={[styles.watchBadge, { backgroundColor: item.color }]}>
-          <Text style={styles.watchBadgeText}>{item.badge}</Text>
-        </View>
-      ) : (
-        <View style={[styles.watchDot, { backgroundColor: item.color }]} />
-      )}
+      <View style={[styles.watchBadge, { backgroundColor: item.color }]}>
+        <Text style={styles.watchBadgeText}>{item.badge}</Text>
+      </View>
       <View style={{ flex: 1 }}>
-        <Text style={styles.watchTitle} numberOfLines={3}>
-          {item.title}
-        </Text>
-        {item.detail ? (
-          <Text style={styles.watchDetail} numberOfLines={3}>
-            {item.detail}
+        <View style={styles.watchTitleRow}>
+          <Text style={styles.watchTitle} numberOfLines={4}>
+            {item.title}
           </Text>
-        ) : null}
-        {metaParts.length > 0 ? (
+          {item.is_recurring ? (
+            <View style={styles.recurringPill}>
+              <Ionicons
+                name="repeat"
+                size={9}
+                color={colors.status.warning}
+                style={{ marginRight: 3 }}
+              />
+              <Text style={styles.recurringPillText}>
+                RECURRING{item.recurring_count ? ` ${item.recurring_count}×` : ''}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        {item.meta.length > 0 ? (
           <Text style={styles.watchMeta} numberOfLines={1}>
-            {metaParts.join('  ·  ')}
+            {item.meta.join('  ·  ')}
           </Text>
         ) : null}
       </View>
@@ -555,89 +559,72 @@ function WatchItem({ item, first }) {
 }
 
 /**
- * Build the prioritized list of real items for "What to watch for".
- * Each item: { key, icon, color, title, detail?, tags?[] }
+ * Convert a server watch_for item into the shape WatchItem renders.
+ * Defensive against legacy shapes (older cached briefs may still have
+ * the old `{type, text, weight}` form, in which case we fall back to
+ * a plain row rather than crashing).
  */
-function buildWatchList({ openIssues, lastGuest, recurring }) {
-  const items = [];
-  const seenIds = new Set();
-  const seenFingerprints = new Set();
+function normalizeWatchItems(items) {
+  if (!Array.isArray(items)) return [];
+  const out = [];
+  items.forEach((raw, idx) => {
+    if (!raw || typeof raw !== 'object') return;
 
-  const fingerprint = (s) =>
-    String(s || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9 ]+/g, '')
-      .trim()
-      .slice(0, 80);
+    // Legacy shape: { type, text, weight } from old cached briefs.
+    const isLegacy =
+      typeof raw.text === 'string' && !raw.description && !raw.source;
+    if (isLegacy) {
+      out.push({
+        key: `legacy-${idx}`,
+        title: raw.text,
+        meta: [],
+        badge: 'NOTE',
+        color: colors.accent.info,
+        is_recurring: false,
+        recurring_count: 0,
+      });
+      return;
+    }
 
-  const pushIssue = (issue, { source }) => {
-    if (!issue) return;
-    if (issue.id && seenIds.has(issue.id)) return;
-    const description = renderableText(issue.description, ['text', 'message']);
-    const category = renderableText(issue.category, ['name', 'label']);
+    const description = renderableText(raw.description, ['text', 'message']);
+    const category = renderableText(raw.category, ['name', 'label']);
+    const guestName = renderableText(raw.guest_name, ['name']);
     if (!description && !category) return;
-    const fp = fingerprint(description || category);
-    if (fp && seenFingerprints.has(fp)) return;
-    if (issue.id) seenIds.add(issue.id);
-    if (fp) seenFingerprints.add(fp);
 
-    const status = renderableText(issue.status, ['name', 'label']);
-    const guestName = renderableText(issue.guest_name, ['name']);
-    const isOpen = source === 'open';
-    const color = isOpen
-      ? colors.status.error
-      : source === 'last-guest'
-      ? colors.status.warning
-      : statusColor(status) || colors.status.warning;
-    const badge = isOpen
-      ? 'OPEN'
-      : source === 'last-guest'
-      ? 'LAST GUEST'
-      : null;
+    let badge;
+    let color;
+    if (raw.source === 'open') {
+      badge = 'OPEN';
+      color = colors.status.error;
+    } else if (raw.source === 'review') {
+      badge = typeof raw.rating === 'number' ? `${raw.rating} ★` : 'REVIEW';
+      color = colors.status.warning;
+    } else {
+      // 'reported' (closed/in-progress issue inside the window)
+      badge = 'REPORTED';
+      color = statusColor(raw.status) || colors.accent.info;
+    }
 
-    const tags = [];
-    if (category) tags.push({ label: category.toUpperCase() });
-    if (issue.reported_at) tags.push({ label: fmtDate(issue.reported_at) });
-    if (!isOpen && guestName) tags.push({ label: guestName });
+    const meta = [];
+    if (category) meta.push(category.toUpperCase());
+    if (raw.reported_at) meta.push(fmtDate(raw.reported_at));
+    if (guestName) meta.push(guestName);
+    if (raw.channel && raw.source === 'review') meta.push(raw.channel);
+    if (raw.status && raw.source !== 'open' && raw.source !== 'review') {
+      meta.push(String(raw.status));
+    }
 
-    items.push({
-      key: issue.id || `${source}-${items.length}`,
-      color,
-      badge,
+    out.push({
+      key: raw.key || raw.id || `watch-${idx}`,
       title: description || category || 'Reported issue',
-      detail: null,
-      tags,
-    });
-  };
-
-  // 1. All open issues (already filtered for cleaning relevance server-side).
-  openIssues.forEach((i) => pushIssue(i, { source: 'open' }));
-
-  // 2. Last guest's reported issues not already shown.
-  (lastGuest?.issues_during_or_after_stay || []).forEach((i) =>
-    pushIssue(i, { source: 'last-guest' })
-  );
-
-  // 3. Recurring category patterns (max 3) — historical context.
-  recurring.slice(0, 3).forEach((c) => {
-    const cat = renderableText(c, ['category', 'name', 'label']);
-    if (!cat) return;
-    const count = typeof c?.count === 'number' ? c.count : null;
-    const sev = severityFromCount(count);
-    items.push({
-      key: `recurring-${cat}`,
-      color: sev.dot,
-      badge: 'PATTERN',
-      title: `Recurring ${cat.toLowerCase()} issues`,
-      detail:
-        count != null
-          ? `Reported ${count}× historically — give it extra attention this visit.`
-          : `Flagged repeatedly — give it extra attention.`,
-      tags: [{ label: cat.toUpperCase() }],
+      meta,
+      badge,
+      color,
+      is_recurring: !!raw.is_recurring,
+      recurring_count: typeof raw.recurring_count === 'number' ? raw.recurring_count : 0,
     });
   });
-
-  return items.slice(0, 8);
+  return out;
 }
 
 function LastGuestCard({ last_guest }) {
@@ -1087,7 +1074,13 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     marginRight: 4,
   },
+  watchTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
   watchTitle: {
+    flex: 1,
     color: colors.text.primary,
     fontSize: 14,
     fontWeight: '700',
@@ -1106,6 +1099,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 6,
     letterSpacing: 0.1,
+  },
+  recurringPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(245, 158, 11, 0.45)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+    marginTop: 1,
+  },
+  recurringPillText: {
+    color: colors.status.warning,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
 
   /* Last guest */
