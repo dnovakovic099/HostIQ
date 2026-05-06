@@ -2,7 +2,7 @@
   "expo": {
     "name": "HostIQ",
     "slug": "roomify",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "Know before your guests do. AI-powered quality control for short-term rentals: verify every cleaning, catch guest issues from messages automatically, and price every night with market data.",
     "orientation": "portrait",
     "icon": "./assets/app-icon.png",
