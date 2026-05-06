@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hostiq.app",
-      "buildNumber": "48",
+      "buildNumber": "49",
       "deploymentTarget": "18.0",
       "infoPlist": {
         "NSCameraUsageDescription": "HostIQ needs access to your camera to capture inspection photos and videos.",
