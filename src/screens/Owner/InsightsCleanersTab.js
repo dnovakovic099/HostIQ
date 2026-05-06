@@ -17,6 +17,7 @@ import api from '../../api/client';
 import { FEATURE_FLAGS } from '../../config/constants';
 import { useDataStore } from '../../store/dataStore';
 import colors from '../../theme/colors';
+import EducationalEmptyState from '../../components/EducationalEmptyState';
 
 // Align with app theme (AssignCleanerScreen / PropertiesScreen)
 const COLORS = {
@@ -509,15 +510,36 @@ export default function InsightsCleanersTab({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <Ionicons name="people-outline" size={48} color={COLORS.accent} />
-            </View>
-            <Text style={styles.emptyTitle}>No Cleaners Yet</Text>
-            <Text style={styles.emptyText}>
-              Add cleaners to start tracking their performance
-            </Text>
-          </View>
+          <EducationalEmptyState
+            icon="people-outline"
+            title="Track every cleaner's performance"
+            subtitle="See who's catching issues, who's missing them, and pay them based on real data."
+            bullets={[
+              {
+                icon: 'analytics-outline',
+                title: 'Pass / fail rates',
+                description:
+                  'AI scores every inspection so you know which cleaners hit the standard.',
+              },
+              {
+                icon: 'time-outline',
+                title: 'Inspection history',
+                description:
+                  'Every photo, every flagged issue, archived and searchable per cleaner.',
+              },
+              {
+                icon: 'cash-outline',
+                title: 'Pay based on quality',
+                description:
+                  'Tie compensation to performance — automatically.',
+              },
+            ]}
+            primaryCta={{
+              label: 'Add a Cleaner',
+              icon: 'person-add',
+              onPress: () => navigation.navigate('ManageCleaners'),
+            }}
+          />
         }
       />
       {renderInspectionsList()}

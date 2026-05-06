@@ -17,6 +17,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../api/client';
+import EducationalEmptyState from '../../components/EducationalEmptyState';
 
 export default function InsightsPropertyTab({ navigation }) {
   const [loading, setLoading] = useState(true);
@@ -334,18 +335,39 @@ export default function InsightsPropertyTab({ navigation }) {
   const renderIssuesSection = () => {
     if (!selectedProperty?.isPMSProperty) {
       return (
-        <View style={styles.noPMSCard}>
-          <Ionicons name="cloud-offline-outline" size={40} color="#9CA3AF" />
-          <Text style={styles.noPMSTitle}>PMS Required</Text>
-          <Text style={styles.noPMSText}>
-            Connect a PMS like Hostify to view guest issues and pricing analytics
-          </Text>
-          <TouchableOpacity
-            style={styles.connectButton}
-            onPress={() => navigation.getParent()?.navigate('Inspections', { screen: 'PMSSettings' })}
-          >
-            <Text style={styles.connectButtonText}>Connect PMS</Text>
-          </TouchableOpacity>
+        <View style={styles.educationalEmptyWrap}>
+          <EducationalEmptyState
+            icon="bar-chart-outline"
+            title="Unlock property insights"
+            subtitle="Connect a PMS to see guest issues, pricing analytics, and revenue trends in one place."
+            bullets={[
+              {
+                icon: 'warning-outline',
+                title: 'Live guest issue feed',
+                description:
+                  'Every complaint scanned from messages, ranked by severity.',
+              },
+              {
+                icon: 'trending-up-outline',
+                title: 'Pricing analytics',
+                description:
+                  'Compare your nightly rates against the market and spot revenue gaps.',
+              },
+              {
+                icon: 'calendar-outline',
+                title: 'Booking patterns',
+                description:
+                  'See occupancy trends, gaps, and lead times across all your listings.',
+              },
+            ]}
+            primaryCta={{
+              label: 'Connect PMS',
+              icon: 'link',
+              onPress: () =>
+                navigation.getParent()?.navigate('Inspections', { screen: 'PMSSettings' }),
+            }}
+            footerNote="Supported: Hostify, Guesty, and more"
+          />
         </View>
       );
     }
@@ -912,7 +934,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#215EEA',
   },
-  // No PMS Card
+  // Wrapper that lets the EducationalEmptyState live inside the
+  // ScrollView without filling the full screen height.
+  educationalEmptyWrap: {
+    minHeight: 540,
+  },
+  // No PMS Card (legacy — kept for any other references)
   noPMSCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,

@@ -12,7 +12,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import colors from '../../theme/colors';
+
+const FEATURE_PILLS = [
+  { icon: 'flash', label: 'AI Cleaning Checks' },
+  { icon: 'chatbubble-ellipses', label: 'Guest Issue Alerts' },
+  { icon: 'trending-up', label: 'Smart Pricing' },
+];
 
 const { width, height } = Dimensions.get('window');
 
@@ -301,9 +308,9 @@ export default function WelcomeScreen({ navigation }) {
                 },
               ]}
             >
-              Welcome to HostIQ
+              Know before your{"\n"}guests do.
             </Animated.Text>
-            
+
             <Animated.Text
               style={[
                 styles.subtitle,
@@ -313,19 +320,29 @@ export default function WelcomeScreen({ navigation }) {
                 },
               ]}
             >
-              AI-driven property intelligence.
+              AI-powered quality control for short-term rentals.
             </Animated.Text>
 
-            <Animated.Text
+            <Animated.View
               style={[
-                styles.callToAction,
+                styles.featurePillsRow,
                 {
                   opacity: subtitleOpacity,
+                  transform: [{ translateY: subtitleSlide }],
                 },
               ]}
             >
-              Start your Short Term Rental AI Journey.
-            </Animated.Text>
+              {FEATURE_PILLS.map((feature) => (
+                <View key={feature.label} style={styles.featurePill}>
+                  <Ionicons
+                    name={feature.icon}
+                    size={14}
+                    color="rgba(255, 255, 255, 0.95)"
+                  />
+                  <Text style={styles.featurePillText}>{feature.label}</Text>
+                </View>
+              ))}
+            </Animated.View>
         </View>
 
         <View style={styles.spacer} />
@@ -426,28 +443,47 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   title: {
-    fontSize: 40,                             // SF Pro Display Large Title
-    fontWeight: '700',                        // Bold not Black (900)
+    fontSize: 38,                             // SF Pro Display Large Title (slightly tighter to fit 2 lines)
+    fontWeight: '700',
     color: '#FFFFFF',
-    marginBottom: 24,                         // 8pt grid
+    marginBottom: 18,
     textAlign: 'center',
-    letterSpacing: -0.8,                      // Tighter for premium feel
+    letterSpacing: -0.8,
+    lineHeight: 44,
   },
   subtitle: {
     fontSize: 17,                             // iOS body text
-    color: 'rgba(255, 255, 255, 0.75)',      // Better contrast
+    color: 'rgba(255, 255, 255, 0.75)',
     textAlign: 'center',
-    lineHeight: 24,                           // Improved readability
-    paddingHorizontal: 32,                    // 8pt grid
+    lineHeight: 24,
+    paddingHorizontal: 16,
     fontWeight: '400',
-    marginBottom: 16,
+    marginBottom: 24,
   },
-  callToAction: {
-    fontSize: 17,
-    color: 'rgba(255, 255, 255, 0.85)',
-    textAlign: 'center',
-    fontWeight: '600',                        // Semibold
-    marginTop: 8,
+  featurePillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 8,
+  },
+  featurePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  featurePillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.95)',
+    letterSpacing: -0.1,
   },
   spacer: {
     flex: 1,

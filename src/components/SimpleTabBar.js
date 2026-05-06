@@ -3,6 +3,7 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../theme/colors';
+import { useOnboardingStore, FIRST_RUN_STAGES } from '../store/onboardingStore';
 
 // Clean iOS-style Tab Bar Colors
 const COLORS = {
@@ -12,8 +13,27 @@ const COLORS = {
   border: '#E5E5E5',                            // Subtle gray border
 };
 
+// Tabs whose value is unlocked by data the user doesn't have yet during
+// first-run. These stay tappable (per UX call) but render at reduced
+// opacity so the eye is drawn to the active funnel instead.
+const FIRST_RUN_DIMMED_TABS = new Set(['Insights', 'Pricing']);
+
 export default function SimpleTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
+  const getFirstRunStage = useOnboardingStore((s) => s.getFirstRunStage);
+  // Subscribe to the underlying flags so the tab bar re-renders the
+  // moment a stage transition happens.
+  const hasSeenDemoInspection = useOnboardingStore(
+    (s) => s.hasSeenDemoInspection
+  );
+  const hasRealProperties = useOnboardingStore((s) => s.hasRealProperties);
+  const stage = getFirstRunStage();
+  const isFirstRun = stage !== FIRST_RUN_STAGES.GRADUATED;
+  // Reference flags so React understands they're dependencies of the
+  // re-render. Not strictly needed for zustand selectors but keeps lint
+  // and intent clear.
+  void hasSeenDemoInspection;
+  void hasRealProperties;
 
   const getIconName = (routeName, focused) => {
     // Filled icons for active, outline for inactive (iOS standard)
@@ -56,11 +76,19 @@ export default function SimpleTabBar({ state, descriptors, navigation }) {
             }
           };
 
+          // Dim (don't lock) tabs whose value depends on data the user
+          // doesn't have during first-run. Still tappable — they'll see
+          // an educational empty state if they explore.
+          const isDimmed =
+            isFirstRun &&
+            !isFocused &&
+            FIRST_RUN_DIMMED_TABS.has(route.name);
+
           return (
             <TouchableOpacity
               key={route.key}
               onPress={onPress}
-              style={styles.tab}
+              style={[styles.tab, isDimmed && styles.tabDimmed]}
               activeOpacity={0.7}
             >
               <Ionicons
@@ -99,6 +127,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 6,                              // Tighter spacing
     paddingBottom: 2,
+  },
+  tabDimmed: {
+    opacity: 0.38,
   },
   label: {
     fontSize: 10,                               // iOS tab bar label

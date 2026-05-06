@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import client from '../../api/client';
+import EducationalEmptyState from '../../components/EducationalEmptyState';
 
 const IssuesScreen = () => {
   const navigation = useNavigation();
@@ -604,26 +605,38 @@ const IssuesScreen = () => {
 
   if (noPMSConnected || properties.length === 0) {
     return (
-      <View style={styles.centerContainer}>
-        <Ionicons name="link-outline" size={80} color="#9CA3AF" />
-        <Text style={styles.emptyTitle}>No PMS Connected</Text>
-        <Text style={styles.emptyText}>
-          Connect your Property Management System to automatically detect and track guest issues from messages.
-        </Text>
-        <TouchableOpacity
-          style={styles.connectButton}
-          onPress={() => {
-            // Navigate to Inspections tab, then to PMSSettings
-            navigation.getParent()?.navigate('Inspections', { screen: 'PMSSettings' });
-          }}
-        >
-          <Ionicons name="link" size={20} color="#FFF" />
-          <Text style={styles.connectButtonText}>Connect PMS</Text>
-        </TouchableOpacity>
-        <Text style={styles.helpText}>
-          Supported: Hostify, Guesty, and more
-        </Text>
-      </View>
+      <EducationalEmptyState
+        icon="chatbubble-ellipses-outline"
+        title="Catch guest complaints automatically"
+        subtitle="HostIQ scans your guest messages and flags issues before they hurt your reviews."
+        bullets={[
+          {
+            icon: 'scan-outline',
+            title: 'AI scans every message',
+            description:
+              'Wi-Fi outages, broken AC, missing items — surfaced the moment a guest mentions them.',
+          },
+          {
+            icon: 'flash-outline',
+            title: 'Severity scoring',
+            description:
+              'Issues are ranked by urgency so you know what needs immediate attention.',
+          },
+          {
+            icon: 'shield-checkmark-outline',
+            title: 'Save your ratings',
+            description:
+              'Resolve issues fast and turn potential 3-star reviews into 5-star ones.',
+          },
+        ]}
+        primaryCta={{
+          label: 'Connect PMS',
+          icon: 'link',
+          onPress: () =>
+            navigation.getParent()?.navigate('Inspections', { screen: 'PMSSettings' }),
+        }}
+        footerNote="Supported: Hostify, Guesty, and more"
+      />
     );
   }
 

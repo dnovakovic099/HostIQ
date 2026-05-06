@@ -20,10 +20,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api/client';
 import UsageIndicator from '../../components/UsageIndicator';
 import OnboardingPopup from '../../components/OnboardingPopup';
-import { useOnboardingStore } from '../../store/onboardingStore';
+import DemoPropertyBanner from '../../components/DemoPropertyBanner';
+import FirstRunAnchorCard from '../../components/FirstRunAnchorCard';
+import { useOnboardingStore, FIRST_RUN_STAGES } from '../../store/onboardingStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDataStore } from '../../store/dataStore';
 import colors from '../../theme/colors';
+
+// Auto-seeded demo properties have a name prefix that lets us identify
+// them on the client without a schema flag. Keep this in sync with the
+// server-side demoSeeder constant.
+const DEMO_PROPERTY_NAME_PREFIX = '✨ Demo:';
+
+const isDemoProperty = (property) =>
+  !!property?.name && property.name.startsWith(DEMO_PROPERTY_NAME_PREFIX);
 
 const { width } = Dimensions.get('window');
 
@@ -65,11 +75,26 @@ export default function OwnerDashboardScreen({ navigation }) {
     const [lowRatingProperties, setLowRatingProperties] = useState([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [hasRealPropertyOnDashboard, setHasRealPropertyOnDashboard] = useState(false);
+    const [hasDemoPropertyOnDashboard, setHasDemoPropertyOnDashboard] = useState(false);
     const lastFetchTime = useRef(0);
     const propertiesFetchInProgress = useRef(false);
 
-    const { loadOnboardingState, shouldShowOnboarding, updateCounts, markOnboardingSeen } = useOnboardingStore();
+    const {
+        loadOnboardingState,
+        updateCounts,
+        markOnboardingSeen,
+        getFirstRunStage,
+    } = useOnboardingStore();
+    // Subscribe to the relevant slice so the dashboard re-renders when the
+    // user transitions between first-run stages (e.g. tapping the demo
+    // inspection flips pre_demo → post_demo immediately).
+    const hasSeenDemoInspection = useOnboardingStore(
+        (s) => s.hasSeenDemoInspection
+    );
+    const hasRealPropertiesStore = useOnboardingStore(
+        (s) => s.hasRealProperties
+    );
 
     useFocusEffect(
         useCallback(() => {
@@ -103,14 +128,34 @@ export default function OwnerDashboardScreen({ navigation }) {
             );
             setRecentInspections(validInspections);
 
+            // Detect demo property from inspection data so we can show the
+            // demo banner without waiting on the (potentially slow) properties
+            // fetch below.
+            const demoFromInspections = validInspections.some((insp) =>
+                isDemoProperty(insp?.unit?.property)
+            );
+            const realFromInspections = validInspections.some(
+                (insp) =>
+                    insp?.unit?.property && !isDemoProperty(insp.unit.property)
+            );
+            setHasDemoPropertyOnDashboard(demoFromInspections);
+            setHasRealPropertyOnDashboard(realFromInspections);
+
             // Check onboarding after loading stats
             // Use stats property count instead of fetching all properties
             const totalProperties = Number(statsRes.data.properties) || 0;
+            // Best-effort initial estimate of real-vs-demo property count
+            // before the properties fetch resolves.
+            const realPropertyEstimate = realFromInspections
+                ? totalProperties // we know at least one real exists
+                : demoFromInspections
+                    ? Math.max(0, totalProperties - 1)
+                    : totalProperties;
             await loadOnboardingState();
-            updateCounts(totalProperties, statsRes.data.cleaners);
-            if (shouldShowOnboarding()) {
-                setShowOnboarding(true);
-            }
+            updateCounts(totalProperties, statsRes.data.cleaners, realPropertyEstimate);
+            // The OnboardingPopup modal is intentionally NOT shown for new
+            // users anymore. The dashboard's inline first-run state (a single
+            // FirstRunAnchorCard) replaces it — see render below.
 
             // Prefetch Team + Insights data in background so those screens load instantly
             useDataStore.getState().prefetchInvites();
@@ -144,6 +189,14 @@ export default function OwnerDashboardScreen({ navigation }) {
 
                     const lowRated = allProperties.filter(prop => prop.hasLowRating);
                     setLowRatingProperties(lowRated);
+
+                    // Recompute real-vs-demo property counts now that we
+                    // have authoritative data from /owner/properties.
+                    const demoCount = allProperties.filter(isDemoProperty).length;
+                    const realCount = allProperties.length - demoCount;
+                    setHasRealPropertyOnDashboard(realCount > 0);
+                    setHasDemoPropertyOnDashboard(demoCount > 0);
+                    updateCounts(allProperties.length, statsRes.data.cleaners, realCount);
                 }).catch(error => {
                     // Silently fail - low-rated properties is a nice-to-have feature
                     // Don't log timeout errors (expected for large property lists)
@@ -161,12 +214,8 @@ export default function OwnerDashboardScreen({ navigation }) {
             setStats({ properties: 0, units: 0, cleaners: 0, inspections_today: 0 });
             setRecentInspections([]);
             setLowRatingProperties([]);
-            // On error, still check onboarding (might be first time user)
             await loadOnboardingState();
             updateCounts(0, 0);
-            if (shouldShowOnboarding()) {
-                setShowOnboarding(true);
-            }
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -178,9 +227,10 @@ export default function OwnerDashboardScreen({ navigation }) {
         fetchDashboardData();
     };
 
+    // Marks the user as having "completed" the welcome flow so the
+    // legacy popup helper (kept for compatibility) never re-fires.
     const handleCloseOnboarding = () => {
         markOnboardingSeen();
-        setShowOnboarding(false);
     };
 
     const handleAddProperty = () => {
@@ -188,10 +238,52 @@ export default function OwnerDashboardScreen({ navigation }) {
         navigation.navigate('Properties', { screen: 'CreateProperty' });
     };
 
-    const handleAddCleaner = () => {
-        handleCloseOnboarding();
-        navigation.navigate('ManageCleaners');
+    // Mark the demo as seen as soon as the user opens any inspection
+    // (real or demo). This flips the dashboard from pre_demo → post_demo
+    // so the next time they're on the home screen they see the
+    // "Add your first real property" anchor instead of "Watch the demo".
+    const markDemoSeen = useOnboardingStore.getState().markDemoInspectionSeen;
+    const handleOpenInspection = (inspection) => {
+        if (!hasSeenDemoInspection) {
+            // Fire-and-forget — don't make the user wait on AsyncStorage.
+            markDemoSeen?.();
+        }
+        navigation.navigate('InspectionDetail', {
+            inspectionId: inspection.id,
+        });
     };
+
+    // Find the most "interesting" demo inspection to anchor the
+    // pre-demo CTA. Prefer the flagged one (it shows AI catching an
+    // actual issue — the magic moment) over the passing one.
+    const demoInspectionToOpen = (() => {
+        const demos = recentInspections.filter((i) =>
+            isDemoProperty(i?.unit?.property)
+        );
+        const flagged = demos.find(
+            (i) => i?.airbnb_grade_analysis?.guest_ready === false
+        );
+        return flagged || demos[0] || null;
+    })();
+
+    const handleWatchDemo = () => {
+        if (demoInspectionToOpen) {
+            handleOpenInspection(demoInspectionToOpen);
+        }
+    };
+
+    // Compute the first-run stage from the source of truth (the store).
+    // We also fall back to the local component state because the demo /
+    // real property detection happens in fetchDashboardData and is
+    // mirrored into the store via updateCounts. Either source flipping
+    // to true graduates us out of first-run mode.
+    const firstRunStage = (() => {
+        const hasReal = hasRealPropertyOnDashboard || hasRealPropertiesStore;
+        if (hasReal) return FIRST_RUN_STAGES.GRADUATED;
+        if (hasSeenDemoInspection) return FIRST_RUN_STAGES.POST_DEMO;
+        return FIRST_RUN_STAGES.PRE_DEMO;
+    })();
+    const isFirstRun = firstRunStage !== FIRST_RUN_STAGES.GRADUATED;
 
     const getStatusConfig = (inspection) => {
         const status = inspection.status || 'UNKNOWN';
@@ -285,13 +377,26 @@ export default function OwnerDashboardScreen({ navigation }) {
                 }
             >
                 {/* Welcome Header with Integrated Quick Actions */}
-                <View style={styles.headerContainer}>
+                <View
+                    style={[
+                        styles.headerContainer,
+                        // When the floating quick-actions card is hidden the
+                        // header doesn't need its 30px overlap margin.
+                        isFirstRun && styles.headerContainerFirstRun,
+                    ]}
+                >
                     <LinearGradient
                         colors={colors.gradients.dashboardHeader}
                         locations={colors.gradients.dashboardHeaderLocations}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={[styles.welcomeSection, { paddingTop: insets.top + 12 }]}
+                        style={[
+                            styles.welcomeSection,
+                            { paddingTop: insets.top + 12 },
+                            // No floating card → no need for 200px of
+                            // paddingBottom reserved for it.
+                            isFirstRun && styles.welcomeSectionFirstRun,
+                        ]}
                     >
                         {/* Animated decorative elements */}
                         <View style={styles.decorativeCircle1}>
@@ -311,69 +416,91 @@ export default function OwnerDashboardScreen({ navigation }) {
                         <Text style={styles.welcomeSubtitle}>Manage your properties with ease</Text>
                     </LinearGradient>
 
-                    {/* Quick Actions Card - Floating above header */}
-                    <View style={styles.quickActionsCard}>
-                        <View style={styles.quickActions}>
-                            {/* Free Image Usage Indicator */}
-                            <View style={styles.usageIndicatorInCard}>
-                                <UsageIndicator navigation={navigation} inCard={true} />
-                            </View>
+                    {/* Quick Actions Card — hidden during first-run to keep
+                        the post-signup screen quiet and focused. Reappears
+                        once the user has a real property. */}
+                    {!isFirstRun && (
+                        <View style={styles.quickActionsCard}>
+                            <View style={styles.quickActions}>
+                                <View style={styles.usageIndicatorInCard}>
+                                    <UsageIndicator navigation={navigation} inCard={true} />
+                                </View>
 
-                            {/* Divider */}
-                            <View style={styles.quickActionsDivider} />
+                                <View style={styles.quickActionsDivider} />
 
-                            <View style={styles.quickActionsRow}>
-                                <TouchableOpacity
-                                    style={styles.quickActionBtn}
-                                    onPress={() => navigation.navigate('Properties', { screen: 'CreateProperty' })}
-                                    activeOpacity={0.7}
-                                >
-                                    <LinearGradient
-                                        colors={['#2CB5E9', '#215EEA']}
-                                        style={styles.quickActionCircle}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
+                                <View style={styles.quickActionsRow}>
+                                    <TouchableOpacity
+                                        style={styles.quickActionBtn}
+                                        onPress={() => navigation.navigate('Properties', { screen: 'CreateProperty' })}
+                                        activeOpacity={0.7}
                                     >
-                                        <Ionicons name="home" size={22} color={colors.text.inverse} />
-                                    </LinearGradient>
-                                    <Text style={styles.quickActionText}>Property</Text>
-                                </TouchableOpacity>
+                                        <LinearGradient
+                                            colors={['#2CB5E9', '#215EEA']}
+                                            style={styles.quickActionCircle}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                        >
+                                            <Ionicons name="home" size={22} color={colors.text.inverse} />
+                                        </LinearGradient>
+                                        <Text style={styles.quickActionText}>Property</Text>
+                                    </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    style={styles.quickActionBtn}
-                                    onPress={() => navigation.navigate('ManageCleaners')}
-                                    activeOpacity={0.7}
-                                >
-                                    <LinearGradient
-                                        colors={['#215EEA', '#1E3AFF']}
-                                        style={styles.quickActionCircle}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
+                                    <TouchableOpacity
+                                        style={styles.quickActionBtn}
+                                        onPress={() => navigation.navigate('ManageCleaners')}
+                                        activeOpacity={0.7}
                                     >
-                                        <Ionicons name="people" size={20} color={colors.text.inverse} />
-                                    </LinearGradient>
-                                    <Text style={styles.quickActionText}>Team</Text>
-                                </TouchableOpacity>
+                                        <LinearGradient
+                                            colors={['#215EEA', '#1E3AFF']}
+                                            style={styles.quickActionCircle}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                        >
+                                            <Ionicons name="people" size={20} color={colors.text.inverse} />
+                                        </LinearGradient>
+                                        <Text style={styles.quickActionText}>Team</Text>
+                                    </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    style={styles.quickActionBtn}
-                                    onPress={() => navigation.navigate('Insights')}
-                                    activeOpacity={0.7}
-                                >
-                                    <LinearGradient
-                                        colors={['#5AC8FA', '#0A84FF']}
-                                        style={styles.quickActionCircle}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
+                                    <TouchableOpacity
+                                        style={styles.quickActionBtn}
+                                        onPress={() => navigation.navigate('Insights')}
+                                        activeOpacity={0.7}
                                     >
-                                        <Ionicons name="analytics" size={20} color={colors.text.inverse} />
-                                    </LinearGradient>
-                                    <Text style={styles.quickActionText}>Issues</Text>
-                                </TouchableOpacity>
+                                        <LinearGradient
+                                            colors={['#5AC8FA', '#0A84FF']}
+                                            style={styles.quickActionCircle}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                        >
+                                            <Ionicons name="analytics" size={20} color={colors.text.inverse} />
+                                        </LinearGradient>
+                                        <Text style={styles.quickActionText}>Issues</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
                         </View>
-                    </View>
+                    )}
                 </View>
+
+                {/* First-Run Anchor: a single, prominent CTA that funnels
+                    new users through one obvious path. Replaces the old
+                    stack of welcome modal + demo banner + stats grid that
+                    overwhelmed people. Auto-disappears once the user has a
+                    real property. */}
+                {firstRunStage === FIRST_RUN_STAGES.PRE_DEMO &&
+                    demoInspectionToOpen && (
+                        <FirstRunAnchorCard
+                            variant="watch_demo"
+                            onPress={handleWatchDemo}
+                            eyebrow="Welcome to HostIQ"
+                        />
+                    )}
+                {firstRunStage === FIRST_RUN_STAGES.POST_DEMO && (
+                    <FirstRunAnchorCard
+                        variant="add_property"
+                        onPress={handleAddProperty}
+                    />
+                )}
 
                 {/* Low Rating Alert */}
                 {
@@ -425,8 +552,10 @@ export default function OwnerDashboardScreen({ navigation }) {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Stats Row */}
-                    {recentInspections.length > 0 && (
+                    {/* Stats Row — hidden during first-run. New users don't
+                        have context to interpret these numbers yet, so we
+                        defer them until they have a real property. */}
+                    {recentInspections.length > 0 && !isFirstRun && (
                         <View style={styles.statsRow}>
                             <View style={styles.statItem}>
                                 <Text style={[styles.statValue, { color: '#1E3AFF' }]}>{totalInspections}</Text>
@@ -470,7 +599,7 @@ export default function OwnerDashboardScreen({ navigation }) {
                             return (
                                 <View key={inspection.id} style={styles.inspectionCard}>
                                     <TouchableOpacity
-                                        onPress={() => navigation.navigate('InspectionDetail', { inspectionId: inspection.id })}
+                                        onPress={() => handleOpenInspection(inspection)}
                                         activeOpacity={0.6}
                                         style={styles.cardTouchable}
                                     >
@@ -514,15 +643,10 @@ export default function OwnerDashboardScreen({ navigation }) {
                 <View style={styles.bottomPadding} />
             </ScrollView>
 
-            {/* Onboarding Popup */}
-            <OnboardingPopup
-                visible={showOnboarding}
-                hasProperties={stats.properties > 0}
-                hasCleaners={stats.cleaners > 0}
-                onClose={handleCloseOnboarding}
-                onAddProperty={handleAddProperty}
-                onAddCleaner={handleAddCleaner}
-            />
+            {/* OnboardingPopup is intentionally not rendered anymore — the
+                inline FirstRunAnchorCard above replaces it. We keep the
+                import / handlers so the component remains compatible if
+                resurrected later for power-user "show me around" flows. */}
         </View>
     );
 }
@@ -546,6 +670,11 @@ const styles = StyleSheet.create({
         position: 'relative',
         marginBottom: 30,
     },
+    // Compact header used in first-run mode: no floating quick-actions
+    // card, so we don't need extra spacing beneath the gradient.
+    headerContainerFirstRun: {
+        marginBottom: 8,
+    },
     // Welcome Section
     welcomeSection: {
         paddingBottom: 200,
@@ -557,6 +686,11 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 0,
         marginHorizontal: 0,
         marginBottom: 0,
+    },
+    // First-run header has no floating card overlapping it, so we
+    // collapse the 200px reservation back to a comfortable amount.
+    welcomeSectionFirstRun: {
+        paddingBottom: 28,
     },
     welcomeContent: {
         flexDirection: 'row',

@@ -828,6 +828,15 @@ export const useAuthStore = create((set, get) => ({
     // Clear cached data
     useDataStore.getState().clear();
 
+    // Reset onboarding state so the next user (or re-login) gets fresh
+    // guidance instead of inheriting this user's "I've seen it" flag.
+    try {
+      const { useOnboardingStore } = require('./onboardingStore');
+      await useOnboardingStore.getState().resetOnboarding();
+    } catch (err) {
+      console.warn('Could not reset onboarding on logout:', err?.message);
+    }
+
     set({
       user: null,
       accessToken: null,
