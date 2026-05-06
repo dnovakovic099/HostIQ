@@ -25,11 +25,34 @@ import colors, { getScoreColor } from '../../theme/colors';
 
 const { width } = Dimensions.get('window');
 
+// Detects URLs that belong to OUR infrastructure (the Roomify API +
+// the production Railway hostname). External CDNs (Unsplash, Cloudinary,
+// etc.) bypass auth-token injection and base-URL rewriting so demo
+// images and any future public assets load without 401/403 noise.
+const isExternalImageUrl = (url) => {
+  if (!url) return false;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) return false;
+  const productionDomain = 'roomify-server-production.up.railway.app';
+  const baseUrl = API_URL.replace('/api', '');
+  // Strip protocol from baseUrl host comparison
+  const baseHost = baseUrl
+    .replace('https://', '')
+    .replace('http://', '')
+    .split(/[:/]/, 1)[0];
+  if (url.includes(productionDomain)) return false;
+  if (baseHost && url.includes(baseHost)) return false;
+  return true;
+};
+
 // Sync version for logging only (no auth token)
 const fixImageUrlSync = (url) => {
   if (!url) return url;
   const originalUrl = String(url).trim();
   url = originalUrl;
+
+  // External URL — leave as-is, no rewriting, no auth.
+  if (isExternalImageUrl(url)) return url;
+
   const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
   let fixedUrl;
 
@@ -56,12 +79,17 @@ const fixImageUrlSync = (url) => {
   return fixedUrl;
 };
 
-// Async version that appends auth token for authenticated image access
+// Async version that appends auth token for authenticated image access.
+// External URLs (Unsplash demo photos, public CDNs, etc.) skip all
+// rewriting and auth — they're already publicly fetchable.
 const fixImageUrl = async (url) => {
   if (!url) return url;
 
   const originalUrl = String(url).trim();
   url = originalUrl;
+
+  if (isExternalImageUrl(url)) return url;
+
   const isFullUrl = url.startsWith('http://') || url.startsWith('https://');
   let fixedUrl;
 
@@ -150,11 +178,16 @@ const AuthenticatedImage = ({ media, index, style }) => {
     );
   }
 
+  // Don't send our Bearer token to third-party image hosts (Unsplash,
+  // Cloudinary, etc.) — they don't need it and some CDNs reject
+  // requests that carry unexpected auth headers.
+  const isExternal = isExternalImageUrl(imageUrl);
+
   return (
     <Image
       source={{
         uri: imageUrl,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: token && !isExternal ? { Authorization: `Bearer ${token}` } : {},
       }}
       style={style}
       resizeMode="cover"
@@ -486,12 +519,24 @@ export default function InspectionDetailScreen({ route, navigation }) {
   // Get selected room data or fall back to overall
   const selectedRoomData = selectedRoomId ? roomResults[selectedRoomId] : null;
 
-  // Use room-specific data if available, otherwise fall back to overall
-  const improvements = selectedRoomData?.cleanliness_reasons || inspection.airbnb_grade_analysis?.improvements_needed || [];
-  const allInventory = selectedRoomData?.damage_items || inspection.damage_analysis?.inventory || [];
+  // Use room-specific data if available, otherwise fall back to overall.
+  const improvements =
+    selectedRoomData?.cleanliness_reasons ||
+    inspection.airbnb_grade_analysis?.improvements_needed ||
+    [];
+  const allInventory =
+    selectedRoomData?.damage_items ||
+    inspection.damage_analysis?.inventory ||
+    [];
   const roomPhotoQuality = selectedRoomData?.photo_quality || photoQuality;
   const isReady = selectedRoomData?.guest_ready ?? inspection.airbnb_grade_analysis?.guest_ready;
-  const grade = selectedRoomData?.overall_grade || inspection.airbnb_grade_analysis?.overall_grade;
+  // Grade may live under either `overall_grade` (current pipeline) or
+  // `grade` (older shape) — accept both.
+  const grade =
+    selectedRoomData?.overall_grade ||
+    inspection.airbnb_grade_analysis?.overall_grade ||
+    inspection.airbnb_grade_analysis?.grade;
+  const aiConfidence = inspection?.airbnb_grade_analysis?.confidence;
   const roomScore = selectedRoomData ? safeNumber(selectedRoomData.cleanliness_score, 0) : cleanlinessScore;
   const photoCount = selectedRoomId
     ? (inspection.media || []).filter(m => m.room_id === selectedRoomId).length
@@ -624,6 +669,101 @@ export default function InspectionDetailScreen({ route, navigation }) {
             contentContainerStyle={[styles.content, { paddingBottom: bottomBarHeight + 16 }]}
             showsVerticalScrollIndicator={false}
           >
+            {/* Demo Inspection Banner — soft acknowledgement that this
+                is sample data, paired with a value-prop tagline so the
+                user understands what they're looking at. Only shown for
+                inspections seeded by demoSeeder.js. */}
+            {(inspection?.summary_json?.is_demo ||
+              inspection?.airbnb_grade_analysis?.is_demo ||
+              inspection?.cleanliness_analysis?.is_demo) && (
+              <LinearGradient
+                colors={['#EBF5FF', '#F0F8FF']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.demoBanner}
+              >
+                <View style={styles.demoBannerIcon}>
+                  <Ionicons name="flash" size={16} color="#0F4FE5" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.demoBannerTitle}>Sample inspection</Text>
+                  <Text style={styles.demoBannerText}>
+                    This is what HostIQ produces after every cleaning. Scroll
+                    through to see how AI scores rooms, flags issues, and builds
+                    an inventory automatically.
+                  </Text>
+                </View>
+              </LinearGradient>
+            )}
+
+            {/* AI Insight Hero Card — the magic moment. Combines the
+                AI's headline grade, a confidence percentage, and the
+                human-readable reasoning paragraph into one prominent
+                card that's the first thing a new user sees. */}
+            {(inspection?.airbnb_grade_analysis?.reasoning ||
+              inspection?.summary_json?.summary ||
+              grade) && (
+              <LinearGradient
+                colors={['#0A1628', '#1A2F4E']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.aiInsightCard}
+              >
+                <View style={styles.aiInsightHeader}>
+                  <View style={styles.aiInsightIconWrap}>
+                    <Ionicons name="flash" size={14} color="#FFFFFF" />
+                  </View>
+                  <Text style={styles.aiInsightLabel}>AI ANALYSIS</Text>
+                  {typeof aiConfidence === 'number' && (
+                    <View style={styles.aiConfidencePill}>
+                      <Text style={styles.aiConfidenceText}>
+                        {Math.round(aiConfidence * 100)}% confidence
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Grade + verdict row */}
+                <View style={styles.aiVerdictRow}>
+                  {!!grade && (
+                    <View
+                      style={[
+                        styles.aiGradeBadge,
+                        {
+                          backgroundColor:
+                            isReady === false ? '#7F1D1D' : '#065F46',
+                        },
+                      ]}
+                    >
+                      <Text style={styles.aiGradeBadgeText}>{grade}</Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1, marginLeft: grade ? 14 : 0 }}>
+                    <Text style={styles.aiVerdictHeadline}>
+                      {isReady === false
+                        ? 'Not ready for guest'
+                        : isReady === true
+                          ? 'Guest-ready'
+                          : 'Inspection complete'}
+                    </Text>
+                    <Text style={styles.aiVerdictSubhead}>
+                      Score {cleanlinessScore.toFixed(1)} / 10 · {photoCount}{' '}
+                      photo{photoCount === 1 ? '' : 's'} analyzed
+                    </Text>
+                  </View>
+                </View>
+
+                {/* AI reasoning paragraph */}
+                {(inspection?.airbnb_grade_analysis?.reasoning ||
+                  inspection?.summary_json?.summary) && (
+                  <Text style={styles.aiInsightBody}>
+                    {inspection?.airbnb_grade_analysis?.reasoning ||
+                      inspection?.summary_json?.summary}
+                  </Text>
+                )}
+              </LinearGradient>
+            )}
+
             {/* Property Info Card */}
             <View style={styles.card}>
               <View style={styles.cardLabelRow}>
@@ -646,6 +786,26 @@ export default function InspectionDetailScreen({ route, navigation }) {
                   <Ionicons name="calendar-outline" size={16} color={colors.text.tertiary} />
                   <Text style={styles.propertyDate}>{formattedDate}</Text>
                 </View>
+
+                {/* Owners can jump straight to property setup to add or
+                    edit rooms — useful when a recent inspection surfaces
+                    a missing room. */}
+                {userRole === 'OWNER' && inspection?.unit?.property?.id ? (
+                  <TouchableOpacity
+                    style={styles.managePropertyLink}
+                    onPress={() =>
+                      navigation.navigate('PropertyDetail', {
+                        propertyId: inspection.unit.property.id,
+                        isPMS: false,
+                      })
+                    }
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="add-circle-outline" size={16} color={colors.primary.main} />
+                    <Text style={styles.managePropertyLinkText}>Manage rooms for this property</Text>
+                    <Ionicons name="chevron-forward" size={14} color={colors.primary.main} />
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </View>
 
@@ -1196,6 +1356,128 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: 20,
   },
+
+  // ===== Demo banner (renders only for seeded sample inspections) =====
+  demoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 79, 229, 0.18)',
+  },
+  demoBannerIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(15, 79, 229, 0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  demoBannerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F4FE5',
+    letterSpacing: -0.1,
+    marginBottom: 3,
+  },
+  demoBannerText: {
+    fontSize: 12,
+    color: '#3C3C43',
+    lineHeight: 16,
+  },
+
+  // ===== AI Insight hero card (dark, premium look) =====
+  aiInsightCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 12,
+    padding: 18,
+    borderRadius: 18,
+    shadowColor: '#0F4FE5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  aiInsightHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  aiInsightIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#0F4FE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  aiInsightLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#5AC8FA',
+    letterSpacing: 1.2,
+  },
+  aiConfidencePill: {
+    marginLeft: 'auto',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(90, 200, 250, 0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(90, 200, 250, 0.4)',
+  },
+  aiConfidenceText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#5AC8FA',
+    letterSpacing: 0.3,
+  },
+  aiVerdictRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  aiGradeBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  aiGradeBadgeText: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -1,
+  },
+  aiVerdictHeadline: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+    marginBottom: 3,
+  },
+  aiVerdictSubhead: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontWeight: '500',
+  },
+  aiInsightBody: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: 'rgba(255, 255, 255, 0.92)',
+    fontWeight: '400',
+  },
+
   center: {
     flex: 1,
     justifyContent: 'center',
@@ -1360,6 +1642,24 @@ const styles = StyleSheet.create({
   propertyDate: {
     fontSize: 13,
     color: colors.text.secondary,
+  },
+  managePropertyLink: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  managePropertyLinkText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary.main,
   },
 
   // Cleaning Summary Metrics

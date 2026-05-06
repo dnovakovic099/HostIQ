@@ -14,6 +14,8 @@ import {
   SafeAreaView,
   Dimensions,
   StatusBar,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,7 +26,10 @@ import api from '../../api/client';
 import { API_URL } from '../../config/api';
 import * as SecureStore from 'expo-secure-store';
 import { useInspectionStore } from '../../store/inspectionStore';
-import { getRoomSuggestionByType } from '../../config/roomSuggestions';
+import {
+  getRoomSuggestionByType,
+  ROOM_SUGGESTIONS,
+} from '../../config/roomSuggestions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -54,7 +59,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
     propertyName, 
     unitName, 
     unitId,
-    rooms = [],
+    rooms: routeRooms = [],
     isRejected = false,
     failedRoomIds = [],
     rejectionReason = '',
@@ -66,6 +71,17 @@ export default function CaptureMediaScreen({ route, navigation }) {
   
   // Get propertyId from route params or assignment
   const propertyId = routePropertyId || assignment?.unit?.property?.id;
+
+  // The room list is mutable on this screen — cleaners can add rooms during
+  // an inspection if they realize one is missing. Keep it as local state and
+  // seed from the navigation params.
+  const [rooms, setRooms] = useState(routeRooms);
+
+  // Add-Room flow state (mirrors the picker UX used in CreatePropertyScreen
+  // / PropertyDetailScreen so it feels consistent across the app).
+  const [showRoomPicker, setShowRoomPicker] = useState(false);
+  const [editingRoom, setEditingRoom] = useState(null);
+  const [savingRoom, setSavingRoom] = useState(false);
   
   const [inspection, setInspection] = useState(inspectionId ? { id: inspectionId } : null);
   const [briefGate, setBriefGate] = useState({ checking: !!inspectionId, redirected: false });
@@ -163,7 +179,84 @@ export default function CaptureMediaScreen({ route, navigation }) {
 
   const hasRooms = rooms.length > 0;
   const failedRoomIdsSet = new Set(failedRoomIds);
-  
+
+  // The unit we'll attach a newly-created room to. Falls back to the
+  // assignment's unit_id when navigation params didn't include unitId.
+  const targetUnitId = unitId || assignment?.unit_id || assignment?.unit?.id;
+
+  // Begin the "Add Room" flow by picking a room type. Mirrors the picker
+  // behavior used by CreatePropertyScreen / PropertyDetailScreen.
+  const beginAddRoomFromType = (roomType) => {
+    setShowRoomPicker(false);
+    const suggestion = getRoomSuggestionByType(roomType);
+    const sameTypeCount = rooms.filter(r => r.room_type === roomType).length;
+    setEditingRoom({
+      id: `local-${Date.now()}`,
+      name:
+        sameTypeCount > 0
+          ? `${suggestion?.defaultName || 'Room'} ${sameTypeCount + 1}`
+          : suggestion?.defaultName || 'Room',
+      room_type: roomType,
+      tips: '',
+      exampleTips: suggestion?.exampleTips || [],
+    });
+  };
+
+  const insertExampleTip = (tip) => {
+    if (!editingRoom) return;
+    const currentTips = (editingRoom.tips || '').trim();
+    const nextTips = currentTips ? `${currentTips}\n• ${tip}` : `• ${tip}`;
+    setEditingRoom({ ...editingRoom, tips: nextTips });
+  };
+
+  // Persist the newly-created room to the server and append it to the
+  // local rooms list so the user can immediately tap into it.
+  const saveNewRoom = async () => {
+    if (!editingRoom) return;
+    if (!editingRoom.name.trim()) {
+      Alert.alert('Required', 'Please enter a room name');
+      return;
+    }
+    if (!targetUnitId) {
+      Alert.alert(
+        'Cannot add room',
+        "We couldn't figure out which unit to attach this room to. Try restarting the inspection."
+      );
+      return;
+    }
+
+    setSavingRoom(true);
+    try {
+      const response = await api.post('/cleaner/rooms', {
+        unit_id: targetUnitId,
+        name: editingRoom.name.trim(),
+        room_type: editingRoom.room_type,
+        tips: (editingRoom.tips || '').trim(),
+      });
+      const created = response?.data;
+      if (!created?.id) {
+        throw new Error('Server did not return the new room.');
+      }
+      setRooms(prev => [...prev, {
+        id: created.id,
+        name: created.name,
+        room_type: created.room_type,
+        tips: created.tips || '',
+      }]);
+      setEditingRoom(null);
+    } catch (err) {
+      console.error('Cleaner add-room error:', err);
+      Alert.alert(
+        'Error',
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Failed to add room. Please try again.'
+      );
+    } finally {
+      setSavingRoom(false);
+    }
+  };
+
   // Toggle room collapse
   const toggleRoomCollapse = (roomId) => {
     setCollapsedRooms(prev => {
@@ -775,12 +868,147 @@ export default function CaptureMediaScreen({ route, navigation }) {
           <Ionicons name="alert-circle" size={64} color="#FF9800" />
           <Text style={styles.errorTitle}>No Rooms Configured</Text>
           <Text style={styles.errorText}>
-            This property has no rooms set up. Please contact the property owner to configure rooms before starting an inspection.
+            This unit has no rooms set up yet. You can add the rooms you'll
+            be inspecting right here, or go back and ask the owner to set them up.
           </Text>
+          {targetUnitId ? (
+            <TouchableOpacity
+              style={[styles.errorButton, { backgroundColor: COLORS.primary, marginBottom: 12 }]}
+              onPress={() => setShowRoomPicker(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.errorButtonText, { color: '#FFFFFF' }]}>Add Room</Text>
+            </TouchableOpacity>
+          ) : null}
           <TouchableOpacity style={styles.errorButton} onPress={() => navigation.goBack()}>
             <Text style={styles.errorButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Reuse the same room-picker / editor modals as the main view so
+            the cleaner can add a room from the empty state. */}
+        <Modal
+          animationType="slide"
+          transparent
+          visible={showRoomPicker}
+          onRequestClose={() => setShowRoomPicker(false)}
+        >
+          <View style={styles.addRoomOverlay}>
+            <View style={styles.addRoomSheet}>
+              <View style={styles.addRoomHeader}>
+                <Text style={styles.addRoomTitle}>Choose Room Type</Text>
+                <TouchableOpacity onPress={() => setShowRoomPicker(false)}>
+                  <Ionicons name="close" size={26} color="#1F2937" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.addRoomList}>
+                {ROOM_SUGGESTIONS.map((suggestion) => (
+                  <TouchableOpacity
+                    key={suggestion.type}
+                    style={styles.addRoomOption}
+                    onPress={() => beginAddRoomFromType(suggestion.type)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.addRoomOptionLeft}>
+                      <View style={styles.addRoomOptionIcon}>
+                        <Ionicons name={suggestion.icon} size={26} color={COLORS.primary} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.addRoomOptionLabel}>{suggestion.label}</Text>
+                        <Text style={styles.addRoomOptionHint} numberOfLines={1}>
+                          {suggestion.exampleTips[0]}
+                        </Text>
+                      </View>
+                    </View>
+                    <Ionicons name="chevron-forward" size={22} color="#CBD5E1" />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          animationType="slide"
+          transparent
+          visible={editingRoom !== null}
+          onRequestClose={() => setEditingRoom(null)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.addRoomOverlay}
+          >
+            <View style={styles.addRoomSheet}>
+              <View style={styles.addRoomHeader}>
+                <Text style={styles.addRoomTitle}>New Room</Text>
+                <TouchableOpacity onPress={() => setEditingRoom(null)} disabled={savingRoom}>
+                  <Ionicons name="close" size={26} color="#1F2937" />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.addRoomEditBody} keyboardShouldPersistTaps="handled">
+                {editingRoom ? (
+                  <>
+                    <Text style={styles.addRoomFieldLabel}>
+                      Room Name <Text style={{ color: '#EF4444' }}>*</Text>
+                    </Text>
+                    <TextInput
+                      style={styles.addRoomInput}
+                      placeholder="e.g., Powder Room"
+                      placeholderTextColor="#94A3B8"
+                      value={editingRoom.name}
+                      onChangeText={(text) => setEditingRoom({ ...editingRoom, name: text })}
+                    />
+
+                    <Text style={[styles.addRoomFieldLabel, { marginTop: 16 }]}>
+                      Cleaning Tips (optional)
+                    </Text>
+                    {editingRoom.exampleTips?.length > 0 ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.addRoomTipsRow}
+                      >
+                        {editingRoom.exampleTips.map((tip, idx) => (
+                          <TouchableOpacity
+                            key={idx}
+                            style={styles.addRoomTipChip}
+                            onPress={() => insertExampleTip(tip)}
+                          >
+                            <Ionicons name="add-circle-outline" size={14} color={COLORS.primary} />
+                            <Text style={styles.addRoomTipChipText} numberOfLines={1}>
+                              {tip}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    ) : null}
+                    <TextInput
+                      style={[styles.addRoomInput, styles.addRoomInputMultiline]}
+                      placeholder="• What should be checked or photographed?"
+                      placeholderTextColor="#94A3B8"
+                      value={editingRoom.tips}
+                      onChangeText={(text) => setEditingRoom({ ...editingRoom, tips: text })}
+                      multiline
+                    />
+
+                    <TouchableOpacity
+                      style={[styles.addRoomSaveBtn, savingRoom && { opacity: 0.7 }]}
+                      onPress={saveNewRoom}
+                      disabled={savingRoom}
+                      activeOpacity={0.85}
+                    >
+                      {savingRoom ? (
+                        <ActivityIndicator color="#fff" />
+                      ) : (
+                        <Text style={styles.addRoomSaveBtnText}>Add Room</Text>
+                      )}
+                    </TouchableOpacity>
+                  </>
+                ) : null}
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
       </View>
     );
   }
@@ -921,6 +1149,18 @@ export default function CaptureMediaScreen({ route, navigation }) {
               </TouchableOpacity>
             );
           })}
+
+          {/* Add a missing room on the fly during inspection. */}
+          {targetUnitId ? (
+            <TouchableOpacity
+              style={styles.addRoomInlineButton}
+              onPress={() => setShowRoomPicker(true)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="add-circle" size={18} color={COLORS.primary} />
+              <Text style={styles.addRoomInlineText}>Add Room</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* Valuable Items Section */}
@@ -1214,6 +1454,134 @@ export default function CaptureMediaScreen({ route, navigation }) {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Add-Room: pick a room type */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={showRoomPicker}
+        onRequestClose={() => setShowRoomPicker(false)}
+      >
+        <View style={styles.addRoomOverlay}>
+          <View style={styles.addRoomSheet}>
+            <View style={styles.addRoomHeader}>
+              <Text style={styles.addRoomTitle}>Choose Room Type</Text>
+              <TouchableOpacity onPress={() => setShowRoomPicker(false)}>
+                <Ionicons name="close" size={26} color="#1F2937" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.addRoomList}>
+              {ROOM_SUGGESTIONS.map((suggestion) => (
+                <TouchableOpacity
+                  key={suggestion.type}
+                  style={styles.addRoomOption}
+                  onPress={() => beginAddRoomFromType(suggestion.type)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.addRoomOptionLeft}>
+                    <View style={styles.addRoomOptionIcon}>
+                      <Ionicons name={suggestion.icon} size={26} color={COLORS.primary} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.addRoomOptionLabel}>{suggestion.label}</Text>
+                      <Text style={styles.addRoomOptionHint} numberOfLines={1}>
+                        {suggestion.exampleTips[0]}
+                      </Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={22} color="#CBD5E1" />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Add-Room: edit name / tips */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={editingRoom !== null}
+        onRequestClose={() => setEditingRoom(null)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.addRoomOverlay}
+        >
+          <View style={styles.addRoomSheet}>
+            <View style={styles.addRoomHeader}>
+              <Text style={styles.addRoomTitle}>New Room</Text>
+              <TouchableOpacity onPress={() => setEditingRoom(null)} disabled={savingRoom}>
+                <Ionicons name="close" size={26} color="#1F2937" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView
+              style={styles.addRoomEditBody}
+              keyboardShouldPersistTaps="handled"
+            >
+              {editingRoom ? (
+                <>
+                  <Text style={styles.addRoomFieldLabel}>
+                    Room Name <Text style={{ color: '#EF4444' }}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={styles.addRoomInput}
+                    placeholder="e.g., Powder Room"
+                    placeholderTextColor="#94A3B8"
+                    value={editingRoom.name}
+                    onChangeText={(text) => setEditingRoom({ ...editingRoom, name: text })}
+                  />
+
+                  <Text style={[styles.addRoomFieldLabel, { marginTop: 16 }]}>
+                    Cleaning Tips (optional)
+                  </Text>
+                  {editingRoom.exampleTips?.length > 0 ? (
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.addRoomTipsRow}
+                    >
+                      {editingRoom.exampleTips.map((tip, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          style={styles.addRoomTipChip}
+                          onPress={() => insertExampleTip(tip)}
+                        >
+                          <Ionicons name="add-circle-outline" size={14} color={COLORS.primary} />
+                          <Text style={styles.addRoomTipChipText} numberOfLines={1}>
+                            {tip}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  ) : null}
+                  <TextInput
+                    style={[styles.addRoomInput, styles.addRoomInputMultiline]}
+                    placeholder="• What should be checked or photographed?"
+                    placeholderTextColor="#94A3B8"
+                    value={editingRoom.tips}
+                    onChangeText={(text) => setEditingRoom({ ...editingRoom, tips: text })}
+                    multiline
+                  />
+
+                  <TouchableOpacity
+                    style={[styles.addRoomSaveBtn, savingRoom && { opacity: 0.7 }]}
+                    onPress={saveNewRoom}
+                    disabled={savingRoom}
+                    activeOpacity={0.85}
+                  >
+                    {savingRoom ? (
+                      <ActivityIndicator color="#fff" />
+                    ) : (
+                      <Text style={styles.addRoomSaveBtnText}>Add Room</Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : null}
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
     </View>
@@ -2359,5 +2727,152 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFF',
+  },
+
+  // ===== Inline "Add Room" button on the rooms list =====
+  addRoomInlineButton: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#C7D2FE',
+    backgroundColor: '#F8FAFF',
+  },
+  addRoomInlineText: {
+    color: COLORS.primary,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+
+  // ===== Add-Room picker / editor modals =====
+  addRoomOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  addRoomSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 16,
+    maxHeight: '85%',
+  },
+  addRoomHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  addRoomTitle: {
+    fontSize: 19,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  addRoomList: {
+    paddingTop: 4,
+    paddingBottom: 32,
+  },
+  addRoomOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F7',
+  },
+  addRoomOptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  addRoomOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  addRoomOptionLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  addRoomOptionHint: {
+    fontSize: 12,
+    color: '#94A3B8',
+    maxWidth: 220,
+  },
+  addRoomEditBody: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 32,
+  },
+  addRoomFieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  addRoomInput: {
+    height: 48,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 14,
+    fontSize: 15,
+    backgroundColor: '#FFFFFF',
+    color: '#111827',
+  },
+  addRoomInputMultiline: {
+    height: 110,
+    paddingTop: 12,
+    textAlignVertical: 'top',
+  },
+  addRoomTipsRow: {
+    marginBottom: 10,
+  },
+  addRoomTipChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F7FF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#D0E7FF',
+    maxWidth: 220,
+  },
+  addRoomTipChipText: {
+    fontSize: 12,
+    color: COLORS.primary,
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  addRoomSaveBtn: {
+    marginTop: 18,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addRoomSaveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

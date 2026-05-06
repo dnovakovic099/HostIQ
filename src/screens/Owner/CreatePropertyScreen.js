@@ -16,19 +16,121 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../api/client';
-import { ROOM_SUGGESTIONS, getRoomSuggestionByType } from '../../config/roomSuggestions';
+import { ROOM_SUGGESTIONS, ROOM_TYPES, getRoomSuggestionByType } from '../../config/roomSuggestions';
 import SecureStayListingPicker from '../../components/SecureStayListingPicker';
 import { getStatus as getSecureStayStatus } from '../../api/securestay';
 
+// =============================================================================
+// QUICK SETUP PRESETS
+// =============================================================================
+// Most short-term rentals fit a small handful of standard layouts. The Quick
+// Setup mode lets users pick "what kind of place is it" and we auto-generate
+// a sensible room list. Power users can still drop into Custom mode for
+// fine-grained control.
+
+const PLACE_TYPES = [
+  { id: 'studio', label: 'Studio', bedrooms: 0, hasLivingRoom: false, icon: 'cube-outline' },
+  { id: '1br', label: '1 Bedroom', bedrooms: 1, hasLivingRoom: true, icon: 'home-outline' },
+  { id: '2br', label: '2 Bedrooms', bedrooms: 2, hasLivingRoom: true, icon: 'home-outline' },
+  { id: '3br', label: '3 Bedrooms', bedrooms: 3, hasLivingRoom: true, icon: 'home-outline' },
+  { id: '4br_plus', label: '4+ Bedrooms', bedrooms: 4, hasLivingRoom: true, icon: 'business-outline' },
+];
+
+const BATHROOM_OPTIONS = [
+  { id: 1, label: '1' },
+  { id: 1.5, label: '1.5' },
+  { id: 2, label: '2' },
+  { id: 2.5, label: '2.5' },
+  { id: 3, label: '3+' },
+];
+
+// Generate a sensible room list from a preset configuration. Returns rooms
+// in the same shape used by the existing wizard, so the rest of the
+// submission flow needs no changes.
+const generateRoomsFromPreset = (placeTypeId, bathroomCount) => {
+  const preset = PLACE_TYPES.find((p) => p.id === placeTypeId);
+  if (!preset) return [];
+
+  const result = [];
+  let idCounter = Date.now();
+
+  // Bedrooms (named "Master Bedroom", "Bedroom 2", "Bedroom 3", ...)
+  for (let i = 0; i < preset.bedrooms; i++) {
+    const suggestion = getRoomSuggestionByType(ROOM_TYPES.BEDROOM);
+    const name = i === 0 ? 'Master Bedroom' : `Bedroom ${i + 1}`;
+    result.push({
+      id: String(idCounter++),
+      name,
+      room_type: ROOM_TYPES.BEDROOM,
+      tips: '',
+      exampleTips: suggestion?.exampleTips || [],
+    });
+  }
+
+  // Living room (skipped for studios — single combined area)
+  if (preset.hasLivingRoom) {
+    const suggestion = getRoomSuggestionByType(ROOM_TYPES.LIVING_ROOM);
+    result.push({
+      id: String(idCounter++),
+      name: 'Living Room',
+      room_type: ROOM_TYPES.LIVING_ROOM,
+      tips: '',
+      exampleTips: suggestion?.exampleTips || [],
+    });
+  }
+
+  // Kitchen
+  {
+    const suggestion = getRoomSuggestionByType(ROOM_TYPES.KITCHEN);
+    result.push({
+      id: String(idCounter++),
+      name: 'Kitchen',
+      room_type: ROOM_TYPES.KITCHEN,
+      tips: '',
+      exampleTips: suggestion?.exampleTips || [],
+    });
+  }
+
+  // Bathrooms (round up — 1.5 baths becomes 2 inspectable rooms)
+  const bathroomRooms = Math.ceil(bathroomCount);
+  for (let i = 0; i < bathroomRooms; i++) {
+    const suggestion = getRoomSuggestionByType(ROOM_TYPES.BATHROOM);
+    const name =
+      bathroomRooms === 1
+        ? 'Bathroom'
+        : i === 0
+          ? 'Master Bathroom'
+          : `Bathroom ${i + 1}`;
+    result.push({
+      id: String(idCounter++),
+      name,
+      room_type: ROOM_TYPES.BATHROOM,
+      tips: '',
+      exampleTips: suggestion?.exampleTips || [],
+    });
+  }
+
+  return result;
+};
+
 export default function CreatePropertyScreen({ navigation }) {
   const insets = useSafeAreaInsets();
-  // Wizard state
+
+  // Setup mode: 'quick' is the new default (smart presets), 'custom' falls
+  // back to the existing 3-step wizard for power users.
+  const [setupMode, setSetupMode] = useState('quick');
+
+  // Quick Setup state
+  const [quickPlaceType, setQuickPlaceType] = useState('1br');
+  const [quickBathrooms, setQuickBathrooms] = useState(1);
+
+  // Wizard state (custom mode)
   const [step, setStep] = useState(1); // 1: Property Info, 2: Add Rooms, 3: Review
 
   // Property details
   const [propertyName, setPropertyName] = useState('');
   const [address, setAddress] = useState('');
-  
+
   // Tab bar height: 60px (TAB_BAR_HEIGHT) + 50px (dipDepth) + safe area bottom
   const tabBarHeight = 15;
 
@@ -41,6 +143,11 @@ export default function CreatePropertyScreen({ navigation }) {
   const [templates, setTemplates] = useState([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
+  // True once the user has manually touched the Quick-mode room list (added,
+  // edited, or deleted a room). After that, place-type / bathroom chips no
+  // longer auto-regenerate the preview — `rooms` is the source of truth.
+  const [quickRoomsCustomized, setQuickRoomsCustomized] = useState(false);
+
   // Loading
   const [loading, setLoading] = useState(false);
 
@@ -52,10 +159,14 @@ export default function CreatePropertyScreen({ navigation }) {
   // Reset form when screen is focused (for adding new property)
   useFocusEffect(
     useCallback(() => {
+      setSetupMode('quick');
+      setQuickPlaceType('1br');
+      setQuickBathrooms(1);
       setStep(1);
       setPropertyName('');
       setAddress('');
       setRooms([]);
+      setQuickRoomsCustomized(false);
       setEditingRoom(null);
       setShowRoomPicker(false);
       setShowTemplatePicker(false);
@@ -74,6 +185,97 @@ export default function CreatePropertyScreen({ navigation }) {
     }, [])
   );
 
+  // The rooms shown/submitted in Quick Setup. SS-imported rooms or any
+  // user-customized list takes priority; otherwise we fall back to the
+  // preset generated from the place-type + bathroom chips.
+  const getQuickRooms = () => {
+    if (importedFromSecureStay || quickRoomsCustomized) {
+      return rooms;
+    }
+    return generateRoomsFromPreset(quickPlaceType, quickBathrooms);
+  };
+
+  // Materialize the current preset preview into `rooms` state so that
+  // the user can add to / edit / delete that list. After this call,
+  // `rooms` is the source of truth for Quick mode.
+  const ensureQuickRoomsMaterialized = () => {
+    if (importedFromSecureStay || quickRoomsCustomized) return;
+    const generatedRooms = generateRoomsFromPreset(quickPlaceType, quickBathrooms);
+    setRooms(generatedRooms);
+    setQuickRoomsCustomized(true);
+  };
+
+  // Submit a property created via Quick Setup. Uses the current Quick
+  // rooms (preset, SS import, or user-customized) and submits in one tap.
+  const handleQuickSubmit = async () => {
+    if (!propertyName.trim() || !address.trim()) {
+      Alert.alert('Required', 'Please enter property name and address');
+      return;
+    }
+
+    const finalRooms = getQuickRooms();
+    if (finalRooms.length === 0) {
+      Alert.alert('Required', 'Please add at least one room before creating the property.');
+      return;
+    }
+
+    const payload = {
+      name: propertyName,
+      address,
+      securestay_listing_id: importedFromSecureStay?.id || null,
+      units: [
+        {
+          name: 'Main Property',
+          notes: '',
+          rooms: finalRooms.map((room) => ({
+            name: room.name,
+            room_type: room.room_type,
+            tips: room.tips,
+          })),
+        },
+      ],
+    };
+
+    setLoading(true);
+    try {
+      await api.post('/owner/properties', payload);
+
+      Alert.alert('Success', 'Property created successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            const parentNav = navigation.getParent();
+            if (parentNav) {
+              parentNav.navigate('Properties', { screen: 'PropertiesList' });
+            } else {
+              navigation.goBack();
+              setTimeout(() => {
+                navigation.navigate('Properties');
+              }, 100);
+            }
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error('Create property (quick) error:', error);
+      Alert.alert(
+        'Error',
+        error.response?.data?.error || 'Failed to create property'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Switch from Quick Setup to Custom mode, pre-populating the wizard
+  // with the rooms we'd have auto-generated. The user can then edit them.
+  const handleSwitchToCustom = () => {
+    const carryRooms = getQuickRooms();
+    setRooms(carryRooms);
+    setStep(propertyName.trim() && address.trim() ? 2 : 1);
+    setSetupMode('custom');
+  };
+
   const applySecureStayTemplate = (template) => {
     if (!template) return;
     setPropertyName(template.name || '');
@@ -88,6 +290,9 @@ export default function CreatePropertyScreen({ navigation }) {
         exampleTips: getRoomSuggestionByType(r.room_type)?.exampleTips || [],
       }))
     );
+    // SS becomes the new base — wipe any prior customization flag so the
+    // user can still tweak/remove these (which will set the flag again).
+    setQuickRoomsCustomized(false);
     setImportedFromSecureStay({
       id: template.securestay_listing_id,
       name: template.name,
@@ -96,6 +301,10 @@ export default function CreatePropertyScreen({ navigation }) {
   };
 
   const addRoomFromType = async (roomType) => {
+    // In Quick mode, freeze the preset preview into `rooms` so the user's
+    // additions survive future place-type chip taps.
+    if (setupMode === 'quick') ensureQuickRoomsMaterialized();
+
     setSelectedRoomType(roomType);
     setShowRoomPicker(false);
 
@@ -124,7 +333,10 @@ export default function CreatePropertyScreen({ navigation }) {
 
   const createRoomFromScratch = (roomType) => {
     const suggestion = getRoomSuggestionByType(roomType);
-    const count = rooms.filter(r => r.room_type === roomType).length;
+    // Use the live Quick room list when in Quick mode so default names
+    // ("Bedroom 2", etc.) reflect what the user actually sees.
+    const baseRooms = setupMode === 'quick' ? getQuickRooms() : rooms;
+    const count = baseRooms.filter(r => r.room_type === roomType).length;
 
     const newRoom = {
       id: Date.now().toString(),
@@ -138,7 +350,8 @@ export default function CreatePropertyScreen({ navigation }) {
   };
 
   const createRoomFromTemplate = (template) => {
-    const count = rooms.filter(r => r.room_type === template.room_type).length;
+    const baseRooms = setupMode === 'quick' ? getQuickRooms() : rooms;
+    const count = baseRooms.filter(r => r.room_type === template.room_type).length;
 
     const newRoom = {
       id: Date.now().toString(),
@@ -158,18 +371,42 @@ export default function CreatePropertyScreen({ navigation }) {
       return;
     }
 
+    // In Quick mode, take ownership of the preset preview (if not already)
+    // before we mutate `rooms`.
+    if (setupMode === 'quick' && !importedFromSecureStay && !quickRoomsCustomized) {
+      const generated = generateRoomsFromPreset(quickPlaceType, quickBathrooms);
+      const existingIdx = generated.findIndex(r => r.id === editingRoom.id);
+      const next = existingIdx >= 0
+        ? generated.map((r, i) => (i === existingIdx ? editingRoom : r))
+        : [...generated, editingRoom];
+      setRooms(next);
+      setQuickRoomsCustomized(true);
+      setEditingRoom(null);
+      return;
+    }
+
     const existingIndex = rooms.findIndex(r => r.id === editingRoom.id);
     if (existingIndex >= 0) {
-      // Update existing room
       const updatedRooms = [...rooms];
       updatedRooms[existingIndex] = editingRoom;
       setRooms(updatedRooms);
     } else {
-      // Add new room
       setRooms([...rooms, editingRoom]);
     }
 
+    if (setupMode === 'quick') setQuickRoomsCustomized(true);
     setEditingRoom(null);
+  };
+
+  // Open the editor for an existing room. In Quick mode, materialize the
+  // preset preview first so the edit affects the actual list.
+  const startEditRoom = (room) => {
+    if (setupMode === 'quick') ensureQuickRoomsMaterialized();
+    const suggestion = getRoomSuggestionByType(room.room_type);
+    setEditingRoom({
+      ...room,
+      exampleTips: room.exampleTips || suggestion?.exampleTips || [],
+    });
   };
 
   const deleteRoom = (id) => {
@@ -181,8 +418,19 @@ export default function CreatePropertyScreen({ navigation }) {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => setRooms(rooms.filter(r => r.id !== id))
-        }
+          onPress: () => {
+            // In Quick mode, materialize the preset before removing so the
+            // remaining rooms are kept (otherwise nothing changes).
+            if (setupMode === 'quick' && !importedFromSecureStay && !quickRoomsCustomized) {
+              const generated = generateRoomsFromPreset(quickPlaceType, quickBathrooms);
+              setRooms(generated.filter(r => r.id !== id));
+              setQuickRoomsCustomized(true);
+              return;
+            }
+            setRooms(rooms.filter(r => r.id !== id));
+            if (setupMode === 'quick') setQuickRoomsCustomized(true);
+          },
+        },
       ]
     );
   };
@@ -478,7 +726,7 @@ export default function CreatePropertyScreen({ navigation }) {
                   </View>
                   <View style={styles.roomSummaryActions}>
                     <TouchableOpacity
-                      onPress={() => setEditingRoom(room)}
+                      onPress={() => startEditRoom(room)}
                       style={styles.iconButton}
                     >
                       <Ionicons name="create-outline" size={22} color="#215EEA" />
@@ -566,53 +814,292 @@ export default function CreatePropertyScreen({ navigation }) {
     </ScrollView>
   );
 
+  // Quick Setup: single-screen smart-defaults flow that's now the default.
+  const renderQuickSetup = () => {
+    const previewRooms = getQuickRooms();
+    // Hide the place-type / bathroom chips once the user has imported from
+    // SecureStay or customized — those chips would overwrite their list.
+    const showPresetChips = !importedFromSecureStay && !quickRoomsCustomized;
+
+    return (
+      <ScrollView
+        style={styles.stepContent}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 80 }}
+      >
+        <View style={styles.stepHeader}>
+          <Text style={styles.stepTitle}>Add a Property</Text>
+          <Text style={styles.stepSubtitle}>
+            Tell us a bit about it — we'll set up the rest.
+          </Text>
+        </View>
+
+        {/* SecureStay quick import (unchanged behavior) */}
+        <TouchableOpacity
+          style={[
+            styles.ssImportButton,
+            !secureStayConnected && styles.ssImportButtonDisabled,
+          ]}
+          onPress={() => {
+            if (secureStayConnected) {
+              setShowSecureStayPicker(true);
+            } else {
+              Alert.alert(
+                'Connect SecureStay first',
+                'Add your SecureStay API key in Settings to auto-fill properties from your listings.',
+                [
+                  { text: 'Not now', style: 'cancel' },
+                  {
+                    text: 'Open Settings',
+                    onPress: () => navigation.navigate('SecureStaySettings'),
+                  },
+                ]
+              );
+            }
+          }}
+          activeOpacity={0.85}
+        >
+          <View style={styles.ssImportIcon}>
+            <Ionicons
+              name={secureStayConnected ? 'shield-checkmark' : 'link-outline'}
+              size={22}
+              color="#fff"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.ssImportTitle}>
+              {!secureStayConnected
+                ? 'Connect SecureStay'
+                : importedFromSecureStay
+                  ? 'Imported from SecureStay'
+                  : 'Search SecureStay listings'}
+            </Text>
+            <Text style={styles.ssImportSubtitle}>
+              {!secureStayConnected
+                ? 'Auto-fill properties from your SecureStay catalog'
+                : importedFromSecureStay
+                  ? `${importedFromSecureStay.name} · tap to pick a different listing`
+                  : 'Type an address to autocomplete and pre-fill rooms'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#fff" />
+        </TouchableOpacity>
+
+        {/* Property Name */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Property Name<Text style={styles.required}> *</Text></Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g., Sunset Beach House"
+            value={propertyName}
+            onChangeText={setPropertyName}
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Address */}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Address<Text style={styles.required}> *</Text></Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="e.g., 123 Ocean Drive, Miami Beach, FL"
+            value={address}
+            onChangeText={setAddress}
+            multiline
+            numberOfLines={2}
+            placeholderTextColor="#999"
+          />
+        </View>
+
+        {/* Place Type Chips — hidden once user has imported from SS or
+            edited the room list, since they'd overwrite the list. */}
+        {showPresetChips && (
+          <>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>What kind of place is it?</Text>
+              <View style={styles.chipRow}>
+                {PLACE_TYPES.map((pt) => {
+                  const selected = quickPlaceType === pt.id;
+                  return (
+                    <TouchableOpacity
+                      key={pt.id}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setQuickPlaceType(pt.id)}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons
+                        name={pt.icon}
+                        size={16}
+                        color={selected ? '#fff' : '#215EEA'}
+                      />
+                      <Text
+                        style={[styles.chipText, selected && styles.chipTextSelected]}
+                      >
+                        {pt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Bathroom Count */}
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>How many bathrooms?</Text>
+              <View style={styles.chipRow}>
+                {BATHROOM_OPTIONS.map((b) => {
+                  const selected = quickBathrooms === b.id;
+                  return (
+                    <TouchableOpacity
+                      key={b.id}
+                      style={[styles.chip, styles.chipCompact, selected && styles.chipSelected]}
+                      onPress={() => setQuickBathrooms(b.id)}
+                      activeOpacity={0.85}
+                    >
+                      <Text
+                        style={[styles.chipText, selected && styles.chipTextSelected]}
+                      >
+                        {b.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* Rooms list — interactive: edit / delete / add. */}
+        <View style={styles.previewSection}>
+          <View style={styles.previewHeader}>
+            <Ionicons
+              name={previewRooms.length > 0 ? 'checkmark-circle' : 'home-outline'}
+              size={18}
+              color={previewRooms.length > 0 ? '#33D39C' : '#94A3B8'}
+            />
+            <Text style={styles.previewTitle}>
+              {previewRooms.length === 0
+                ? 'No rooms yet — tap "Add Room" below'
+                : importedFromSecureStay
+                  ? `${previewRooms.length} room${previewRooms.length === 1 ? '' : 's'} from SecureStay`
+                  : `${previewRooms.length} room${previewRooms.length === 1 ? '' : 's'} ready`}
+            </Text>
+          </View>
+
+          {previewRooms.map((r) => (
+            <View key={r.id} style={styles.quickRoomRow}>
+              <Ionicons
+                name={getRoomIcon(r.room_type)}
+                size={18}
+                color="#215EEA"
+                style={{ marginRight: 10 }}
+              />
+              <Text style={styles.quickRoomText} numberOfLines={1}>
+                {r.name}
+              </Text>
+              <TouchableOpacity
+                onPress={() => startEditRoom(r)}
+                style={styles.quickRoomIconBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="create-outline" size={18} color="#215EEA" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => deleteRoom(r.id)}
+                style={styles.quickRoomIconBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="trash-outline" size={18} color="#F44336" />
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          <TouchableOpacity
+            style={styles.quickAddRoomButton}
+            onPress={() => setShowRoomPicker(true)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add-circle" size={18} color="#fff" />
+            <Text style={styles.quickAddRoomButtonText}>Add Room</Text>
+          </TouchableOpacity>
+
+          {!quickRoomsCustomized && !importedFromSecureStay && (
+            <TouchableOpacity
+              style={styles.customLink}
+              onPress={handleSwitchToCustom}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.customLinkText}>
+                Prefer the full wizard? Switch to manual setup →
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ScrollView>
+    );
+  };
+
   return (
     <View style={styles.container}>
-      {/* Progress Indicator */}
-      {renderProgress()}
+      {/* Progress Indicator (custom mode only) */}
+      {setupMode === 'custom' && renderProgress()}
 
       {/* Step Content */}
       <View style={styles.content}>
-        {step === 1 && renderPropertyDetails()}
-        {step === 2 && renderAddRooms()}
-        {step === 3 && renderReview()}
+        {setupMode === 'quick' && renderQuickSetup()}
+        {setupMode === 'custom' && step === 1 && renderPropertyDetails()}
+        {setupMode === 'custom' && step === 2 && renderAddRooms()}
+        {setupMode === 'custom' && step === 3 && renderReview()}
       </View>
 
       {/* Navigation Buttons */}
       <View style={[styles.footer, { paddingBottom: tabBarHeight }]}>
-        {step > 1 && (
+        {setupMode === 'quick' ? (
           <TouchableOpacity
-            style={[styles.footerButton, styles.backButton]}
-            onPress={handleBack}
-          >
-            <Ionicons name="arrow-back" size={20} color="#215EEA" />
-            <Text style={styles.backButtonText}>Back</Text>
-          </TouchableOpacity>
-        )}
-
-        {step < 3 ? (
-          <TouchableOpacity
-            style={[styles.footerButton, styles.nextButton, step === 1 && styles.fullWidth]}
-            onPress={handleNext}
-          >
-            <Text style={styles.nextButtonText}>Next</Text>
-            <Ionicons name="arrow-forward" size={20} color="#fff" />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.footerButton, styles.completeButton]}
-            onPress={handleComplete}
+            style={[styles.footerButton, styles.completeButton, styles.fullWidth]}
+            onPress={handleQuickSubmit}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <>
-                
-                <Text style={styles.completeButtonText}>Create Property</Text>
-              </>
+              <Text style={styles.completeButtonText}>Create Property</Text>
             )}
           </TouchableOpacity>
+        ) : (
+          <>
+            {step > 1 && (
+              <TouchableOpacity
+                style={[styles.footerButton, styles.backButton]}
+                onPress={handleBack}
+              >
+                <Ionicons name="arrow-back" size={20} color="#215EEA" />
+                <Text style={styles.backButtonText}>Back</Text>
+              </TouchableOpacity>
+            )}
+
+            {step < 3 ? (
+              <TouchableOpacity
+                style={[styles.footerButton, styles.nextButton, step === 1 && styles.fullWidth]}
+                onPress={handleNext}
+              >
+                <Text style={styles.nextButtonText}>Next</Text>
+                <Ionicons name="arrow-forward" size={20} color="#fff" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.footerButton, styles.completeButton]}
+                onPress={handleComplete}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.completeButtonText}>Create Property</Text>
+                )}
+              </TouchableOpacity>
+            )}
+          </>
         )}
       </View>
 
@@ -853,6 +1340,123 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
   },
+
+  // ===== Quick Setup Chips =====
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#E5E5EA',
+  },
+  chipCompact: {
+    paddingHorizontal: 18,
+    minWidth: 56,
+    justifyContent: 'center',
+  },
+  chipSelected: {
+    backgroundColor: '#215EEA',
+    borderColor: '#215EEA',
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#215EEA',
+    letterSpacing: -0.1,
+  },
+  chipTextSelected: {
+    color: '#fff',
+  },
+
+  // ===== Quick Setup Preview =====
+  previewSection: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  previewTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: -0.2,
+  },
+  previewRoomItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  previewRoomText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  quickRoomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F2F2F7',
+  },
+  quickRoomText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  quickRoomIconBtn: {
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  quickAddRoomButton: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: '#215EEA',
+  },
+  quickAddRoomButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.1,
+  },
+  customLink: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F2F2F7',
+    alignItems: 'center',
+  },
+  customLinkText: {
+    fontSize: 13,
+    color: '#215EEA',
+    fontWeight: '600',
+    letterSpacing: -0.1,
+  },
+
   ssImportButton: {
     flexDirection: 'row',
     alignItems: 'center',
