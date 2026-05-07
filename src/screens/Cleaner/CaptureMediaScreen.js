@@ -35,6 +35,7 @@ import colors from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import shadows from '../../theme/shadows';
 import { getPreCleaningBrief } from '../../api/securestay';
+import { fetchRecentIssues } from '../../api/issueAcknowledgments';
 
 const COLORS = {
   bg: '#F8FAFC',
@@ -145,7 +146,9 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
   const [selectedPhotoForView, setSelectedPhotoForView] = useState(null);
-  const [damageReport, setDamageReport] = useState('');
+  // Damage report is captured per-room inside RoomCaptureScreen.
+  // We keep a map keyed by room_id and combine into a single labeled string on submit.
+  const [damageReportsByRoom, setDamageReportsByRoom] = useState({});
   const { createInspection } = useInspectionStore();
   
   // Valuable Items State
@@ -156,21 +159,72 @@ export default function CaptureMediaScreen({ route, navigation }) {
   const [showValuableItemModal, setShowValuableItemModal] = useState(false);
   const [collapsedRooms, setCollapsedRooms] = useState(new Set());
   const [resolvedRefPhotoUrls, setResolvedRefPhotoUrls] = useState({}); // { itemId: fixedUrl }
+
+  // Recent-issue acknowledgment tracking (used to gate Submit and to show
+  // unresolved counts on each room and the property-wide entry card).
+  const [recentIssuesData, setRecentIssuesData] = useState(null);
+  const [loadingRecentIssues, setLoadingRecentIssues] = useState(false);
+
+  const loadRecentIssues = React.useCallback(async () => {
+    const id = inspectionId || inspection?.id;
+    if (!id) return;
+    setLoadingRecentIssues(true);
+    try {
+      const data = await fetchRecentIssues(id);
+      setRecentIssuesData(data);
+    } catch (err) {
+      console.error('Failed to load recent issues', err);
+    } finally {
+      setLoadingRecentIssues(false);
+    }
+  }, [inspectionId, inspection?.id]);
   
+  // Load recent issues on mount + whenever inspection id becomes available
+  React.useEffect(() => {
+    loadRecentIssues();
+  }, [loadRecentIssues]);
+
   // Listen for updates from RoomCaptureScreen
   React.useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      // Check if we have updated photos from RoomCaptureScreen
+      // Refresh recent issues so per-room ack counts update after returning
+      loadRecentIssues();
       const params = route.params;
-      if (params?.updatedRoomPhotos) {
-        const roomId = params.updatedRoomId;
-        // Update photos for this room
+      const roomId = params?.updatedRoomId;
+
+      if (params?.updatedRoomPhotos && roomId) {
         setPhotos(prev => {
           const filtered = prev.filter(p => p.roomId !== roomId);
           return [...filtered, ...params.updatedRoomPhotos];
         });
-        // Clear the params
-        navigation.setParams({ updatedRoomPhotos: undefined, updatedRoomId: undefined });
+      }
+
+      // Persist the per-room damage report (typed in RoomCaptureScreen).
+      // Always merge when the param is defined — including '' so cleaners can
+      // clear a previously-saved note.
+      if (roomId && params?.updatedDamageReport !== undefined) {
+        const incoming = (params.updatedDamageReport || '').trim();
+        setDamageReportsByRoom(prev => {
+          const next = { ...prev };
+          if (incoming) {
+            next[roomId] = incoming;
+          } else {
+            delete next[roomId];
+          }
+          return next;
+        });
+      }
+
+      if (
+        params?.updatedRoomPhotos !== undefined ||
+        params?.updatedRoomId !== undefined ||
+        params?.updatedDamageReport !== undefined
+      ) {
+        navigation.setParams({
+          updatedRoomPhotos: undefined,
+          updatedRoomId: undefined,
+          updatedDamageReport: undefined,
+        });
       }
     });
 
@@ -681,11 +735,75 @@ export default function CaptureMediaScreen({ route, navigation }) {
         console.log('📦 Valuable item verifications complete!');
       }
 
-      // Submit inspection with damage report
-      console.log('📤 Submitting inspection with damage report...');
-      await api.post(`/cleaner/inspections/${currentInspection.id}/submit`, {
-        damage_report: damageReport || null
+      // Submit inspection with damage report (combined from per-room notes)
+      const roomNameById = new Map(rooms.map(r => [r.id, r.name]));
+      const combinedDamageReport = Object.entries(damageReportsByRoom)
+        .filter(([, text]) => text && text.trim())
+        .map(([roomId, text]) => {
+          const roomName = roomNameById.get(roomId) || 'Room';
+          return `[${roomName}]\n${text.trim()}`;
+        })
+        .join('\n\n');
+
+      console.log('📤 Submitting inspection with damage report...', {
+        rooms_with_notes: Object.keys(damageReportsByRoom).length,
+        combined_length: combinedDamageReport.length,
       });
+      try {
+        await api.post(`/cleaner/inspections/${currentInspection.id}/submit`, {
+          damage_report: combinedDamageReport || null
+        });
+      } catch (err) {
+        // Server returns 400 with code=ISSUE_ACKS_REQUIRED when the cleaner
+        // hasn't responded to every recent-issue slot. Surface a clear
+        // message and route them to the first unresolved slot.
+        const data = err?.response?.data;
+        if (data?.code === 'ISSUE_ACKS_REQUIRED') {
+          await loadRecentIssues();
+          const first = data.missing_slots?.[0];
+          const roomTarget = first?.room_id
+            ? rooms.find((r) => r.id === first.room_id)
+            : null;
+
+          Alert.alert(
+            'Recent issues need review',
+            `${data.missing_count} recent issue${data.missing_count === 1 ? '' : 's'} ${data.missing_count === 1 ? 'is' : 'are'} not yet marked. Mark each as Addressed, Still Present, or N/A before submitting.`,
+            [
+              {
+                text: 'Take me there',
+                onPress: () => {
+                  if (first?.room_id && roomTarget) {
+                    navigation.navigate('RoomCapture', {
+                      room: roomTarget,
+                      assignment,
+                      inspectionId: currentInspection.id,
+                      propertyId,
+                      propertyName,
+                      unitName,
+                      unitId,
+                      rooms,
+                      isRejected,
+                      failedRoomIds,
+                      rejectionReason,
+                      existingMedia: existingMedia.filter((m) => m.room_id === roomTarget.id),
+                      isEditing,
+                      allPhotos: photos,
+                      existingDamageReport: damageReportsByRoom[roomTarget.id] || '',
+                    });
+                  } else {
+                    navigation.navigate('PropertyWideIssues', {
+                      inspectionId: currentInspection.id,
+                    });
+                  }
+                },
+              },
+              { text: 'OK', style: 'cancel' },
+            ]
+          );
+          return;
+        }
+        throw err;
+      }
       console.log('✅ Inspection submitted successfully!');
 
       // Prompt to update inventory after successful submission
@@ -1078,6 +1196,48 @@ export default function CaptureMediaScreen({ route, navigation }) {
           </View>
         )}
 
+        {/* Property-wide recent issues entry card */}
+        {(recentIssuesData?.property_wide?.length ?? 0) > 0 && (() => {
+          const pwItems = recentIssuesData.property_wide;
+          const pwTotal = pwItems.length;
+          const pwAcked = (recentIssuesData.acknowledgments || []).filter(
+            (a) => !a.room_id && pwItems.some((i) => i.key === a.external_issue_id)
+          ).length;
+          const pwRemaining = Math.max(0, pwTotal - pwAcked);
+          return (
+            <TouchableOpacity
+              style={styles.propertyWideCard}
+              onPress={() => navigation.navigate('PropertyWideIssues', {
+                inspectionId: inspectionId || inspection?.id,
+              })}
+              activeOpacity={0.85}
+            >
+              <View style={styles.propertyWideIcon}>
+                <Ionicons name="alert-circle" size={22} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.propertyWideTitle}>Property-wide Issues</Text>
+                <Text style={styles.propertyWideSubtitle}>
+                  {pwRemaining > 0
+                    ? `${pwRemaining} of ${pwTotal} still need a response`
+                    : `All ${pwTotal} reviewed`}
+                </Text>
+              </View>
+              <View style={[
+                styles.propertyWideBadge,
+                pwRemaining === 0 && styles.propertyWideBadgeDone,
+              ]}>
+                <Text style={[
+                  styles.propertyWideBadgeText,
+                  pwRemaining === 0 && styles.propertyWideBadgeTextDone,
+                ]}>
+                  {pwRemaining === 0 ? '✓ Done' : `${pwRemaining}`}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })()}
+
         {/* Rooms & Cleaning Tips - REDESIGNED */}
         <View style={styles.roomsOverviewCard}>
           <View style={styles.roomsOverviewHeader}>
@@ -1096,6 +1256,16 @@ export default function CaptureMediaScreen({ route, navigation }) {
           {rooms.map((room) => {
             const roomPhotos = photos.filter(p => p.roomId === room.id);
             const isComplete = roomPhotos.length > 0;
+            const savedDamageNote = damageReportsByRoom[room.id];
+            const hasDamageNote = !!(savedDamageNote && savedDamageNote.trim());
+
+            // Recent-issue ack count for this room
+            const roomItemsForRoom = recentIssuesData?.per_room?.[room.id] || [];
+            const roomItemsTotal = roomItemsForRoom.length;
+            const roomItemsAcked = (recentIssuesData?.acknowledgments || []).filter(
+              (a) => a.room_id === room.id && roomItemsForRoom.some((i) => i.key === a.external_issue_id)
+            ).length;
+            const roomItemsRemaining = Math.max(0, roomItemsTotal - roomItemsAcked);
             
             return (
               <TouchableOpacity
@@ -1120,6 +1290,7 @@ export default function CaptureMediaScreen({ route, navigation }) {
                   existingMedia: existingMedia.filter(m => m.room_id === room.id),
                   isEditing,
                   allPhotos: photos, // Pass all photos to maintain state
+                  existingDamageReport: damageReportsByRoom[room.id] || '',
                 })}
                 activeOpacity={0.7}
               >
@@ -1130,6 +1301,20 @@ export default function CaptureMediaScreen({ route, navigation }) {
                       <View style={styles.completeBadge}>
                         <Ionicons name="checkmark-circle" size={16} color="#33D39C" />
                         <Text style={styles.completeBadgeText}>{roomPhotos.length} photo{roomPhotos.length > 1 ? 's' : ''}</Text>
+                      </View>
+                    )}
+                    {hasDamageNote && (
+                      <View style={styles.damageNoteBadge}>
+                        <Ionicons name="document-text-outline" size={14} color="#F59E0B" />
+                        <Text style={styles.damageNoteBadgeText}>Note saved</Text>
+                      </View>
+                    )}
+                    {roomItemsRemaining > 0 && (
+                      <View style={styles.unresolvedIssuesBadge}>
+                        <Ionicons name="alert-circle" size={14} color="#EF4444" />
+                        <Text style={styles.unresolvedIssuesBadgeText}>
+                          {roomItemsRemaining} to review
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -1769,6 +1954,88 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#33D39C',
+  },
+  damageNoteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 6,
+  },
+  damageNoteBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#F59E0B',
+  },
+  unresolvedIssuesBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 6,
+  },
+  unresolvedIssuesBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#EF4444',
+  },
+  propertyWideCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 14,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.18)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  propertyWideIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EF4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  propertyWideTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  propertyWideSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  propertyWideBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+  },
+  propertyWideBadgeDone: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+  },
+  propertyWideBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#EF4444',
+  },
+  propertyWideBadgeTextDone: {
+    color: '#10B981',
   },
   modernRoomTips: {
     fontSize: 13,

@@ -15,6 +15,7 @@ import InventoryUpdateScreen from '../screens/Cleaner/InventoryUpdateScreen';
 import CleaningReportScreen from '../screens/Common/CleaningReportScreen';
 import SecureStayIssuesScreen from '../screens/Common/SecureStayIssuesScreen';
 import PreCleaningBriefScreen from '../screens/Cleaner/PreCleaningBriefScreen';
+import PropertyWideIssuesScreen from '../screens/Cleaner/PropertyWideIssuesScreen';
 
 const Stack = createStackNavigator();
 
@@ -116,6 +117,11 @@ export default function CleanerStack() {
         name="PreCleaningBrief"
         component={PreCleaningBriefScreen}
         options={{ headerShown: false, gestureEnabled: false }}
+      />
+      <Stack.Screen
+        name="PropertyWideIssues"
+        component={PropertyWideIssuesScreen}
+        options={{ headerShown: false }}
       />
     </Stack.Navigator>
   );

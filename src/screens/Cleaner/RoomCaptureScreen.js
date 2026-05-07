@@ -26,6 +26,8 @@ import api from '../../api/client';
 import { API_URL } from '../../config/api';
 import { getRoomSuggestionByType } from '../../config/roomSuggestions';
 import colors from '../../theme/colors';
+import IssueAckCard from '../../components/IssueAckCard';
+import { fetchRecentIssues } from '../../api/issueAcknowledgments';
 
 const { width } = Dimensions.get('window');
 
@@ -40,12 +42,20 @@ export default function RoomCaptureScreen({ route, navigation }) {
     allPhotos = [],
     existingMedia = [],
     isEditing = false,
+    existingDamageReport = '',
   } = route.params;
 
   const [photos, setPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [selectedPhotoForView, setSelectedPhotoForView] = useState(null);
-  const [damageReport, setDamageReport] = useState('');
+  // Seed from CaptureMediaScreen's per-room map so the cleaner sees what they
+  // previously typed when they re-open this room.
+  const [damageReport, setDamageReport] = useState(existingDamageReport || '');
+
+  // Recent-issue acknowledgments (per-room subset)
+  const [issueItems, setIssueItems] = useState([]);
+  const [acksByExternalId, setAcksByExternalId] = useState({});
+  const [loadingIssues, setLoadingIssues] = useState(true);
   const scrollViewRef = useRef(null);
   const damageReportInputRef = useRef(null);
 
@@ -82,6 +92,44 @@ export default function RoomCaptureScreen({ route, navigation }) {
       setPhotos(roomPhotos);
     }
   }, [existingMedia, allPhotos, room.id, room.name, isEditing]);
+
+  // Load recent issues + existing acks for this room
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!inspectionId || !room?.id) {
+        setLoadingIssues(false);
+        return;
+      }
+      try {
+        const data = await fetchRecentIssues(inspectionId);
+        if (!alive) return;
+        const items = data.per_room?.[room.id] || [];
+        const ackMap = {};
+        for (const a of data.acknowledgments || []) {
+          if (a.room_id === room.id) {
+            ackMap[a.external_issue_id] = a;
+          }
+        }
+        setIssueItems(items);
+        setAcksByExternalId(ackMap);
+      } catch (err) {
+        console.error('Failed to load recent issues for room', err);
+      } finally {
+        if (alive) setLoadingIssues(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [inspectionId, room?.id]);
+
+  const handleAckChange = (ack) => {
+    setAcksByExternalId((prev) => ({
+      ...prev,
+      [ack.external_issue_id]: ack,
+    }));
+  };
 
   const requestPermissions = async () => {
     const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
@@ -309,6 +357,70 @@ export default function RoomCaptureScreen({ route, navigation }) {
                 </View>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* Recent Issues for this Room */}
+        {issueItems.length > 0 && (() => {
+          const requiredItems = issueItems.filter((i) =>
+            i.source === 'open' || i.source === 'reported' || i.source === 'review'
+          );
+          const recurringItems = issueItems.filter((i) => i.source === 'recurring');
+          return (
+            <View style={styles.recentIssuesSection}>
+              <View style={styles.recentIssuesHeader}>
+                <View style={styles.recentIssuesIconContainer}>
+                  <Ionicons name="alert-circle" size={18} color="#EF4444" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.recentIssuesTitle}>
+                    Recent Issues for {room.name}
+                  </Text>
+                  <Text style={styles.recentIssuesSubtitle}>
+                    Tap any card for full details. Open / last-30-day / review
+                    items are required; recurring history is for context.
+                  </Text>
+                </View>
+              </View>
+
+              {requiredItems.map((item) => (
+                <IssueAckCard
+                  key={item.key}
+                  inspectionId={inspectionId}
+                  roomId={room.id}
+                  item={item}
+                  existingAck={acksByExternalId[item.key] || null}
+                  onChange={handleAckChange}
+                />
+              ))}
+
+              {recurringItems.length > 0 ? (
+                <>
+                  <Text style={styles.recurringSubsectionLabel}>
+                    Recurring (last 12 months) · context only
+                  </Text>
+                  {recurringItems.map((item) => (
+                    <IssueAckCard
+                      key={item.key}
+                      inspectionId={inspectionId}
+                      roomId={room.id}
+                      item={item}
+                      existingAck={acksByExternalId[item.key] || null}
+                      onChange={handleAckChange}
+                    />
+                  ))}
+                </>
+              ) : null}
+            </View>
+          );
+        })()}
+
+        {loadingIssues && (
+          <View style={styles.loadingIssues}>
+            <ActivityIndicator size="small" color="#94A3B8" />
+            <Text style={styles.loadingIssuesText}>
+              Checking for recent issues…
+            </Text>
           </View>
         )}
 
@@ -589,6 +701,66 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 2,
+  },
+  recentIssuesSection: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.18)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  recentIssuesHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    gap: 10,
+  },
+  recentIssuesIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recentIssuesTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  recentIssuesSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 16,
+  },
+  recurringSubsectionLabel: {
+    marginTop: 14,
+    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#92400E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  loadingIssues: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+  },
+  loadingIssuesText: {
+    fontSize: 12,
+    color: '#94A3B8',
   },
   damageReportSection: {
     marginHorizontal: 16,

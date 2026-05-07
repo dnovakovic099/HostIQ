@@ -23,6 +23,7 @@ import {
   formatStars,
   LOW_RATING_THRESHOLD,
 } from '../../api/securestayFormat';
+import IssueDetailModal from '../../components/IssueDetailModal';
 import colors from '../../theme/colors';
 
 /**
@@ -497,41 +498,69 @@ function derivePriorityTone(brief) {
  * The mobile UI just renders the list; no further filtering or
  * truncation. The cleaner asked to see every single one.
  */
-function WatchForSection({ items = [], windowDays = 90 }) {
+function WatchForSection({ items = [] }) {
   const renderable = useMemo(() => normalizeWatchItems(items), [items]);
+  const [activeItem, setActiveItem] = useState(null);
+
   if (renderable.length === 0) return null;
 
-  const recurringCount = renderable.filter((it) => it.is_recurring).length;
-  const subtitle =
-    recurringCount > 0
-      ? `Every issue and low-rated review from the last ${windowDays} days · ${recurringCount} recurring`
-      : `Every issue and low-rated review from the last ${windowDays} days`;
+  const counts = {
+    open: renderable.filter((it) => it.source === 'open').length,
+    reported: renderable.filter((it) => it.source === 'reported').length,
+    recurring: renderable.filter((it) => it.source === 'recurring').length,
+    review: renderable.filter((it) => it.source === 'review').length,
+  };
+
+  // Build a precise subtitle so the cleaner knows exactly what they're
+  // looking at and how far back the data goes.
+  const parts = [];
+  if (counts.open > 0) parts.push(`${counts.open} still open`);
+  if (counts.reported > 0) parts.push(`${counts.reported} reported in last 30d`);
+  if (counts.recurring > 0) parts.push(`${counts.recurring} recurring (last 12mo)`);
+  if (counts.review > 0) parts.push(`${counts.review} from reviews (last 60d)`);
+  const subtitle = parts.length > 0 ? parts.join(' · ') : 'Tap any item for full details.';
 
   return (
-    <Section
-      icon="eye"
-      title="What to watch for"
-      count={renderable.length}
-      tint={colors.primary.main}
-      subtitle={subtitle}
-      featured
-    >
-      {renderable.map((it, idx) => (
-        <WatchItem key={it.key} item={it} first={idx === 0} />
-      ))}
-    </Section>
+    <>
+      <Section
+        icon="eye"
+        title="What to watch for"
+        count={renderable.length}
+        tint={colors.primary.main}
+        subtitle={subtitle}
+        featured
+      >
+        {renderable.map((it, idx) => (
+          <WatchItem
+            key={it.key}
+            item={it}
+            first={idx === 0}
+            onPress={() => setActiveItem(it.raw)}
+          />
+        ))}
+      </Section>
+      <IssueDetailModal
+        visible={!!activeItem}
+        onClose={() => setActiveItem(null)}
+        item={activeItem}
+      />
+    </>
   );
 }
 
-function WatchItem({ item, first }) {
+function WatchItem({ item, first, onPress }) {
   return (
-    <View style={[styles.watchItem, first && { borderTopWidth: 0 }]}>
+    <TouchableOpacity
+      style={[styles.watchItem, first && { borderTopWidth: 0 }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={[styles.watchBadge, { backgroundColor: item.color }]}>
         <Text style={styles.watchBadgeText}>{item.badge}</Text>
       </View>
       <View style={{ flex: 1 }}>
         <View style={styles.watchTitleRow}>
-          <Text style={styles.watchTitle} numberOfLines={4}>
+          <Text style={styles.watchTitle} numberOfLines={3}>
             {item.title}
           </Text>
           {item.is_recurring ? (
@@ -553,8 +582,23 @@ function WatchItem({ item, first }) {
             {item.meta.join('  ·  ')}
           </Text>
         ) : null}
+        {item.category_recurrence ? (
+          <Text style={styles.categoryContext} numberOfLines={1}>
+            <Ionicons name="trending-up" size={10} color="#92400E" />
+            {'  '}
+            {item.category_recurrence.category} reported{' '}
+            {item.category_recurrence.count}× in last{' '}
+            {item.category_recurrence.window_days}d at this property
+          </Text>
+        ) : null}
       </View>
-    </View>
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color="#9CA3AF"
+        style={{ marginLeft: 4 }}
+      />
+    </TouchableOpacity>
   );
 }
 
@@ -599,8 +643,11 @@ function normalizeWatchItems(items) {
     } else if (raw.source === 'review') {
       badge = typeof raw.rating === 'number' ? `${raw.rating} ★` : 'REVIEW';
       color = colors.status.warning;
+    } else if (raw.source === 'recurring') {
+      badge = 'RECURRING';
+      color = colors.status.warning;
     } else {
-      // 'reported' (closed/in-progress issue inside the window)
+      // 'reported' (closed/in-progress issue inside the 30d window)
       badge = 'REPORTED';
       color = statusColor(raw.status) || colors.accent.info;
     }
@@ -616,12 +663,18 @@ function normalizeWatchItems(items) {
 
     out.push({
       key: raw.key || raw.id || `watch-${idx}`,
+      source: raw.source,
       title: description || category || 'Reported issue',
       meta,
       badge,
       color,
       is_recurring: !!raw.is_recurring,
       recurring_count: typeof raw.recurring_count === 'number' ? raw.recurring_count : 0,
+      category_recurrence:
+        raw.category_recurrence && raw.category_recurrence.count > 0
+          ? raw.category_recurrence
+          : null,
+      raw,
     });
   });
   return out;
@@ -1116,6 +1169,13 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.4,
+  },
+  categoryContext: {
+    marginTop: 4,
+    color: '#92400E',
+    fontSize: 10,
+    fontWeight: '600',
+    lineHeight: 13,
   },
 
   /* Last guest */
