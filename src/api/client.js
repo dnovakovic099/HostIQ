@@ -12,6 +12,13 @@ const client = axios.create({
   timeout: 120000, // 2 minutes for photo uploads on mobile networks
   headers: {
     'Content-Type': 'application/json',
+    // Capability flag: this build understands the issue-acknowledgment
+    // flow (recent-issues fetch, ack upsert, photo upload, submit gate).
+    // The server uses this to decide whether to enforce the
+    // ISSUE_ACKS_REQUIRED gate on /cleaner/inspections/:id/submit.
+    // Older builds (≤ 49) don't send this header, so the server skips
+    // the gate for them and submits go through as before.
+    'x-supports-issue-acks': '1',
   },
 });
 
